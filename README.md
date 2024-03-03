@@ -1,13 +1,15 @@
-# starikov.io
-**🚀 Landing page for starikov.io**
+# [starikov.io](https://starikov.io)
+
+Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my personal projects. Feel free to use freely!
 
 - [Resume](#resume)
-- [Dotfiles](#dotfiles)
-  
-<a name="resume"/></a>
-## ⭐🎓 Resume [`resume.starikov.io`](resume.starikov.io)
+- [.dotfiles](#dotfiles)
 
-*All the reasons why you should ~~or shouldn’t~~ hire me.*
+<a name="resume"/>
+
+## 🎓 [`resume.starikov.io`](https://resume.starikov.io)
+*All the reasons why you should ~~or shouldn't~~ hire me.*
+
 <p align="center"><img width=512 src="https://resume.starikov.io/template/starriculum-vitae.png"></p>
 
 - **[Résumé](https://resume.starikov.io/illya-starikov-resume.pdf)** [[Dark](https://resume.starikov.io/illya-starikov-resume-dark.pdf)]
@@ -17,9 +19,11 @@
 ---
 
 
-<a name="dotfiles"/></a>
-## 🟩 .dotfiles [`dotfiles.starikov.io`](dotfiles.starikov.io)
+<a name="dotfiles"/>
+
+## 🟢 [`dotfiles.starikov.io`](https://dotfiles.starikov.io)
 *I use Vim.*
+
 <p align="center"><img width=512 src="https://dotfiles.starikov.io/template/dotfiles.png"></p>
 
 - **[Source](https://github.com/IllyaStarikov/.dotfiles)**
@@ -33,3 +37,4 @@
 - [`zshrc`](http://dotfiles.starikov.io/template/zshrc.html)
 
 ---
+
