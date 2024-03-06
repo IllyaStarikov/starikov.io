@@ -1,5 +1,15 @@
 # [starikov.io](https://starikov.io)
 
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MF94N59911"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MF94N59911');
+</script>
+
 Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my personal projects. Feel free to use freely!
 
 - [Resume](#resume)
