@@ -20,7 +20,7 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 
 <a name="resume"/>
 
-## 📄 [`resume.starikov.io`](https://resume.starikov.io)
+## 📄 [`resume`](https://resume.starikov.io)
 *All the reasons why you should ~~or shouldn't~~ hire me.*
 
 <p align="center"><img width=512 src="https://resume.starikov.io/template/starriculum-vitae.png"></p>
