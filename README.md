@@ -34,7 +34,7 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 
 <a name="dotfiles"/>
 
-## 🟢 [`dotfiles.starikov.io`](https://dotfiles.starikov.io)
+## 🟢 [`dotfiles`](https://github.com/IllyaStarikov/.dotfiles)
 *I use Vim btw.*
 
 Personal development environment configuration with enterprise-level testing. Features Neovim (80+ plugins with lazy.nvim), Zsh with Zinit, and a dynamic theme system supporting 4 TokyoNight variants across Alacritty, tmux, Neovim, WezTerm, and Starship.
@@ -49,7 +49,7 @@ Personal development environment configuration with enterprise-level testing. Fe
 
 <a name="colosseum"/>
 
-## 🏟 [`colosseum.starikov.io`](https://colosseum.starikov.io)
+## 🏟 [`colosseum`](https://github.com/IllyaStarikov/colosseum)
 *ARE YOU NOT ENTERTAINED, code judge?*
 
 <p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/colosseum/main/template/colosseum.png"></p>
