@@ -20,7 +20,7 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 
 <a name="resume"/>
 
-## 🎓 [`resume.starikov.io`](https://resume.starikov.io)
+## 📄 [`resume.starikov.io`](https://resume.starikov.io)
 *All the reasons why you should ~~or shouldn't~~ hire me.*
 
 <p align="center"><img width=512 src="https://resume.starikov.io/template/starriculum-vitae.png"></p>
@@ -35,7 +35,7 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 <a name="dotfiles"/>
 
 ## 🟢 [`dotfiles.starikov.io`](https://dotfiles.starikov.io)
-*I use Vim.*
+*I use Vim btw.*
 
 Personal development environment configuration with enterprise-level testing. Features Neovim (80+ plugins with lazy.nvim), Zsh with Zinit, and a dynamic theme system supporting 4 TokyoNight variants across Alacritty, tmux, Neovim, WezTerm, and Starship.
 
@@ -43,16 +43,6 @@ Personal development environment configuration with enterprise-level testing. Fe
 - **Testing** 4-level test infrastructure (unit, functional, integration, performance) with 40+ test files
 - **fixy** Universal code formatter with priority-based formatter selection
 - **Theme Switching** Atomic theme changes across all terminal applications
-
-- **[Source](https://github.com/IllyaStarikov/.dotfiles)**
-- [`alacritty`](http://dotfiles.starikov.io/template/alacritty.html)
-- [`gitignore`](http://dotfiles.starikov.io/template/gitignore.html)
-- [`i3_config`](http://dotfiles.starikov.io/template/i3_config.html)
-- [`latexmkrc`](http://dotfiles.starikov.io/template/latexmkrc.html)
-- [`tmux.conf`](http://dotfiles.starikov.io/template/tmux.html)
-- [`vimrc`](http://dotfiles.starikov.io/template/vimrc.html)
-- [`zshenv`](http://dotfiles.starikov.io/template/zshenv.html)
-- [`zshrc`](http://dotfiles.starikov.io/template/zshrc.html)
 
 ---
 
@@ -76,7 +66,7 @@ Competitive programming code throughout time. Programming languages may vary. Me
 
 <a name="academia"/>
 
-## 📚 [`academia`](https://github.com/IllyaStarikov/academia)
+## 🎓 [`academia`](https://github.com/IllyaStarikov/academia)
 *Pain is temporary, GPA is forever.*
 
 <p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/academia/main/assets/banner.png"></p>
