@@ -15,6 +15,7 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 - [Resume](#resume)
 - [.dotfiles](#dotfiles)
 - [Colosseum](#colosseum)
+- [Academia](#academia)
 
 
 <a name="resume"/>
@@ -36,7 +37,12 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 ## 🟢 [`dotfiles.starikov.io`](https://dotfiles.starikov.io)
 *I use Vim.*
 
-<p align="center"><img width=512 src="https://dotfiles.starikov.io/template/dotfiles.png"></p>
+Personal development environment configuration with enterprise-level testing. Features Neovim (80+ plugins with lazy.nvim), Zsh with Zinit, and a dynamic theme system supporting 4 TokyoNight variants across Alacritty, tmux, Neovim, WezTerm, and Starship.
+
+**Highlights:**
+- **Testing** 4-level test infrastructure (unit, functional, integration, performance) with 40+ test files
+- **fixy** Universal code formatter with priority-based formatter selection
+- **Theme Switching** Atomic theme changes across all terminal applications
 
 - **[Source](https://github.com/IllyaStarikov/.dotfiles)**
 - [`alacritty`](http://dotfiles.starikov.io/template/alacritty.html)
@@ -56,7 +62,7 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 ## 🏟 [`colosseum.starikov.io`](https://colosseum.starikov.io)
 *ARE YOU NOT ENTERTAINED, code judge?*
 
-<p align="center"><img width=512 src="https://colosseum.starikov.io/template/colosseum.png"></p>
+<p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/colosseum/main/template/colosseum.png"></p>
 
 Competitive programming code throughout time. Programming languages may vary. Methodology to solve might be questionable (we all experiment in college).
 
@@ -64,4 +70,24 @@ Competitive programming code throughout time. Programming languages may vary. Me
 - [Hacker Rank](https://github.com/IllyaStarikov/colosseum/tree/main/src/hacker-rank)
 - [Kattis](https://github.com/IllyaStarikov/colosseum/tree/main/src/kattis)
 - [Leetcode](https://github.com/IllyaStarikov/colosseum/tree/main/src/leetcode)
+
+---
+
+
+<a name="academia"/>
+
+## 📚 [`academia`](https://github.com/IllyaStarikov/academia)
+*Pain is temporary, GPA is forever.*
+
+<p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/academia/main/assets/banner.png"></p>
+
+A complete archive of four years of computer science education at Missouri S&T (2014-2018), culminating in a combined BS/MS in Computer Science. Consolidated from 24+ separate course repositories with preserved commit history.
+
+**Highlighted Projects:**
+- **Chess AI** Bitboard-based engine with alpha-beta pruning and iterative deepening
+- **Puzzle Solvers** A* search implementations with custom heuristics
+- **Linear Algebra Library** Templated C++ with LU/QR/Cholesky decomposition
+- **Space Invaders on 8051** Classic arcade game in assembly with extreme memory constraints
+- **Splatoonio** Multiplayer mobile game (Flutter/Dart) capstone project
+- **Documentation** 815 pages of LaTeX, curated work, assignments, and lecture notes.
 
