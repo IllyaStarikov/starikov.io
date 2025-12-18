@@ -37,6 +37,8 @@ Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my per
 ## 🟢 [`dotfiles`](https://github.com/IllyaStarikov/.dotfiles)
 *I use Vim btw.*
 
+<p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/.dotfiles/main/template/dotfiles.png"></p>
+
 Personal development environment configuration with enterprise-level testing. Features Neovim (80+ plugins with lazy.nvim), Zsh with Zinit, and a dynamic theme system supporting 4 TokyoNight variants across Alacritty, tmux, Neovim, WezTerm, and Starship.
 
 **Highlights:**
