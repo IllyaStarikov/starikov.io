@@ -1,0 +1,45 @@
+---
+/*
+ * ProfileCard -- the live, self-refreshing neofetch card from the profile repo,
+ * shown as the hero of /projects/profile. Two committed SVGs (light + dark) that
+ * a daily GitHub Action regenerates; a plain <picture> picks the one matching the
+ * viewer's system, no JS. Served remotely from raw.githubusercontent.com, which
+ * the site CSP allows (img-src https:). Encapsulated as a component because MDX
+ * can't host a scoped <style> (its CSS braces parse as JS expressions).
+ */
+const RAW = 'https://raw.githubusercontent.com/IllyaStarikov/IllyaStarikov/main/assets';
+---
+
+<figure class="profile-card">
+  <picture>
+    <source srcset={`${RAW}/readme-dark.svg`} media="(prefers-color-scheme: dark)" />
+    <img
+      src={`${RAW}/readme-light.svg`}
+      alt="A neofetch-style GitHub profile card: an ASCII portrait beside live stats — repositories, stars, commits, and top languages — that regenerate daily."
+      loading="lazy"
+      decoding="async"
+    />
+  </picture>
+  <figcaption>The live card, straight from the profile repo — light or dark to match your system.</figcaption>
+</figure>
+
+<style>
+  .profile-card {
+    margin: var(--s-2) 0 var(--s-6);
+  }
+
+  .profile-card img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+  }
+
+  .profile-card figcaption {
+    margin-top: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+</style>

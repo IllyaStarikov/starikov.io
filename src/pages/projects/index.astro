@@ -1,0 +1,89 @@
+---
+/*
+ * /projects -- the project ledger. Featured projects (dotfiles, eclecta,
+ * mcp-servers) pinned to the top by `order`, then the rest. One quiet document
+ * row per project: title, tagline, and a mono meta trail of live repo facts
+ * (★stars · language · updated relative). Curated MDX overlays drive the list;
+ * a new overlay file appears here on the next build with no edit to this page.
+ */
+import Shell from '../../layouts/Shell.astro';
+import LedgerRow from '../../components/LedgerRow.astro';
+import { getCollection } from 'astro:content';
+import { joinRepos, summarizeRepos, sortProjects } from '../../lib/model';
+import { formatRelativeTime } from '../../lib/relative-time';
+
+const repos = await getCollection('repos');
+const projects = sortProjects((await getCollection('projects')).filter((p) => !p.data.draft));
+
+/** ★stars · language · updated (relative) -- omit any fact that's unavailable. */
+function metaFor(data: (typeof projects)[number]['data']): string[] {
+  const names = [...(data.repo ? [data.repo] : []), ...data.repos];
+  const summary = summarizeRepos(joinRepos(names, repos));
+  const rel = summary.updated ? formatRelativeTime(summary.updated) : null;
+  return [
+    summary.stars !== null ? `★ ${summary.stars}` : null,
+    summary.language,
+    rel ? `updated ${rel}` : null,
+  ].filter((x): x is string => Boolean(x));
+}
+
+const count = projects.length;
+---
+
+<Shell
+  title="Projects — starikov.io"
+  description="Flagship projects: a decade of dotfiles, an LLM news pipeline, MCP servers, AI algorithms, and more — each a curated page over live repo metadata."
+  crumbs={[{ href: '/projects', label: 'projects' }]}
+  pageType="projects"
+>
+  <div class="projects-index">
+    <header class="projects-index__head">
+      <h1>Projects</h1>
+      <p class="projects-index__intro">
+        The work worth reading about — each project is a curated page laid over its repository's live
+        metadata. Featured first, then everything else, most-recent commit noted.
+      </p>
+    </header>
+
+    {
+      count > 0 ? (
+        <div class="projects-index__list">
+          {projects.map((project) => (
+            <LedgerRow
+              href={`/projects/${project.id}`}
+              title={project.data.title}
+              dek={project.data.tagline}
+              meta={metaFor(project.data)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="projects-index__empty">No projects yet.</p>
+      )
+    }
+  </div>
+</Shell>
+
+<style>
+  .projects-index__head {
+    margin-bottom: var(--s-6);
+  }
+
+  .projects-index__head h1 {
+    margin-top: var(--s-2);
+    font-size: var(--fs-32);
+    letter-spacing: -0.02em;
+  }
+
+  .projects-index__intro {
+    margin-top: var(--s-3);
+    max-width: 60ch;
+    color: var(--text-secondary);
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+  }
+
+  .projects-index__empty {
+    color: var(--text-secondary);
+  }
+</style>

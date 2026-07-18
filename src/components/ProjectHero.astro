@@ -1,0 +1,57 @@
+---
+/*
+ * ProjectHero -- the framed hero image atop a project page (design spec §3
+ * anatomy: hero media sits under the metadata strip). Takes a local
+ * ImageMetadata (from the overlay's `hero` frontmatter) and routes it through
+ * Astro's asset pipeline to AVIF. Lazy is wrong here -- the hero is the LCP
+ * candidate above the fold -- so it loads eagerly with a high fetch priority.
+ *
+ * Video and <picture> heroes (mcp-servers, artificial, profile) are authored in
+ * the MDX body instead, since their sources are transcoded/remote rather than a
+ * single local still.
+ */
+import { Image } from 'astro:assets';
+
+interface Props {
+  image: ImageMetadata;
+  alt: string;
+  /** Optional caption rendered under the frame in mono. */
+  caption?: string;
+}
+const { image, alt, caption } = Astro.props;
+---
+
+<figure class="project-hero">
+  <Image
+    src={image}
+    alt={alt}
+    widths={[720, 960, 1440]}
+    sizes="(min-width: 1024px) 720px, 100vw"
+    format="avif"
+    quality={60}
+    loading="eager"
+    fetchpriority="high"
+  />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .project-hero {
+    margin: var(--s-6) 0 0;
+  }
+
+  .project-hero :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+  }
+
+  .project-hero figcaption {
+    margin-top: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+</style>

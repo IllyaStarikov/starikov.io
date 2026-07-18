@@ -15,16 +15,19 @@
  */
 import ThemeControl from './ThemeControl.astro';
 import Kbd from './Kbd.astro';
-import { buildNav, sliceGroup, activeHref, GITHUB_URL, type ToolRef } from '../lib/nav';
+import { buildNav, sliceGroup, activeHref, GITHUB_URL, type ToolRef, type ProjectRef } from '../lib/nav';
 
 interface Props {
   pathname: string;
   tools?: ToolRef[];
+  projects?: ProjectRef[];
   variant?: 'desktop' | 'sheet';
 }
-const { pathname, tools = [], variant = 'desktop' } = Astro.props;
+const { pathname, tools = [], projects, variant = 'desktop' } = Astro.props;
 
-const groups = buildNav(tools);
+// `projects` undefined -> buildNav's flagship fallback; injected by Shell in
+// normal use so a new curated project shows up here with no edit.
+const groups = buildNav(tools, projects);
 const active = activeHref(pathname, groups);
 const sliced = groups.map((group) => ({ group, ...sliceGroup(group) }));
 const isDesktop = variant === 'desktop';

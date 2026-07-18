@@ -12,6 +12,7 @@
  */
 
 import { defineCollection, z } from 'astro:content';
+import { glob } from 'astro/loaders';
 import { binToolsLoader } from './loaders/bin-tools';
 import { academiaShowcaseLoader, coursesLoader } from './loaders/academia';
 import { githubMetaLoader } from './loaders/github-meta';
@@ -135,4 +136,42 @@ const repos = defineCollection({
   }),
 });
 
-export const collections = { tools, academiaShowcase, courses, repos };
+// The curated projects (design spec section 6: "MDX is the page; repo metadata
+// joins on"). Unlike the auto collections above, these are human-authored MDX
+// files whose BODY is the page content; the schema is the overlay's frontmatter.
+// `repo`/`repos` name the GitHub repos to join against the `repos` collection
+// (their values must match SITE.projectRepos casing; the join lowercases both
+// sides, so casing drift is harmless). `hero` is an optional local image routed
+// through Astro's asset pipeline (→ AVIF). `license` is carried here because the
+// `repos` GitHub metadata doesn't include it and the spec's metadata strip shows
+// it. `draft` skips a file from getStaticPaths, the ledger, and getAllItems.
+const projects = defineCollection({
+  loader: glob({ pattern: '*.mdx', base: 'src/content/projects' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      /** One-line dek under the H1. */
+      tagline: z.string(),
+      /** Single joined repo (mutually usable with `repos`). */
+      repo: z.string().optional(),
+      /** A cluster of joined repos (e.g. mcp-servers = omnifocus + readwise). */
+      repos: z.array(z.string()).default([]),
+      /** A live deployment to link (eclecta.co, resume.starikov.io). */
+      liveUrl: z.string().url().optional(),
+      /** SPDX-ish license label for the metadata strip; repos API omits it. */
+      license: z.string().optional(),
+      /** Pinned to the top of the ledger + sidebar. */
+      featured: z.boolean().default(false),
+      /** Ascending sort key within the featured / non-featured groups. */
+      order: z.number().default(99),
+      /** Optional local hero image, resolved to ImageMetadata (→ AVIF). */
+      hero: image().optional(),
+      /** Manual related-essay slugs (design spec section 6, resolved in Task 14). */
+      essays: z.array(z.string()).default([]),
+      /** Related-essay tags, matched after explicit slugs (Task 14). */
+      essayTags: z.array(z.string()).default([]),
+      draft: z.boolean().default(false),
+    }),
+});
+
+export const collections = { tools, academiaShowcase, courses, repos, projects };

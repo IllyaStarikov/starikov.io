@@ -1,0 +1,20 @@
+---
+/*
+ * Highlights -- the container for a project's metric-led vignettes (the dotfiles
+ * page's signature). Each child <Highlight> leads with a real measured number,
+ * so the structural device (the figure in the margin) encodes something true --
+ * these are counts you can reproduce from the repo, not ordinal 01/02/03
+ * decoration. A quiet vertical ledger of facts, echoing the home neofetch card.
+ */
+---
+
+<div class="highlights">
+  <slot />
+</div>
+
+<style>
+  .highlights {
+    margin-top: var(--s-5);
+    border-top: 1px solid var(--border);
+  }
+</style>

@@ -1,0 +1,30 @@
+---
+title: GitHub Profile
+tagline: A neofetch-style profile card that rebuilds itself every day with live stats.
+repo: IllyaStarikov/IllyaStarikov
+license: MIT
+featured: false
+order: 6
+---
+
+import ProfileCard from '../../components/ProfileCard.astro';
+
+<ProfileCard />
+
+## Story
+
+The `IllyaStarikov/IllyaStarikov` repository is the special one GitHub renders at the top of
+my profile, and I could not let it be a static README. So it is a neofetch panel instead — the
+terminal ritual of printing your system's specs, aimed at a person instead of a machine: an
+ASCII portrait on the left, live stats on the right.
+
+It regenerates itself. A GitHub Actions workflow runs every day and rebuilds two SVG cards, one
+light and one dark, so the numbers on my profile are never stale. Three small Python programs do
+the work — `fetch_stats` pulls the live figures from the GitHub API, `ascii_portrait` renders the
+portrait, and `generate_svg` lays out the card and writes both variants. The page you are reading
+picks the right one for your system with a plain `<picture>` and `prefers-color-scheme`, no
+JavaScript.
+
+It is the smallest project on this list and one of my favorites — a tiny, self-maintaining piece
+of craft that greets anyone who lands on my profile, in their own color scheme, with numbers that
+were true this morning.

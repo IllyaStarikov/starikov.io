@@ -1,0 +1,37 @@
+---
+title: Artificial
+tagline: A shelf of AI and optimization algorithms — chess, evolution, satisfiability, search.
+repo: IllyaStarikov/artificial
+license: MIT
+featured: false
+order: 4
+essayTags: ['ai']
+---
+
+import ProjectVideo from '../../components/ProjectVideo.astro';
+
+<ProjectVideo
+  mp4="/projects/artificial-chess.mp4"
+  webm="/projects/artificial-chess.webm"
+  poster="/projects/artificial-chess.jpg"
+  alt="The minimax chess engine searching and playing a game"
+  caption="The chess engine: minimax with alpha-beta pruning, written in C++."
+/>
+
+## Story
+
+This is where I keep the classic AI and optimization algorithms — the ones every course
+gestures at and few people sit down and actually implement end to end. Each is its own small,
+runnable program behind a unified Python CLI, in Python or C++ depending on what the problem
+rewards.
+
+The one at the top is the **chess engine**: minimax with alpha-beta pruning, in C++, because
+search this deep wants the speed. Next to it lives a **shape packer** that uses an evolutionary
+algorithm to cram 2D shapes into as little space as possible, a **SAT solver** that treats
+Boolean satisfiability as another population to evolve, a **match-3 solver**, a **hill climber**
+for 2D function optimization, and a minimax **tic-tac-toe** that never loses.
+
+They share a theme: most interesting problems are search problems, and the art is in how you
+prune. Alpha-beta throws away chess lines that cannot matter; evolution keeps the packings and
+assignments that score well and mutates the rest. Same instinct, different clothes. It is MIT-
+licensed and meant to be read — every module has a runnable demo and its own documentation.

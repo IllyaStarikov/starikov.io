@@ -1,0 +1,105 @@
+---
+/*
+ * Highlight -- one metric-led vignette. The measured number hangs in the left
+ * margin as a large mono figure (accent), its unit beneath it; the label + prose
+ * sit to the right. Stacks on narrow viewports. Lives inside the page's `.prose`
+ * wrapper, so the scoped rules below deliberately out-specify `.prose h3` etc.
+ */
+interface Props {
+  /** The measured figure, pre-formatted (e.g. "1,188", "~150ms", "57"). */
+  metric: string;
+  /** Small unit under the figure (e.g. "lines", "startup", "variants"). */
+  unit?: string;
+  /** The vignette's heading. */
+  label: string;
+}
+const { metric, unit, label } = Astro.props;
+---
+
+<article class="highlight">
+  <div class="highlight__metric" aria-hidden="false">
+    <span class="highlight__num">{metric}</span>
+    {unit && <span class="highlight__unit">{unit}</span>}
+  </div>
+  <div class="highlight__body">
+    <h3 class="highlight__label">{label}</h3>
+    <div class="highlight__prose"><slot /></div>
+  </div>
+</article>
+
+<style>
+  .highlight {
+    display: grid;
+    grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+    gap: var(--s-5);
+    padding: var(--s-5) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    /* baseline-align the big figure with the label to its right */
+    padding-top: 2px;
+  }
+
+  .highlight__num {
+    font-family: var(--font-mono);
+    font-size: var(--fs-32);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .highlight__unit {
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .highlight__label {
+    margin: 0 0 var(--s-2);
+    font-size: var(--fs-20);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+
+  /* The slotted prose is markdown from the MDX; keep it in the reading measure. */
+  .highlight__prose {
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+    color: var(--fg);
+  }
+
+  .highlight__prose :global(p) {
+    margin: 0;
+  }
+
+  .highlight__prose :global(p + p) {
+    margin-top: var(--s-3);
+  }
+
+  .highlight__prose :global(code) {
+    font-size: 0.9em;
+  }
+
+  @media (max-width: 640px) {
+    .highlight {
+      grid-template-columns: 1fr;
+      gap: var(--s-2);
+    }
+
+    .highlight__metric {
+      flex-direction: row;
+      align-items: baseline;
+      gap: var(--s-2);
+    }
+  }
+</style>

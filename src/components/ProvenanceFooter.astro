@@ -1,0 +1,101 @@
+---
+/*
+ * ProvenanceFooter -- the honesty line at the foot of every project page: where
+ * the auto metadata came from, and when the human overlay was last touched.
+ * (The same authenticity-through-disclosure move as /colophon's palette
+ * provenance and the dotfiles' validate-themes.sh.)
+ *
+ * Two build-time git reads, both on OUR OWN repo (not on any checked-out remote
+ * content -- so this is safe to execSync), each guarded so a missing .git or
+ * uncommitted file never fails the build:
+ *
+ *   1. source sha -- for the ONE repo checked out locally (.sources/dotfiles),
+ *      `git rev-parse --short HEAD` gives the palette/source commit, printed as
+ *      "Auto-generated from <repo>@<sha>". Every other project has no local
+ *      checkout, so it falls back to "Metadata via GitHub API · <build date>".
+ *   2. overlay edit date -- `git log -1 --format=%as -- <overlay>` dates the
+ *      curated MDX; falls back to the file's mtime for an as-yet-uncommitted
+ *      overlay.
+ */
+import { execSync } from 'node:child_process';
+import { statSync } from 'node:fs';
+
+interface Props {
+  /** Primary repo "owner/name" the page is generated from. */
+  repo?: string;
+  /** Local checkout dir whose HEAD sha to read (only .sources/dotfiles exists). */
+  sourceDir?: string;
+  /** Overlay path relative to the repo root, e.g. src/content/projects/x.mdx. */
+  overlayPath: string;
+}
+const { repo, sourceDir, overlayPath } = Astro.props;
+
+function git(args: string): string | null {
+  try {
+    return execSync(`git ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function shortSha(dir: string): string | null {
+  const out = git(`-C "${dir}" rev-parse --short HEAD`);
+  return out || null;
+}
+
+function overlayEdited(path: string): string | null {
+  const logged = git(`log -1 --format=%as -- "${path}"`);
+  if (logged) return logged;
+  try {
+    return statSync(path).mtime.toISOString().slice(0, 10);
+  } catch {
+    return null;
+  }
+}
+
+const buildDate = new Date().toISOString().slice(0, 10);
+const sha = sourceDir ? shortSha(sourceDir) : null;
+const edited = overlayEdited(overlayPath);
+
+const sourceLine =
+  repo && sha
+    ? `Auto-generated from ${repo}@${sha}`
+    : repo
+      ? `Metadata via GitHub API · ${buildDate}`
+      : null;
+---
+
+<footer class="provenance">
+  {sourceLine && <span>{sourceLine}</span>}
+  {
+    edited && (
+      <>
+        {sourceLine && (
+          <span class="provenance__dot" aria-hidden="true">
+            ·
+          </span>
+        )}
+        <span>Overlay last edited {edited}</span>
+      </>
+    )
+  }
+</footer>
+
+<style>
+  .provenance {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    margin-top: var(--s-8);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+
+  .provenance__dot {
+    user-select: none;
+  }
+</style>

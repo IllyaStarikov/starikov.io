@@ -1,0 +1,36 @@
+---
+title: Eclecta
+tagline: A digital broadsheet for the frontier — we read the firehose so you read what matters.
+repo: IllyaStarikov/eclecta
+liveUrl: https://eclecta.co
+license: MIT
+featured: true
+order: 2
+essayTags: ['ai']
+---
+
+## Story
+
+[Eclecta](https://eclecta.co) is a daily newspaper for technology, AI, and the sciences,
+written by a machine and edited by a taste. Every weekday morning there is a brief; on
+Fridays a weekly digest; then monthly, quarterly, and yearly reviews — five cadences, one
+front page. It is a static [Astro 5](https://astro.build) site, so the reading experience
+is instant and the whole thing survives even if the machinery behind it is offline.
+
+That machinery is a pipeline called `signalpipe`. It ingests thousands of verified sources —
+RSS, Hacker News, Lobsters, Reddit, arXiv, Mastodon trends, Google News, Wikipedia current
+events, GDELT — then canonicalizes and clusters them, because one story shows up on twenty
+surfaces and should count as one story. What survives clustering is scored _deterministically_:
+consensus times engagement times reputation times recency times topic fit. No model decides
+what is important. A formula does, and the formula is the same every day.
+
+Only then does the LLM earn its keep. Claude reads the day's finalists closely and explains
+what actually matters, and writes the digests under an Economist-school style guide — plain,
+confident, no hedging. The pipeline writes its output _into_ the repository and pushes;
+GitHub Actions builds and deploys. The site never depends on an API being up at read time,
+which is the whole trick: the intelligence happens at build, the reading happens on plain
+static HTML.
+
+It is tested like something people rely on — unit tests with Vitest, end-to-end flows with
+Playwright, and accessibility checked with axe. The source and the pipeline are both public
+under MIT. Read it, run it, fork it — or just read it: [eclecta.co](https://eclecta.co).

@@ -1,0 +1,147 @@
+---
+/*
+ * /projects/<slug> -- a flagship project page (design spec §3 anatomy):
+ *
+ *   breadcrumb → H1 → dek → metadata strip (language · ★stars · license ·
+ *   last-commit relative · repo ↗ — stars omitted when the repo metadata is
+ *   stale) → hero media → curated MDX body → auto tail (RelatedEssays, hidden
+ *   while empty · ProvenanceFooter).
+ *
+ * The MDX overlay IS the page body; this route supplies the chrome around it and
+ * joins live repo metadata on. getStaticPaths builds one page per non-draft
+ * overlay, so a new file in src/content/projects/ ships a page with no edit here.
+ * The right rail (≥1280px) carries the heading TOC and, for projects that have
+ * ≥2 genuine cross-links, a Connections block.
+ */
+import { getCollection } from 'astro:content';
+import Shell from '../../layouts/Shell.astro';
+import MetadataStrip from '../../components/MetadataStrip.astro';
+import ProjectHero from '../../components/ProjectHero.astro';
+import RelatedEssays from '../../components/RelatedEssays.astro';
+import ProvenanceFooter from '../../components/ProvenanceFooter.astro';
+import { getProjectPage } from '../../lib/model';
+import { formatRelativeTime } from '../../lib/relative-time';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).filter((p) => !p.data.draft);
+  return Promise.all(
+    projects.map(async (project) => ({
+      params: { slug: project.id },
+      props: { page: await getProjectPage(project.id) },
+    })),
+  );
+}
+
+// getStaticPaths only emits slugs that resolve to a non-draft page.
+const page = Astro.props.page!;
+const { slug, data, summary, Content, headings, essays } = page;
+
+// -- Metadata strip: language · ★stars · license · updated · live ↗ · repo ↗ ---
+type StripItem = { label: string; href?: string; external?: boolean };
+const rel = summary.updated ? formatRelativeTime(summary.updated) : null;
+const stripItems: StripItem[] = [];
+if (summary.language) stripItems.push({ label: summary.language });
+if (summary.stars !== null) stripItems.push({ label: `★ ${summary.stars}` });
+if (data.license) stripItems.push({ label: data.license });
+if (rel) stripItems.push({ label: rel });
+if (data.liveUrl) stripItems.push({ label: 'Live', href: data.liveUrl, external: true });
+for (const r of summary.repos) {
+  stripItems.push({ label: r.fullName.split('/')[1], href: r.url, external: true });
+}
+
+// -- Right-rail TOC: the overlay's H2 sections, in document order. Only worth a
+// TOC when there's more than one section (dotfiles); a lone "Story" is noise. ---
+const sections = headings.filter((h) => h.depth === 2);
+const toc = sections.length >= 2 ? sections.map((h) => ({ id: h.slug, label: h.text })) : [];
+
+// -- Connections: only where ≥2 genuine cross-links exist (RightRail enforces --
+// the ≥2 rule too; this is just the curated source). --------------------------
+const CONNECTIONS: Record<string, { href: string; label: string; external?: boolean }[]> = {
+  dotfiles: [
+    { href: '/colophon', label: 'The theme system, live' },
+    { href: '/bin', label: 'Standalone command-line tools' },
+  ],
+};
+const connections = CONNECTIONS[slug] ?? [];
+
+// -- Provenance: dotfiles is the one repo checked out locally, so it gets a real
+// source sha; the rest fall back to "metadata via GitHub API · <build date>". --
+const primaryRepo = data.repo ?? data.repos[0];
+const sourceDir = slug === 'dotfiles' ? '.sources/dotfiles' : undefined;
+const overlayPath = `src/content/projects/${slug}.mdx`;
+
+const heroAlt = `${data.title} — preview`;
+---
+
+<Shell
+  title={`${data.title} — projects — starikov.io`}
+  description={data.tagline}
+  crumbs={[
+    { href: '/projects', label: 'projects' },
+    { href: `/projects/${slug}`, label: slug },
+  ]}
+  toc={toc}
+  connections={connections}
+  pageType="project"
+>
+  <article class="project">
+    <header class="project__head">
+      <h1 class="project__title">{data.title}</h1>
+      <p class="project__dek">{data.tagline}</p>
+      {stripItems.length > 0 && <MetadataStrip items={stripItems} />}
+    </header>
+
+    {data.hero && <ProjectHero image={data.hero} alt={heroAlt} />}
+
+    <div class="prose project__body">
+      <Content />
+    </div>
+
+    <RelatedEssays essays={essays} />
+
+    <ProvenanceFooter repo={primaryRepo} sourceDir={sourceDir} overlayPath={overlayPath} />
+  </article>
+</Shell>
+
+<script>
+  import '../../scripts/project-media.ts';
+</script>
+
+<style>
+  .project {
+    max-width: 720px;
+  }
+
+  .project__title {
+    font-size: var(--fs-32);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .project__dek {
+    margin-top: var(--s-3);
+    max-width: 60ch;
+    color: var(--text-secondary);
+    font-size: var(--fs-20);
+    line-height: 1.4;
+  }
+
+  .project__head :global(.metadata-strip) {
+    margin-top: var(--s-4);
+  }
+
+  .project__body {
+    margin-top: var(--s-6);
+  }
+
+  /* Anchor offset so a TOC jump doesn't tuck the heading under the top edge. */
+  .project__body :global(h2) {
+    scroll-margin-top: var(--s-5);
+  }
+
+  /* The first heading in the body already has the hero/strip above it; trim its
+     big default top margin so the section rhythm stays even. */
+  .project__body :global(> :first-child) {
+    margin-top: 0;
+  }
+</style>

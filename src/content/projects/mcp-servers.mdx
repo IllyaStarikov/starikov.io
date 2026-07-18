@@ -1,0 +1,46 @@
+---
+title: MCP Servers
+tagline: Two Model Context Protocol servers that hand Claude my task manager and my reading library.
+repos: ['IllyaStarikov/omnifocus-mcp', 'IllyaStarikov/readwise-mcp']
+license: MIT
+featured: true
+order: 3
+---
+
+import ProjectVideo from '../../components/ProjectVideo.astro';
+
+<ProjectVideo
+  mp4="/projects/mcp-demo.mp4"
+  webm="/projects/mcp-demo.webm"
+  poster="/projects/mcp-demo.jpg"
+  alt="Claude creating and organizing OmniFocus projects through the omnifocus-mcp server"
+  caption="omnifocus-mcp — turning a prompt into a project, live in Claude."
+/>
+
+## Story
+
+I wanted to talk to the tools I actually run my life on instead of clicking through them.
+So I wrote two [Model Context Protocol](https://modelcontextprotocol.io) servers — the
+bridge that lets Claude read and write real application state — one for my task manager,
+one for my reading library.
+
+**omnifocus-mcp** is feature-complete: **51 tools, 2 resources, and 3 prompts** covering
+full read/write access to OmniFocus tasks, projects, folders, tags, and perspectives. Under
+the hood it drives [Omni Automation](https://omni-automation.com) (OmniJS) through JXA and
+`osascript`, which is why it is macOS-only and why it can do everything the app can. "Create
+a project in my Work folder with subtasks due Friday, assigned sequentially" becomes a real
+OmniFocus project. It ships on npm as [`omnifocus-mcp-server`](https://www.npmjs.com/package/omnifocus-mcp-server):
+
+```bash
+claude mcp add omnifocus -- npx -y omnifocus-mcp-server
+```
+
+**readwise-mcp** is the other half: **16 tools** for capturing authenticated DOM content
+straight from Safari tabs and managing a full Readwise library — Reader documents, highlights,
+books, tags, export, and the daily review. It grabs the real rendered page from an open tab
+(so paywalled and logged-in content comes through intact), and stores your Readwise token in
+the macOS Keychain rather than a dotfile. Off macOS it degrades gracefully: the URL-based
+capture tools fall back to letting Readwise fetch the page itself.
+
+Both are MIT-licensed. Together they are the clearest demonstration I have that an assistant
+is only as useful as the surfaces you let it touch.

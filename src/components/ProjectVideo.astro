@@ -1,0 +1,51 @@
+---
+/*
+ * ProjectVideo -- a muted looping demo clip, transcoded once from a repo's GIF
+ * (mp4 + webm + poster) and committed under public/projects/. Imported directly
+ * into an MDX overlay (mcp-servers, artificial) as its hero media.
+ *
+ * Playback mirrors /academia: preload nothing, play only while on screen, and
+ * under prefers-reduced-motion never autoplay -- the poster stands in with
+ * native controls (project-media.ts, shipped by the [...slug] page). The markup
+ * is correct with no JS: a poster-backed <video> that a reader can still play.
+ */
+interface Props {
+  mp4: string;
+  webm: string;
+  poster: string;
+  alt: string;
+  /** Mono caption under the frame (e.g. "omnifocus-mcp, driven from Claude"). */
+  caption?: string;
+}
+const { mp4, webm, poster, alt, caption } = Astro.props;
+---
+
+<figure class="project-video">
+  <video data-project-video muted loop playsinline preload="none" poster={poster} aria-label={alt}>
+    <source src={webm} type="video/webm" />
+    <source src={mp4} type="video/mp4" />
+  </video>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .project-video {
+    margin: var(--s-6) 0 0;
+  }
+
+  .project-video video {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    background: var(--surface);
+  }
+
+  .project-video figcaption {
+    margin-top: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+</style>

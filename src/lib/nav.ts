@@ -36,7 +36,17 @@ export interface ToolRef {
   updated?: string;
 }
 
-/** Six flagship project slugs, hardcoded until the projects collection (Task 12). */
+/** Project injected from getCollection('projects'), already sorted (featured
+ *  first, by `order`) by the caller. `label` is the human title, not the slug. */
+export interface ProjectRef {
+  slug: string;
+  label: string;
+}
+
+/** The six flagship slugs, kept as the buildNav fallback so the Projects group
+ *  still renders if no collection is injected. The live tree comes from the
+ *  `projects` collection (Shell injects it), so a new curated project appears in
+ *  the sidebar with no edit here. */
 export const FLAGSHIP_PROJECTS = [
   'dotfiles',
   'eclecta',
@@ -46,16 +56,23 @@ export const FLAGSHIP_PROJECTS = [
   'profile',
 ] as const;
 
+const FALLBACK_PROJECTS: ProjectRef[] = FLAGSHIP_PROJECTS.map((slug) => ({ slug, label: slug }));
+
 export const GITHUB_URL = 'https://github.com/IllyaStarikov';
 
 /** Groups >8 entries collapse to the 8 most-recent + an "All N ->" link. */
 export const SLICE_LIMIT = 8;
 
 /**
- * Build the nav tree. `tools` is empty in v1; Task 9 injects the built
- * collection here (`buildNav(getCollection('tools').map(...))`).
+ * Build the nav tree. `tools` and `projects` are injected from their collections
+ * by Shell (`buildNav(toolRefs, projectRefs)`); both default to a fallback so
+ * the tree still renders standalone. Projects arrive pre-sorted (featured first,
+ * by `order`).
  */
-export function buildNav(tools: ToolRef[] = []): NavGroup[] {
+export function buildNav(
+  tools: ToolRef[] = [],
+  projects: ProjectRef[] = FALLBACK_PROJECTS,
+): NavGroup[] {
   return [
     {
       label: 'Index',
@@ -68,7 +85,7 @@ export function buildNav(tools: ToolRef[] = []): NavGroup[] {
     {
       label: 'Projects',
       index: { href: '/projects' },
-      items: FLAGSHIP_PROJECTS.map((slug) => ({ href: `/projects/${slug}`, label: slug })),
+      items: projects.map((p) => ({ href: `/projects/${p.slug}`, label: p.label })),
     },
     {
       // Populated at build from getCollection('tools') in Task 9.
