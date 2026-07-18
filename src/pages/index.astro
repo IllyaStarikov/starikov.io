@@ -3,8 +3,19 @@ import Base from '../layouts/Base.astro';
 ---
 
 <Base>
-  <main>
+  <main class="prose" style="padding: var(--s-6) var(--s-4);">
+    <p class="mono-label">status</p>
     <h1>starikov.io — rebuilding</h1>
-    <p>The new site is under construction. Check back soon.</p>
+    <p>
+      The new site is under construction. Check back soon — in the meantime, here's
+      <a href="https://github.com/IllyaStarikov">the GitHub</a> this is being rebuilt from.
+    </p>
+    <p>
+      Tokens land first: type scale, spacing, motion, and self-hosted <code>Inter Variable</code>
+      + <code>Commit Mono</code>.
+    </p>
+    <pre><code>{`function greet(name: string) {
+  return \`hello, \${name}\`;
+}`}</code></pre>
   </main>
 </Base>

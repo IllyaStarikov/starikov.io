@@ -1,0 +1,213 @@
+/*
+ * Reset-lite + base element styles + prose. Consumes theme tokens (--bg,
+ * --fg, --surface, --border, --accent, --text-secondary, --code-comment,
+ * --selection) via var(--token, fallback) at each use site -- those tokens
+ * are defined per-variant in src/styles/themes.generated.css (Task 3/5),
+ * NOT here. The fallback values below are the tokyonight-storm palette
+ * (the site's dark default) so an unstyled flash never happens even before
+ * the theme runtime lands.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg, #24283b);
+  color: var(--fg, #c0caf5);
+  font: 400 var(--fs-16) / var(--lh-body) var(--font-sans);
+  font-feature-settings:
+    'cv05' 1,
+    'cv11' 1,
+    'ss01' 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--selection, #364a82);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
+}
+
+h1 {
+  font-size: var(--fs-32);
+}
+
+h2 {
+  font-size: var(--fs-24);
+}
+
+h3 {
+  font-size: var(--fs-20);
+}
+
+/* Home statement only -- opt-in, not a default heading size. */
+.text-statement {
+  font-size: var(--fs-44);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
+}
+
+.mono-label {
+  font: 500 var(--fs-12) / 1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow);
+  color: var(--text-secondary, #8890b2);
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border, #3b4261);
+  text-underline-offset: 0.15em;
+  transition: text-decoration-color var(--dur-2) var(--ease-out);
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration-color: var(--accent, #7aa2f7);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent, #7aa2f7);
+  outline-offset: 2px;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/*
+ * Applied to <html> for ~200ms while a theme swap is in flight (Task 5's
+ * theme-control.ts toggles the class). Everything crossfades in lockstep
+ * instead of each token snapping independently.
+ */
+.theme-transitioning * {
+  transition:
+    background-color 120ms linear,
+    border-color 120ms linear,
+    color 120ms linear !important;
+}
+
+/* -----------------------------------------------------------------------
+ * Prose: the essay/long-form reading column.
+ * ----------------------------------------------------------------------- */
+.prose {
+  max-width: min(70ch, 720px);
+  font-size: var(--fs-16);
+  line-height: var(--lh-body);
+}
+
+.prose > * + * {
+  margin-top: var(--s-4);
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  margin-top: var(--s-7);
+  margin-bottom: var(--s-3);
+}
+
+.prose h2 {
+  font-size: var(--fs-24);
+}
+
+.prose h3 {
+  font-size: var(--fs-20);
+}
+
+.prose p,
+.prose ul,
+.prose ol {
+  color: var(--fg, #c0caf5);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: var(--s-5);
+}
+
+.prose a {
+  text-decoration-thickness: 1px;
+}
+
+.prose :not(pre) > code {
+  background: var(--surface, #1f2335);
+  border: 1px solid var(--border, #3b4261);
+  border-radius: var(--r-1);
+  padding: 0.15em 0.4em;
+  font-size: 0.9em;
+}
+
+.prose pre {
+  background: var(--surface, #1f2335);
+  border: 1px solid var(--border, #3b4261);
+  border-radius: var(--r-3);
+  padding: var(--s-4);
+  overflow-x: auto;
+  font-size: var(--fs-14);
+  line-height: var(--lh-body);
+}
+
+.prose pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+.prose img {
+  border-radius: var(--r-2);
+}

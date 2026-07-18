@@ -1,5 +1,15 @@
 ---
 import { SITE } from '../site.config';
+import '@fontsource/commit-mono/latin-400.css';
+import '@fontsource/commit-mono/latin-700.css';
+import '../styles/tokens.css';
+import '../styles/global.css';
+// Resolved, fingerprinted URLs for the two fonts that render text on every
+// page -- preloaded below so the browser fetches them before it discovers
+// them via CSS. Not the whole font set: Commit Mono 700 loads lazily, only
+// on pages that actually render bold mono text.
+import interLatinWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
+import commitMono400Woff2 from '@fontsource/commit-mono/files/commit-mono-latin-400-normal.woff2?url';
 
 interface Props {
   title?: string;
@@ -27,6 +37,8 @@ const gaInlineScript = `
     <meta name="description" content={description} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#1a1b26" />
+    <link rel="preload" href={interLatinWoff2} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={commitMono400Woff2} as="font" type="font/woff2" crossorigin />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src https://academia.starikov.io; base-uri 'none'; object-src 'none'"

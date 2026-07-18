@@ -12,6 +12,8 @@
     "@astrojs/mdx": "^4.3.14",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource/commit-mono": "^5.2.5",
     "astro": "^5.18.2"
   },
   "devDependencies": {
