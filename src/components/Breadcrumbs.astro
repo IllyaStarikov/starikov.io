@@ -1,0 +1,88 @@
+---
+/*
+ * Breadcrumbs rendered as a shell path: `~ / bin / pocketcasts-reset`. The `~`
+ * home root is prepended automatically; callers pass only the trail below it.
+ * Every ancestor is a link; the current leaf is plain text + aria-current.
+ */
+interface Crumb {
+  href: string;
+  label: string;
+}
+interface Props {
+  crumbs: Crumb[];
+}
+const { crumbs } = Astro.props;
+const segments: Crumb[] = [{ href: '/', label: '~' }, ...crumbs];
+---
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    {
+      segments.map((crumb, i) => {
+        const last = i === segments.length - 1;
+        return (
+          <li>
+            {i > 0 && (
+              <span class="sep" aria-hidden="true">
+                /
+              </span>
+            )}
+            {last ? (
+              <span class="current" aria-current="page">
+                {crumb.label}
+              </span>
+            ) : (
+              <a href={crumb.href}>{crumb.label}</a>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style>
+  .breadcrumbs {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    line-height: 1;
+  }
+
+  .breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .breadcrumbs li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
+  .breadcrumbs .sep {
+    color: var(--text-secondary);
+    user-select: none;
+  }
+
+  .breadcrumbs a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    text-underline-offset: 0.2em;
+  }
+
+  .breadcrumbs a:hover,
+  .breadcrumbs a:focus-visible {
+    color: var(--fg);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+
+  .breadcrumbs .current {
+    color: var(--fg);
+  }
+</style>

@@ -128,6 +128,66 @@ samp {
   }
 }
 
+/* -----------------------------------------------------------------------
+ * Skip link: first focusable element (Base.astro), off-screen until focused.
+ * ----------------------------------------------------------------------- */
+.skip-link {
+  position: fixed;
+  top: var(--s-3);
+  left: var(--s-3);
+  z-index: 100;
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface-raised, var(--surface));
+  color: var(--fg);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  text-decoration: none;
+  transform: translateY(calc(-100% - var(--s-4)));
+  transition: transform var(--dur-2) var(--ease-out);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* -----------------------------------------------------------------------
+ * Page transitions (design spec §4 motion table): old fades 100ms, new fades
+ * in + rises 4px over 180ms. The sidebar is excluded via transition:persist.
+ * ----------------------------------------------------------------------- */
+::view-transition-old(root) {
+  animation: page-fade-out var(--dur-1) var(--ease-out) both;
+}
+
+::view-transition-new(root) {
+  animation: page-fade-rise var(--dur-3) var(--ease-out) both;
+}
+
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 /*
  * Applied to <html> for ~200ms while a theme swap is in flight (Task 5's
  * theme-control.ts toggles the class). Everything crossfades in lockstep

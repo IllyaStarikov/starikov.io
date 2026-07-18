@@ -1,0 +1,167 @@
+---
+/*
+ * RightRail -- the ≥1280px companion column.
+ *
+ *   TOC: scrollspy list (IntersectionObserver in shell.ts). The active entry's
+ *        colour flips instantly; a 2px marker slides between entries (180ms).
+ *   Connections: rendered ONLY at ≥2 resolved links -- never an empty
+ *        affordance (design spec §3). Enforced here, not by the caller.
+ *
+ * The whole rail is omitted when there is neither a TOC nor a valid Connections
+ * block, so the grid can drop to two columns.
+ */
+interface TocItem {
+  id: string;
+  label: string;
+}
+interface Connection {
+  href: string;
+  label: string;
+  external?: boolean;
+}
+interface Props {
+  toc?: TocItem[];
+  connections?: Connection[];
+}
+const { toc = [], connections = [] } = Astro.props;
+const showToc = toc.length > 0;
+const showConnections = connections.length >= 2;
+---
+
+{
+  (showToc || showConnections) && (
+    <div class="rail">
+      {showToc && (
+        <nav class="toc" aria-label="On this page" data-toc>
+          <p class="rail-label">On this page</p>
+          <span class="toc__marker" aria-hidden="true" data-toc-marker />
+          <ul>
+            {toc.map((item) => (
+              <li>
+                <a href={`#${item.id}`} data-toc-link={item.id}>
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+
+      {showConnections && (
+        <nav class="connections" aria-label="Connections">
+          <p class="rail-label">Connections</p>
+          <ul>
+            {connections.map((c) => (
+              <li>
+                <a
+                  href={c.href}
+                  {...(c.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
+                  {c.label}
+                  {c.external && <span aria-hidden="true"> ↗</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+    </div>
+  )
+}
+
+<style>
+  .rail {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-6);
+    max-height: 100vh;
+    padding: var(--s-6) var(--s-4);
+    overflow-y: auto;
+    font-size: var(--fs-14);
+  }
+
+  .rail-label {
+    margin-bottom: var(--s-3);
+    font: 500 11px / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .toc,
+  .connections {
+    position: relative;
+  }
+
+  .toc ul,
+  .connections ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOC hangs off a 1px baseline; the marker rides on top of it. */
+  .toc ul {
+    border-left: 1px solid var(--border);
+  }
+
+  .toc li a {
+    display: block;
+    padding: var(--s-1) var(--s-3);
+    color: var(--text-secondary);
+    text-decoration: none;
+    line-height: 1.4;
+  }
+
+  .toc li a:hover,
+  .toc li a:focus-visible {
+    color: var(--fg);
+  }
+
+  .toc li a.is-active {
+    color: var(--fg);
+  }
+
+  .toc__marker {
+    position: absolute;
+    left: -1px;
+    top: 0;
+    width: 2px;
+    height: 0;
+    background: var(--accent);
+    opacity: 0;
+    /* transform-only slide; height is set once (uniform rows) so only
+       translateY animates. reduced-motion path never adds the transition. */
+  }
+
+  .toc[data-spy='on'] .toc__marker {
+    opacity: 1;
+    /* 180ms per spec §4 motion table (no token at 180 — the FLIP value). */
+    transition: transform 180ms var(--ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toc[data-spy='on'] .toc__marker {
+      transition: none;
+    }
+  }
+
+  .connections li a {
+    display: block;
+    padding: var(--s-1) 0;
+    color: var(--text-secondary);
+    text-decoration: none;
+    line-height: 1.5;
+  }
+
+  .connections li a:hover,
+  .connections li a:focus-visible {
+    color: var(--fg);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+</style>

@@ -1,0 +1,70 @@
+---
+/*
+ * MetadataStrip -- a mono line of page facts under a page title (updated date,
+ * type, source repo, license...). Middot-separated; any item can be a link.
+ * A shell primitive consumed by content pages built in later tasks.
+ */
+interface MetaItem {
+  label: string;
+  href?: string;
+  external?: boolean;
+}
+interface Props {
+  items: MetaItem[];
+}
+const { items } = Astro.props;
+---
+
+<div class="metadata-strip">
+  {
+    items.map((item, i) => (
+      <>
+        {i > 0 && (
+          <span class="dot" aria-hidden="true">
+            ·
+          </span>
+        )}
+        {item.href ? (
+          <a
+            href={item.href}
+            {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          >
+            {item.label}
+            {item.external && <span aria-hidden="true"> ↗</span>}
+          </a>
+        ) : (
+          <span>{item.label}</span>
+        )}
+      </>
+    ))
+  }
+</div>
+
+<style>
+  .metadata-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
+  .metadata-strip .dot {
+    user-select: none;
+  }
+
+  .metadata-strip a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .metadata-strip a:hover,
+  .metadata-strip a:focus-visible {
+    color: var(--fg);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+</style>

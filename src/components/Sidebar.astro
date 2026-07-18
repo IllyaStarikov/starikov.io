@@ -1,0 +1,355 @@
+---
+/*
+ * Sidebar -- the persistent filesystem index.
+ *
+ * Rendered twice: once in the desktop rail (variant="desktop", wrapped in
+ * transition:persist by Shell) and once inside the mobile nav <dialog>
+ * (variant="sheet"). The desktop copy owns the ThemeControl; the sheet copy
+ * gets a lightweight mode toggle instead, so exactly one ThemeControl (and one
+ * `#theme-popover` id) exists in the document.
+ *
+ * Active item is resolved server-side (longest-prefix, correct with no JS).
+ * shell.ts re-resolves it on every ClientRouter swap because the desktop
+ * sidebar persists and never re-renders, and animates the 2px accent bar
+ * between positions via FLIP.
+ */
+import ThemeControl from './ThemeControl.astro';
+import Kbd from './Kbd.astro';
+import { buildNav, sliceGroup, activeHref, GITHUB_URL, type ToolRef } from '../lib/nav';
+
+interface Props {
+  pathname: string;
+  tools?: ToolRef[];
+  variant?: 'desktop' | 'sheet';
+}
+const { pathname, tools = [], variant = 'desktop' } = Astro.props;
+
+const groups = buildNav(tools);
+const active = activeHref(pathname, groups);
+const sliced = groups.map((group) => ({ group, ...sliceGroup(group) }));
+const isDesktop = variant === 'desktop';
+---
+
+<div class="sidebar-inner" data-variant={variant}>
+  {
+    /* The mobile sheet's own <dialog> header already carries the wordmark. */
+    isDesktop && (
+      <div class="sidebar-head">
+        <a class="wordmark" href="/" aria-label="starikov.io home">
+          <span class="wordmark__path">~/starikov</span>
+          <span class="wordmark__cursor" aria-hidden="true">▊</span>
+        </a>
+      </div>
+    )
+  }
+
+  {
+    isDesktop && (
+      <button type="button" class="search" data-open-palette>
+        <span class="search__glyph" aria-hidden="true">
+          {'⌕'}
+        </span>
+        <span class="search__label">Search…</span>
+        <Kbd label="Command K">⌘K</Kbd>
+      </button>
+    )
+  }
+
+  <nav class="sidebar-nav" aria-label="Primary" data-flip-host={isDesktop ? 'true' : undefined}>
+    {isDesktop && <span class="nav-bar" aria-hidden="true" data-nav-bar></span>}
+    {
+      sliced.map(({ group, items, overflow }) => (
+        <div class="nav-group">
+          <p class="nav-group__label">{group.label}</p>
+          <ul>
+            {items.length === 0 && group.index && (
+              <li>
+                <a class="nav-link nav-link--muted" href={group.index.href} data-nav-link>
+                  All {group.label.toLowerCase()} →
+                </a>
+              </li>
+            )}
+            {items.map((item) => (
+              <li>
+                <a
+                  class:list={['nav-link', { 'is-active': item.href === active, 'nav-link--muted': item.muted }]}
+                  href={item.href}
+                  data-nav-link
+                  data-href={item.href}
+                  {...(item.href === active ? { 'aria-current': 'page' } : {})}
+                  {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
+                  {item.label}
+                  {item.external && <span aria-hidden="true"> ↗</span>}
+                </a>
+              </li>
+            ))}
+            {overflow && (
+              <li>
+                <a class="nav-link nav-link--overflow" href={overflow.href} data-nav-link>
+                  {overflow.label}
+                </a>
+              </li>
+            )}
+          </ul>
+        </div>
+      ))
+    }
+  </nav>
+
+  <div class="sidebar-foot">
+    {
+      isDesktop ? (
+        <ThemeControl />
+      ) : (
+        <button type="button" class="mode-toggle" data-mode-toggle aria-label="Toggle light or dark mode">
+          <span class="mode-toggle__dot" aria-hidden="true" />
+          <span>Toggle theme</span>
+        </button>
+      )
+    }
+    <a class="ghost-link" href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label="GitHub profile (opens in a new tab)">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path
+          fill-rule="evenodd"
+          d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+        />
+      </svg>
+    </a>
+  </div>
+</div>
+
+<style>
+  .sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: var(--s-5) var(--s-4) var(--s-4);
+    gap: var(--s-5);
+  }
+
+  /* -- Wordmark ------------------------------------------------------------ */
+  .sidebar-head {
+    display: flex;
+    align-items: center;
+  }
+
+  .wordmark {
+    display: inline-flex;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: var(--fs-16);
+    font-weight: 700;
+    color: var(--fg);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+
+  .wordmark__cursor {
+    display: inline-block;
+    margin-left: 1px;
+    color: var(--accent);
+    /* Blink exactly twice, then hold (fill: forwards ends at opacity 1). */
+    animation: cursor-blink 1s steps(1, end) 2 forwards;
+  }
+
+  @keyframes cursor-blink {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wordmark__cursor {
+      animation: none;
+      opacity: 1;
+    }
+  }
+
+  /* -- Search affordance --------------------------------------------------- */
+  .search {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    width: 100%;
+    padding: var(--s-2) var(--s-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    line-height: 1;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .search:hover {
+    background: var(--surface-hover, var(--surface));
+    border-color: var(--accent);
+  }
+
+  .search__glyph {
+    font-size: var(--fs-14);
+  }
+
+  .search__label {
+    flex: 1;
+  }
+
+  /* -- Nav ----------------------------------------------------------------- */
+  .sidebar-nav {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    flex: 1;
+  }
+
+  .nav-group__label {
+    margin-bottom: var(--s-2);
+    padding: 0 var(--s-2);
+    font: 500 11px / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .nav-group ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-link {
+    display: block;
+    position: relative;
+    padding: var(--s-2);
+    border-radius: var(--r-2);
+    color: var(--text-secondary);
+    font-size: var(--fs-14);
+    line-height: 1.2;
+    text-decoration: none;
+    /* Uniform height so the FLIP bar only ever animates translateY. */
+    min-height: 32px;
+  }
+
+  .nav-link:hover {
+    color: var(--fg);
+    background: var(--surface-hover, var(--surface));
+  }
+
+  .nav-link.is-active {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  /* Static 2px bar: correct without JS. Hidden once shell.ts takes over the
+     shared FLIP bar (data-flip="on"), so the two never double up. */
+  .nav-link.is-active::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+  }
+
+  .sidebar-nav[data-flip='on'] .nav-link.is-active::before {
+    opacity: 0;
+  }
+
+  .nav-link--muted,
+  .nav-link--overflow {
+    color: var(--text-secondary);
+    font-size: var(--fs-13);
+  }
+
+  .nav-link--muted {
+    font-style: italic;
+    opacity: 0.75;
+  }
+
+  /* Shared FLIP bar -- one element, slid between active items by shell.ts. */
+  .nav-bar {
+    position: absolute;
+    left: -1px;
+    top: 0;
+    width: 2px;
+    height: 0;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-nav[data-flip='on'] .nav-bar {
+    opacity: 1;
+  }
+
+  /* -- Footer -------------------------------------------------------------- */
+  .sidebar-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .ghost-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--s-2);
+    border-radius: var(--r-2);
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .ghost-link:hover,
+  .ghost-link:focus-visible {
+    color: var(--fg);
+    background: var(--surface-hover, var(--surface));
+  }
+
+  .mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    cursor: pointer;
+  }
+
+  .mode-toggle__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+  }
+
+  /* The sheet copy sits inside the dialog's own padding; use full-width taps. */
+  .sidebar-inner[data-variant='sheet'] {
+    padding: 0;
+  }
+
+  .sidebar-inner[data-variant='sheet'] .nav-link {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+  }
+</style>

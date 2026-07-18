@@ -1,0 +1,330 @@
+---
+/*
+ * Shell -- the persistent chassis every page lives in.
+ *
+ * Grid: 240px sidebar / fluid content / 224px right rail. The rail appears at
+ * ≥1280px, the sidebar collapses to a mobile top bar + full-screen nav <dialog>
+ * below 1024px. The sidebar is wrapped in transition:persist so it survives
+ * ClientRouter navigations untouched (shell.ts re-resolves the active item and
+ * slides the accent bar on each swap).
+ *
+ * Pages import Shell only; Shell wraps Base (which owns <head>, CSP, theme boot,
+ * ClientRouter). Pages supply their own <h1> in the default slot.
+ */
+import Base from './Base.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import RightRail from '../components/RightRail.astro';
+import type { ToolRef } from '../lib/nav';
+
+interface Crumb {
+  href: string;
+  label: string;
+}
+interface TocItem {
+  id: string;
+  label: string;
+}
+interface Connection {
+  href: string;
+  label: string;
+  external?: boolean;
+}
+interface Props {
+  title: string;
+  description?: string;
+  crumbs?: Crumb[];
+  toc?: TocItem[];
+  connections?: Connection[];
+  pageType?: string;
+  /* tools injected Task 9 (getCollection('tools')) -- empty until then. */
+  tools?: ToolRef[];
+}
+
+const {
+  title,
+  description,
+  crumbs,
+  toc = [],
+  connections = [],
+  pageType,
+  tools = [],
+} = Astro.props;
+
+const pathname = Astro.url.pathname;
+const hasRail = toc.length > 0 || connections.length >= 2;
+---
+
+<Base title={title} description={description}>
+  <!-- Mobile-only top bar. Hidden ≥1024px. -->
+  <header class="topbar" data-page-type={pageType}>
+    <a class="topbar__wordmark" href="/" aria-label="starikov.io home">
+      <span>~/starikov</span><span class="topbar__cursor" aria-hidden="true">▊</span>
+    </a>
+    <div class="topbar__actions">
+      <button type="button" class="topbar__btn" data-open-palette aria-label="Search">
+        <span aria-hidden="true">⌕</span>
+      </button>
+      <button type="button" class="topbar__btn" data-mode-toggle aria-label="Toggle light or dark mode">
+        <span class="topbar__swatch" aria-hidden="true"></span>
+      </button>
+      <button
+        type="button"
+        class="topbar__btn topbar__menu"
+        data-nav-open
+        aria-label="Open navigation"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="shell" data-rail={hasRail ? 'true' : 'false'}>
+    <aside class="sidebar" transition:persist="sidebar" aria-label="Sidebar">
+      <Sidebar pathname={pathname} tools={tools} variant="desktop" />
+    </aside>
+
+    <div class="content-col">
+      {crumbs && crumbs.length > 0 && <Breadcrumbs crumbs={crumbs} />}
+      <main id="main" data-pagefind-body>
+        <slot />
+      </main>
+    </div>
+
+    {
+      hasRail && (
+        <div class="rail-col">
+          <RightRail toc={toc} connections={connections} />
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Full-screen mobile navigation. Native <dialog> gives the focus trap,
+       Esc-to-close, and inert background for free. -->
+  <dialog class="nav-sheet" data-nav-sheet aria-label="Site navigation">
+    <div class="nav-sheet__head">
+      <a class="topbar__wordmark" href="/" aria-label="starikov.io home">
+        <span>~/starikov</span>
+      </a>
+      <button type="button" class="topbar__btn" data-nav-close aria-label="Close navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+    <button type="button" class="nav-sheet__search" data-open-palette>
+      <span aria-hidden="true">⌕</span>
+      <span>Search…</span>
+    </button>
+    <Sidebar pathname={pathname} tools={tools} variant="sheet" />
+  </dialog>
+</Base>
+
+<script>
+  import '../scripts/shell.ts';
+</script>
+
+<style>
+  /* ---------------------------------------------------------------------
+   * Grid
+   * ------------------------------------------------------------------- */
+  .shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .rail-col {
+    display: none;
+  }
+
+  .content-col {
+    min-width: 0;
+    padding: var(--s-5) var(--s-4) var(--s-9);
+  }
+
+  main {
+    max-width: 720px;
+    margin-top: var(--s-4);
+  }
+
+  /* Sidebar appears at ≥1024px. */
+  @media (min-width: 1024px) {
+    .shell {
+      grid-template-columns: 240px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      display: block;
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    .content-col {
+      padding: var(--s-7) var(--s-7) var(--s-9);
+    }
+  }
+
+  /* Right rail appears at ≥1280px (only when the page provides rail content). */
+  @media (min-width: 1280px) {
+    .shell[data-rail='true'] {
+      grid-template-columns: 240px minmax(0, 1fr) 224px;
+    }
+
+    .rail-col {
+      display: block;
+      border-left: 1px solid var(--border);
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+   * Mobile top bar (<1024px)
+   * ------------------------------------------------------------------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: var(--s-3) var(--s-4);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  @media (min-width: 1024px) {
+    .topbar {
+      display: none;
+    }
+  }
+
+  .topbar__wordmark {
+    display: inline-flex;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: var(--fs-16);
+    font-weight: 700;
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .topbar__cursor {
+    display: inline-block;
+    margin-left: 1px;
+    color: var(--accent);
+    animation: topbar-cursor-blink 1s steps(1, end) 2 forwards;
+  }
+
+  @keyframes topbar-cursor-blink {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .topbar__cursor {
+      animation: none;
+      opacity: 1;
+    }
+  }
+
+  .topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+  }
+
+  .topbar__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-2);
+    color: var(--text-secondary);
+    font-size: var(--fs-16);
+    cursor: pointer;
+  }
+
+  .topbar__btn:hover,
+  .topbar__btn:focus-visible {
+    color: var(--fg);
+    background: var(--surface-hover, var(--surface));
+  }
+
+  .topbar__swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Mobile nav sheet
+   * ------------------------------------------------------------------- */
+  .nav-sheet {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    padding: var(--s-4);
+    background: var(--bg);
+    color: var(--fg);
+    border: 0;
+  }
+
+  .nav-sheet::backdrop {
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+  }
+
+  .nav-sheet:not([open]) {
+    display: none;
+  }
+
+  .nav-sheet__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--s-4);
+  }
+
+  .nav-sheet__search {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    width: 100%;
+    margin-bottom: var(--s-2);
+    padding: var(--s-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    text-align: left;
+    cursor: pointer;
+  }
+</style>

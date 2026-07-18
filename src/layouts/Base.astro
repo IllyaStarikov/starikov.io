@@ -68,6 +68,9 @@ const gaInlineScript = `
     <script is:inline set:html={gaInlineScript} />
   </head>
   <body>
+    <!-- First focusable element on every page: jump straight to the page main
+         region (id="main", provided by Shell), bypassing the sidebar. -->
+    <a class="skip-link" href="#main">Skip to content</a>
     <slot />
   </body>
 </html>

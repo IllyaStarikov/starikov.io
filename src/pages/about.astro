@@ -1,0 +1,19 @@
+---
+import Shell from '../layouts/Shell.astro';
+---
+
+<!-- Minimal placeholder so page transitions and active-nav can be exercised
+     against a second route. Task 18 fleshes this out (bio + neofetch card +
+     resume links). -->
+<Shell
+  title="About — starikov.io"
+  description="About Illya Starikov."
+  crumbs={[{ href: '/about', label: 'about' }]}
+  pageType="page"
+>
+  <div class="prose">
+    <p class="mono-label">about</p>
+    <h1>About</h1>
+    <p>Software engineer. This page fills in soon — for now it proves the shell moves.</p>
+  </div>
+</Shell>

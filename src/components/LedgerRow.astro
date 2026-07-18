@@ -1,0 +1,94 @@
+---
+/*
+ * LedgerRow -- one entry in a ledger (Start Here, Recently Updated, /projects,
+ * /bin, /writing). A quiet document row, not a card: title link, optional dek,
+ * and a mono meta trail. External rows link out with a `↗`. The whole row is a
+ * link target; meta chips sit to the right on wide viewports.
+ *
+ * A shell primitive; the pages that lay these into lists arrive in later tasks.
+ */
+interface Props {
+  href: string;
+  title: string;
+  dek?: string;
+  meta?: string[];
+  external?: boolean;
+}
+const { href, title, dek, meta = [], external = false } = Astro.props;
+const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+---
+
+<a class="ledger-row" href={href} {...linkAttrs}>
+  <span class="ledger-row__main">
+    <span class="ledger-row__title">
+      {title}
+      {external && <span class="ledger-row__ext" aria-hidden="true">↗</span>}
+    </span>
+    {dek && <span class="ledger-row__dek">{dek}</span>}
+  </span>
+  {
+    meta.length > 0 && (
+      <span class="ledger-row__meta">
+        {meta.map((m) => (
+          <span class="ledger-row__chip">{m}</span>
+        ))}
+      </span>
+    )
+  }
+</a>
+
+<style>
+  .ledger-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--border);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .ledger-row:hover .ledger-row__title,
+  .ledger-row:focus-visible .ledger-row__title {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 0.15em;
+  }
+
+  .ledger-row__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .ledger-row__title {
+    font-weight: 600;
+    font-size: var(--fs-16);
+    line-height: 1.3;
+  }
+
+  .ledger-row__ext {
+    margin-left: 0.25em;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .ledger-row__dek {
+    color: var(--text-secondary);
+    font-size: var(--fs-14);
+    line-height: 1.45;
+  }
+
+  .ledger-row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+</style>

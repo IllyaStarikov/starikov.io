@@ -1,0 +1,32 @@
+---
+/*
+ * Kbd -- a keycap glyph. Pass `label` whenever the visible text is a symbol a
+ * screen reader would mangle (⌘ reads as "place of interest sign"), so the
+ * accessible name stays human ("Command K").
+ */
+interface Props {
+  label?: string;
+}
+const { label } = Astro.props;
+---
+
+<kbd class="kbd" aria-label={label}><slot /></kbd>
+
+<style>
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    min-width: 1.5em;
+    justify-content: center;
+    padding: 2px 5px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    line-height: 1;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: var(--r-1);
+    white-space: nowrap;
+  }
+</style>
