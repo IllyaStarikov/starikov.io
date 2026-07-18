@@ -10,3 +10,7 @@ public/media/
 
 # counter user-level global ignore of lib/ dirs (Task 3 discovery)
 !**/lib/
+
+# counter user-level global ignore of bin/ dirs (Task 8 discovery -- shadowed
+# test/fixtures/bin/, same root cause as the lib/ rule above)
+!**/bin/
