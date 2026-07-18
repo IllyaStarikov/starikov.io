@@ -1,10 +1,22 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveRelatedEssaysCore, type EssayCandidate } from '../src/lib/related';
 import { report } from '../src/loaders/lib/report';
+
+// resolveRelatedEssaysCore's warnings go through report.warn(), which routes
+// to console.log('::warning::...') under GITHUB_ACTIONS (see report.ts) and
+// plain console.warn(...) otherwise. The tests below spy on console.warn, so
+// they need the plain-console branch deterministically -- regardless of
+// whether this file happens to run inside an actual CI job (GITHUB_ACTIONS is
+// set ambiently there). Stub it unset for every test in this file so the
+// suite's outcome never depends on the runner it executes on.
+beforeEach(() => {
+  vi.stubEnv('GITHUB_ACTIONS', undefined);
+});
 
 afterEach(() => {
   report.flush();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 function essay(slug: string, publishedAt: string, tags: string[]): EssayCandidate {

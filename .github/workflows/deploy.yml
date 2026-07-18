@@ -51,6 +51,18 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      # theme-boot.test.mjs/theme-display.test.ts import src/data/generated/
+      # themes.json, which only exists after scripts/build-themes.mjs has run
+      # at least once. Locally it's always present as a leftover of a prior
+      # `npm run build`; a fresh CI checkout has no such leftover, so the
+      # tests-before-build step below would fail on a missing module. This
+      # duplicates the build-themes.mjs invocation `npm run build` already
+      # makes further down -- that's intentional: the script is idempotent
+      # and cheap (regenerating themes.json/themes.generated.css again costs
+      # a fraction of a second), and it keeps tests-before-build ordering
+      # intact (see the fail-fast note below) instead of moving tests after
+      # the full build.
+      - run: node scripts/build-themes.mjs
       # Task 15 CARRIED FINDING (Task 10 review): CI never ran the test suite,
       # so a broken pure-logic change could still deploy as long as the build
       # itself didn't throw. Gate the deploy on it -- fast (< 1s locally) and
