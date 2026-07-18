@@ -36,14 +36,18 @@ jobs:
       # Restore transcoded academia media (GIF→mp4/webm + posters, PNGs) keyed
       # on PORTFOLIO.md so the ffmpeg prebuild runs once per source change, not
       # every nightly build. MUST come before `npm run build` (the transcode
-      # step's digest cache skips whatever this restored). ffmpeg is preinstalled
-      # on ubuntu-latest; the transcode script hard-fails if it's missing.
+      # step's digest cache skips whatever this restored).
       - uses: actions/cache@v4
         with:
           path: public/media
           key: academia-media-${{ hashFiles('.sources/academia/PORTFOLIO.md') }}
           restore-keys: |
             academia-media-
+      # ffmpeg is NOT preinstalled on current ubuntu-latest images (every
+      # deploy from Task 10 to Task 15 failed on this; the validate gate
+      # correctly kept the last good deploy live). The transcode script
+      # still hard-fails with ::error:: if this step is ever removed.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
