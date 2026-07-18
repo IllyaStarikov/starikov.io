@@ -7,3 +7,6 @@ src/data/generated/
 src/styles/themes.generated.css
 public/media/
 .superpowers/
+
+# counter user-level global ignore of lib/ dirs (Task 3 discovery)
+!**/lib/
