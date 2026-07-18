@@ -1,5 +1,13 @@
 ---
+import { ClientRouter } from 'astro:transitions';
 import { SITE } from '../site.config';
+import { THEME_BOOT_SRC } from '../lib/theme-boot';
+// Themes CSS is emitted as its own early <link> (below) rather than folded into
+// Astro's bundled stylesheet, so it is guaranteed to appear in the head BEFORE
+// the pre-paint boot script and before tokens/global -- the per-variant
+// `[data-theme]` blocks define --bg/--fg/..., and global.css's
+// `var(--token, fallback)` use-site fallbacks only fire if a bad id sneaks in.
+import themesGeneratedHref from '../styles/themes.generated.css?url';
 import '@fontsource/commit-mono/latin-400.css';
 import '@fontsource/commit-mono/latin-700.css';
 import '../styles/tokens.css';
@@ -36,14 +44,25 @@ const gaInlineScript = `
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#1a1b26" />
+    <!-- Per-variant theme tokens. First stylesheet in the head and render-
+         blocking, so the palette the boot script selects is painted with no
+         flash. Must precede the boot script (below). -->
+    <link rel="stylesheet" href={themesGeneratedHref} />
+    <!-- Sensible no-JS default (tokyonight-storm bg); the boot script below
+         overwrites this pre-paint from the resolved theme. -->
+    <meta name="theme-color" content="#24283b" />
     <link rel="preload" href={interLatinWoff2} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={commitMono400Woff2} as="font" type="font/woff2" crossorigin />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src https://academia.starikov.io; base-uri 'none'; object-src 'none'"
     />
+    <ClientRouter />
     <slot name="head" />
+    <!-- Pre-paint theme boot: resolves data-theme + theme-color before first
+         paint, live-switches system mode, and re-applies on astro:after-swap.
+         data-astro-rerun re-executes it after every ClientRouter navigation. -->
+    <script is:inline data-astro-rerun set:html={THEME_BOOT_SRC} />
     <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${SITE.gaId}`}
     ></script>
     <script is:inline set:html={gaInlineScript} />

@@ -1,8 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
+import ThemeControl from '../components/ThemeControl.astro';
 ---
 
 <Base>
+  <!-- Temporary top-right mount. Task 7 moves <ThemeControl /> into the sidebar
+       footer unchanged; the positioning lives here on the host, not the component. -->
+  <div class="theme-control-slot">
+    <ThemeControl />
+  </div>
   <main class="prose" style="padding: var(--s-6) var(--s-4);">
     <p class="mono-label">status</p>
     <h1>starikov.io — rebuilding</h1>
@@ -19,3 +25,13 @@ import Base from '../layouts/Base.astro';
 }`}</code></pre>
   </main>
 </Base>
+
+<style>
+  /* Temporary placement only -- Task 7 relocates the control into the sidebar. */
+  .theme-control-slot {
+    position: fixed;
+    top: var(--s-4);
+    right: var(--s-4);
+    z-index: 50;
+  }
+</style>
