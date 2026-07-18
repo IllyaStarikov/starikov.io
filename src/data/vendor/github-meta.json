@@ -1,0 +1,95 @@
+{
+  "illyastarikov/.dotfiles": {
+    "fullName": "IllyaStarikov/.dotfiles",
+    "description": "🐚 Code at the speed of thought.",
+    "stars": 19,
+    "pushedAt": "2026-07-18T17:00:40Z",
+    "language": "Shell",
+    "topics": [
+      "dotfiles",
+      "vim"
+    ],
+    "archived": false
+  },
+  "illyastarikov/academia": {
+    "fullName": "IllyaStarikov/academia",
+    "description": "🎓 Pain is temporary, GPA is forever.",
+    "stars": 164,
+    "pushedAt": "2026-05-09T01:02:31Z",
+    "language": "C++",
+    "topics": [
+      "academic",
+      "coursework"
+    ],
+    "archived": true
+  },
+  "illyastarikov/artificial": {
+    "fullName": "IllyaStarikov/artificial",
+    "description": "🧠 Attention is all you need, but tea helps.",
+    "stars": 2,
+    "pushedAt": "2026-05-08T04:06:41Z",
+    "language": "Python",
+    "topics": [],
+    "archived": false
+  },
+  "illyastarikov/bin": {
+    "fullName": "IllyaStarikov/bin",
+    "description": "🛠️ A small collection of standalone utility scripts.",
+    "stars": 0,
+    "pushedAt": "2026-06-06T06:32:45Z",
+    "language": "Python",
+    "topics": [],
+    "archived": false
+  },
+  "illyastarikov/eclecta": {
+    "fullName": "IllyaStarikov/eclecta",
+    "description": "Eclecta — the best of technology, AI & science, curated continuously, distilled daily to yearly. We read the firehose, so you read what matters.",
+    "stars": 0,
+    "pushedAt": "2026-07-18T17:55:45Z",
+    "language": "Python",
+    "topics": [],
+    "archived": false
+  },
+  "illyastarikov/illyastarikov": {
+    "fullName": "IllyaStarikov/IllyaStarikov",
+    "description": "⭐ I think, therefore I am (not an LLM).",
+    "stars": 0,
+    "pushedAt": "2026-07-18T10:42:53Z",
+    "language": "Python",
+    "topics": [],
+    "archived": false
+  },
+  "illyastarikov/omnifocus-mcp": {
+    "fullName": "IllyaStarikov/omnifocus-mcp",
+    "description": "✔️ Turn prompts into projects.",
+    "stars": 13,
+    "pushedAt": "2026-05-05T04:39:11Z",
+    "language": "TypeScript",
+    "topics": [
+      "mcp-server",
+      "omnifocus"
+    ],
+    "archived": false
+  },
+  "illyastarikov/readwise-mcp": {
+    "fullName": "IllyaStarikov/readwise-mcp",
+    "description": null,
+    "stars": 0,
+    "pushedAt": "2026-05-06T10:13:36Z",
+    "language": "TypeScript",
+    "topics": [],
+    "archived": false
+  },
+  "illyastarikov/resume": {
+    "fullName": "IllyaStarikov/resume",
+    "description": "📄 All the reasons why you should (or shouldn’t) hire me.",
+    "stars": 3,
+    "pushedAt": "2026-06-20T03:21:25Z",
+    "language": "TeX",
+    "topics": [
+      "latex",
+      "resume"
+    ],
+    "archived": false
+  }
+}

@@ -14,6 +14,7 @@
 import { defineCollection, z } from 'astro:content';
 import { binToolsLoader } from './loaders/bin-tools';
 import { academiaShowcaseLoader, coursesLoader } from './loaders/academia';
+import { githubMetaLoader } from './loaders/github-meta';
 
 const tools = defineCollection({
   loader: binToolsLoader({ root: '.sources/bin' }),
@@ -111,4 +112,27 @@ const courses = defineCollection({
   }),
 });
 
-export const collections = { tools, academiaShowcase, courses };
+// GitHub metadata (design §6): one entry per repo in `SITE.projectRepos`, id
+// keyed by the repo's lowercased "owner/name". Populated via `withFallback`'s
+// live -> per-repo `.cache/` -> committed vendor-snapshot cascade (Task 11);
+// `stale` tells a consumer (Task 12's project pages) whether this run's data
+// came from a successful live fetch or an older fallback tier.
+const repos = defineCollection({
+  loader: githubMetaLoader(),
+  schema: z.object({
+    /** GitHub "owner/name", canonical casing (the entry id is lowercased). */
+    fullName: z.string(),
+    description: z.string().nullable(),
+    stars: z.number(),
+    /** Coerced from the fallback data's ISO string to a real Date here --
+     *  the loader itself keeps it a string so cache/vendor JSON round-trips. */
+    pushedAt: z.coerce.date(),
+    language: z.string().nullable(),
+    topics: z.array(z.string()),
+    archived: z.boolean(),
+    /** True when this entry did not come from a successful live fetch this run. */
+    stale: z.boolean(),
+  }),
+});
+
+export const collections = { tools, academiaShowcase, courses, repos };

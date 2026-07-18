@@ -35,6 +35,24 @@ export const SITE = {
     material: { light: 'lighter', dark: 'darker' },
   },
   minCounts: { essays: 50, tools: 1, themeVariants: 10, projects: 4 },
+  // The `repos` collection's (Task 11) repo list: every "owner/name" the
+  // GitHub metadata loader fetches. Task 12's `projects` collection doesn't
+  // exist yet, so this is read directly for now. Once it lands, the loader
+  // MAY instead union this list with each project entry's `repo`/`repos`
+  // frontmatter (so a curated project can reference a repo without a manual
+  // edit here) -- Task 12's frontmatter values must then match these names
+  // exactly (case as GitHub reports it, e.g. `IllyaStarikov/bin`).
+  projectRepos: [
+    'IllyaStarikov/.dotfiles',
+    'IllyaStarikov/eclecta',
+    'IllyaStarikov/omnifocus-mcp',
+    'IllyaStarikov/readwise-mcp',
+    'IllyaStarikov/artificial',
+    'illyaStarikov/resume',
+    'IllyaStarikov/IllyaStarikov',
+    'IllyaStarikov/bin',
+    'IllyaStarikov/academia',
+  ],
 };
 
 // ---------------------------------------------------------------------------
