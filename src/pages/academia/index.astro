@@ -1,0 +1,582 @@
+---
+/*
+ * /academia — the coursework marquee (design §3 route, §6 media). A single
+ * record page over the archived Missouri S&T repo, in four movements:
+ *
+ *   HEADER    degree line + a frozen mono stat strip + an archived-repo note
+ *   VOLUMES   the four bound LaTeX PDFs — first-page thumbnail, page count,
+ *             "Open PDF ↗" to the ROOT of academia.starikov.io (never /latex/;
+ *             no inline iframe in v1 — iOS renders those as a frozen page)
+ *   PROJECTS  the 14 showcase projects grouped by theme; GIF demos are muted
+ *             looping <video> that play only while on screen (scripts/academia.ts)
+ *   COURSES   the auto course index (code + title, unlinked in v1)
+ *
+ * Everything but the four committed PDF thumbnails and the frozen stat numbers
+ * is generated from the academia checkout by the academia loader.
+ */
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Shell from '../../layouts/Shell.astro';
+import { GITHUB_URL } from '../../lib/nav';
+import { PDF_VOLUMES, ACADEMIA_PDF_ORIGIN, ACADEMIA_THEME_ORDER } from '../../site.config';
+
+import curatedThumb from '../../assets/academia/curated.jpg';
+import notesThumb from '../../assets/academia/notes.jpg';
+import assignmentsThumb from '../../assets/academia/assignments.jpg';
+import completeThumb from '../../assets/academia/complete.jpg';
+
+const THUMBS: Record<string, ImageMetadata> = {
+  curated: curatedThumb,
+  notes: notesThumb,
+  assignments: assignmentsThumb,
+  complete: completeThumb,
+};
+
+// Frozen coursework stats. The academia repo is archived at graduation, so
+// these never move; hardcoded here (not loader-derived) per the Task 10 brief.
+// Source: PORTFOLIO.md `### Summary` (LOC 91,512 → 91.5K; 9 languages) plus the
+// brief's normative course/assignment totals. NOTE: the brief freezes "34
+// courses" while PORTFOLIO's Summary table says 25 and the auto course index
+// below enumerates the src/ course dirs — the strip is the headline figure, the
+// table is the live enumeration (see task-10-report.md).
+const STATS = [
+  { value: '34', label: 'Courses' },
+  { value: '147', label: 'Assignments' },
+  { value: '91.5K', label: 'Lines of code' },
+  { value: '9', label: 'Languages' },
+];
+
+const DEGREE = 'Missouri S&T · B.S. + M.S. Computer Science · 2014–2018';
+const REPO_URL = `${GITHUB_URL}/academia`;
+
+const showcase = (await getCollection('academiaShowcase')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+const themed = ACADEMIA_THEME_ORDER.map((group) => ({
+  ...group,
+  projects: showcase.filter((p) => p.data.theme === group.theme),
+})).filter((group) => group.projects.length > 0);
+
+const courses = (await getCollection('courses')).sort(
+  (a, b) =>
+    a.data.dept.replace(/\d+/, '').localeCompare(b.data.dept.replace(/\d+/, '')) ||
+    Number(a.data.number) - Number(b.data.number),
+);
+
+const toc = [
+  { id: 'volumes', label: 'Four volumes' },
+  { id: 'projects', label: 'Selected projects' },
+  { id: 'courses', label: 'Course index' },
+];
+
+const facts = [
+  { label: 'Degree', value: 'B.S. + M.S. CS' },
+  { label: 'Years', value: '2014–2018' },
+  { label: 'Stars', value: '164' },
+  { label: 'Source', value: 'academia', href: REPO_URL, external: true },
+];
+---
+
+<Shell
+  title="Academia — coursework archive — starikov.io"
+  description="Four bound LaTeX volumes and a 14-project media showcase from the Missouri S&T years — degree coursework, archived."
+  crumbs={[{ href: '/academia', label: 'academia' }]}
+  toc={toc}
+  facts={facts}
+  pageType="academia"
+>
+  <div class="academia">
+    <!-- HEADER -->
+    <header class="acad-head">
+      <p class="acad-eyebrow">Coursework archive</p>
+      <h1 class="acad-title">academia</h1>
+      <p class="acad-degree">{DEGREE}</p>
+
+      <dl class="acad-stats" aria-label="Coursework totals">
+        {
+          STATS.map((s) => (
+            <div class="acad-stats__cell">
+              <dt class="acad-stats__label">{s.label}</dt>
+              <dd class="acad-stats__value">{s.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+
+      <p class="acad-archived">
+        The repository is <strong>archived</strong> — frozen at graduation and unchanged since. Read
+        it on{' '}
+        <a href={REPO_URL} target="_blank" rel="noopener noreferrer"
+          >GitHub<span aria-hidden="true"> ↗</span></a
+        >.
+      </p>
+    </header>
+
+    <!-- VOLUMES -->
+    <section id="volumes" class="acad-section">
+      <h2 class="acad-label">Four volumes</h2>
+      <p class="acad-section__lead">
+        Every course's notes and assignments, typeset in LaTeX and bound into four PDFs — 2,368
+        pages in all. They open in a new tab; no reader is embedded here (v1).
+      </p>
+      <ul class="acad-shelf">
+        {
+          PDF_VOLUMES.map((vol) => (
+            <li class="acad-vol">
+              <a
+                class="acad-vol__link"
+                href={`${ACADEMIA_PDF_ORIGIN}/${vol.slug}.pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span class="acad-vol__cover">
+                  <Image
+                    src={THUMBS[vol.slug]}
+                    alt={`First page of the ${vol.title} volume`}
+                    width={340}
+                    height={440}
+                    format="avif"
+                    quality={62}
+                    loading="lazy"
+                  />
+                </span>
+                <span class="acad-vol__meta">
+                  <span class="acad-vol__title">{vol.title}</span>
+                  <span class="acad-vol__pages">{vol.pages.toLocaleString()} pp</span>
+                </span>
+                <span class="acad-vol__open">
+                  Open PDF<span aria-hidden="true"> ↗</span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <!-- PROJECTS -->
+    <section id="projects" class="acad-section">
+      <h2 class="acad-label">Selected projects</h2>
+      <p class="acad-section__lead">
+        Fourteen projects that hold up, grouped by what they are. Demos play as you scroll.
+      </p>
+
+      {
+        themed.map((group) => (
+          <div class="acad-theme">
+            <h3 class="acad-theme__label">{group.label}</h3>
+            <div class="acad-theme__list">
+              {group.projects.map((p) => (
+                <article class="acad-project">
+                  <div class="acad-project__head">
+                    <h4 class="acad-project__title">{p.data.title}</h4>
+                    {p.data.courseCode && (
+                      <span class="acad-project__course">{p.data.courseCode}</span>
+                    )}
+                  </div>
+
+                  {p.data.media.length > 0 && (
+                    <div class="acad-media" data-count={p.data.media.length}>
+                      {p.data.media.map((m) =>
+                        m.kind === 'video' ? (
+                          <figure class="acad-media__frame">
+                            <video
+                              data-academia-video
+                              muted
+                              loop
+                              playsinline
+                              preload="none"
+                              poster={m.poster}
+                              aria-label={m.alt}
+                            >
+                              <source src={m.webm} type="video/webm" />
+                              <source src={m.mp4} type="video/mp4" />
+                            </video>
+                          </figure>
+                        ) : (
+                          <figure class="acad-media__frame">
+                            <img src={m.src} alt={m.alt} loading="lazy" decoding="async" />
+                          </figure>
+                        ),
+                      )}
+                    </div>
+                  )}
+
+                  <div class="prose acad-project__body" set:html={p.data.body} />
+                </article>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </section>
+
+    <!-- COURSES -->
+    <section id="courses" class="acad-section">
+      <h2 class="acad-label">Course index</h2>
+      <p class="acad-section__lead">
+        {courses.length} courses with material in the repository, newest departments last.
+      </p>
+      <table class="acad-courses">
+        <tbody>
+          {
+            courses.map((c) => (
+              <tr>
+                <th scope="row" class="acad-courses__code">
+                  {c.data.code}
+                </th>
+                <td class="acad-courses__title">{c.data.title}</td>
+                <td class="acad-courses__meta">
+                  {c.data.assignmentCount > 0 && (
+                    <span>
+                      {c.data.assignmentCount} {c.data.assignmentCount === 1 ? 'set' : 'sets'}
+                    </span>
+                  )}
+                  {c.data.hasNotes && <span class="acad-courses__notes">notes</span>}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </section>
+  </div>
+</Shell>
+
+<script>
+  import '../../scripts/academia.ts';
+</script>
+
+<style>
+  .academia {
+    max-width: 720px;
+  }
+
+  /* -- HEADER -------------------------------------------------------------- */
+  .acad-eyebrow {
+    font: 500 var(--fs-13) / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .acad-title {
+    margin-top: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-32);
+    letter-spacing: -0.02em;
+  }
+
+  .acad-degree {
+    margin-top: var(--s-3);
+    color: var(--fg);
+    font-size: var(--fs-20);
+    line-height: 1.4;
+  }
+
+  /* Stat strip: a mono readout, hairline-divided (design §3 "mono stat strip"). */
+  .acad-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: var(--s-6);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    overflow: hidden;
+  }
+
+  .acad-stats__cell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+  }
+
+  /* Kill the outer top/left rules so only the interior grid lines show. */
+  .acad-stats__cell:nth-child(-n + 2) {
+    border-top: 0;
+  }
+  .acad-stats__cell:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .acad-stats__value {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-24);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }
+
+  .acad-stats__label {
+    font: 500 11px / 1.2 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  @media (min-width: 560px) {
+    .acad-stats {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    /* Interior-only rules: reset, then draw left rules on cells 2–4. */
+    .acad-stats__cell {
+      border-top: 0;
+    }
+    .acad-stats__cell:nth-child(n) {
+      border-left: 1px solid var(--border);
+    }
+    .acad-stats__cell:first-child {
+      border-left: 0;
+    }
+  }
+
+  .acad-archived {
+    margin-top: var(--s-5);
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--r-2);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: var(--fs-14);
+    line-height: 1.5;
+  }
+
+  .acad-archived strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  /* -- Sections ------------------------------------------------------------ */
+  .acad-section {
+    margin-top: var(--s-9);
+    scroll-margin-top: var(--s-5);
+  }
+
+  .acad-label {
+    margin-bottom: var(--s-4);
+    padding-bottom: var(--s-2);
+    border-bottom: 1px solid var(--border);
+    font: 500 var(--fs-13) / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .acad-section__lead {
+    margin-bottom: var(--s-6);
+    max-width: 60ch;
+    color: var(--text-secondary);
+    font-size: var(--fs-14);
+    line-height: 1.5;
+  }
+
+  /* -- VOLUMES shelf ------------------------------------------------------- */
+  .acad-shelf {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-5) var(--s-4);
+    margin: 0;
+    padding: 0 0 var(--s-5);
+    list-style: none;
+    /* the shelf the volumes stand on */
+    border-bottom: 1px solid var(--border);
+  }
+
+  @media (min-width: 560px) {
+    .acad-shelf {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .acad-vol__link {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .acad-vol__cover {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    background: var(--surface);
+    transition:
+      transform var(--dur-2) var(--ease-out),
+      border-color var(--dur-2) var(--ease-out);
+  }
+
+  .acad-vol__cover :global(img) {
+    width: 100%;
+    height: auto;
+  }
+
+  .acad-vol__link:hover .acad-vol__cover,
+  .acad-vol__link:focus-visible .acad-vol__cover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+
+  .acad-vol__meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-2);
+  }
+
+  .acad-vol__title {
+    font-weight: 600;
+    font-size: var(--fs-14);
+  }
+
+  .acad-vol__pages {
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .acad-vol__open {
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--accent);
+  }
+
+  .acad-vol__link:hover .acad-vol__open,
+  .acad-vol__link:focus-visible .acad-vol__open {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  /* -- PROJECTS ------------------------------------------------------------ */
+  .acad-theme {
+    margin-top: var(--s-7);
+  }
+
+  .acad-theme__label {
+    margin-bottom: var(--s-5);
+    font: 500 var(--fs-12) / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--accent);
+  }
+
+  .acad-theme__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-7);
+  }
+
+  .acad-project__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+    margin-bottom: var(--s-3);
+  }
+
+  .acad-project__title {
+    font-size: var(--fs-20);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .acad-project__course {
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .acad-media {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-3);
+    margin-bottom: var(--s-4);
+  }
+
+  /* Paired demos (Splatoonio, Bolt) sit side by side once there's room. */
+  @media (min-width: 560px) {
+    .acad-media[data-count='2'] {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .acad-media__frame {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    background: var(--surface);
+  }
+
+  .acad-media__frame :global(video),
+  .acad-media__frame :global(img) {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .acad-project__body {
+    color: var(--text-secondary);
+  }
+
+  /* -- COURSES table ------------------------------------------------------- */
+  .acad-courses {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-14);
+  }
+
+  .acad-courses tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .acad-courses tr:last-child {
+    border-bottom: 0;
+  }
+
+  .acad-courses__code {
+    width: 6.5rem;
+    padding: var(--s-3) var(--s-4) var(--s-3) 0;
+    text-align: left;
+    vertical-align: baseline;
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    font-weight: 500;
+    color: var(--fg);
+    white-space: nowrap;
+  }
+
+  .acad-courses__title {
+    padding: var(--s-3) var(--s-4) var(--s-3) 0;
+    vertical-align: baseline;
+    color: var(--fg);
+  }
+
+  .acad-courses__meta {
+    padding: var(--s-3) 0;
+    text-align: right;
+    vertical-align: baseline;
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .acad-courses__notes {
+    margin-left: var(--s-3);
+    color: var(--accent);
+  }
+
+  @media (max-width: 520px) {
+    .acad-courses__meta {
+      display: none;
+    }
+  }
+</style>

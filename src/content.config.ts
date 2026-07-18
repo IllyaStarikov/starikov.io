@@ -13,6 +13,7 @@
 
 import { defineCollection, z } from 'astro:content';
 import { binToolsLoader } from './loaders/bin-tools';
+import { academiaShowcaseLoader, coursesLoader } from './loaders/academia';
 
 const tools = defineCollection({
   loader: binToolsLoader({ root: '.sources/bin' }),
@@ -43,4 +44,68 @@ const tools = defineCollection({
   }),
 });
 
-export const collections = { tools };
+// The 14 curated PORTFOLIO.md projects (design §6). `body` is ready-to-`set:html`
+// HTML; `media` carries the transcode step's output paths (GIF → looping video,
+// PNG → image) under /media/academia/.
+const academiaShowcase = defineCollection({
+  loader: academiaShowcaseLoader({ root: '.sources/academia' }),
+  schema: z.object({
+    /** Position in PORTFOLIO.md (1–14); drives stable ordering. */
+    order: z.number(),
+    title: z.string(),
+    /** The `**Path:**` source location, e.g. `src/cs5400-…/game-series/`. */
+    srcPath: z.string(),
+    /** First path segment after `src/` (a course slug or a project name). */
+    courseSlug: z.string().optional(),
+    /** Display course code, e.g. `CS 5400`; absent for non-course projects. */
+    courseCode: z.string().optional(),
+    /** Department code, e.g. `cs5400`; absent for non-course projects. */
+    dept: z.string().optional(),
+    /** Theme bucket: `ai` | `graphics` | `games` | `systems` (site.config rules). */
+    theme: z.string(),
+    /** Rendered HTML of the project prose (media/Path/details removed). */
+    body: z.string(),
+    /** Referenced media as build-time output paths. */
+    media: z.array(
+      z.discriminatedUnion('kind', [
+        z.object({
+          kind: z.literal('video'),
+          slug: z.string(),
+          alt: z.string(),
+          poster: z.string(),
+          mp4: z.string(),
+          webm: z.string(),
+        }),
+        z.object({
+          kind: z.literal('image'),
+          slug: z.string(),
+          alt: z.string(),
+          src: z.string(),
+        }),
+      ]),
+    ),
+  }),
+});
+
+// Every `src/<slug>/` course directory in the academia repo (dir enumeration,
+// no PORTFOLIO involvement): the course index table on /academia.
+const courses = defineCollection({
+  loader: coursesLoader({ root: '.sources/academia' }),
+  schema: z.object({
+    slug: z.string(),
+    /** Display code, e.g. `CS 5400`. */
+    code: z.string(),
+    /** Department code, e.g. `cs5400`. */
+    dept: z.string(),
+    number: z.string(),
+    /** Humanized directory title, e.g. `Artificial Intelligence`. */
+    title: z.string(),
+    /** True when a matching `latex/<underscored>/` notes directory exists. */
+    hasNotes: z.boolean(),
+    /** Count of assignment subdirectories. */
+    assignmentCount: z.number(),
+    sourceUrl: z.string().url(),
+  }),
+});
+
+export const collections = { tools, academiaShowcase, courses };

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/build-themes.mjs && astro build",
+    "build": "node scripts/build-themes.mjs && node scripts/transcode-media.mjs && astro build",
     "test": "vitest run",
     "preview": "astro preview"
   },

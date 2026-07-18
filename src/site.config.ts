@@ -6,3 +6,10 @@
 // `as const` cast doesn't apply to a re-exported reference -- TS only allows
 // it on literal expressions -- so the narrowing has to happen at the source).
 export { SITE } from './site.config.mjs';
+export {
+  ACADEMIA_PDF_ORIGIN,
+  PDF_VOLUMES,
+  ACADEMIA_THEME_RULES,
+  ACADEMIA_THEME_FALLBACK,
+  ACADEMIA_THEME_ORDER,
+} from './site.config.mjs';

@@ -52,14 +52,30 @@ function toolToItem(entry: ToolEntry): SiteItem {
 }
 
 /**
- * Every site item, newest-first. Tools only for now; the shape is fixed so
- * projects/essays/pages append here later without touching any consumer.
+ * Static pages that are first-class site items (⌘K / search / Connections /
+ * home feed) but aren't collection-backed. /academia is one uniform record: a
+ * marquee page over the archived coursework, not a per-entry route in v1.
+ */
+const PAGE_ITEMS: SiteItem[] = [
+  {
+    type: 'page',
+    slug: 'academia',
+    title: 'Academia',
+    tagline: 'Four bound LaTeX volumes and a media showcase from the Missouri S&T years.',
+    href: '/academia',
+  },
+];
+
+/**
+ * Every site item, newest-first. Tools + static pages for now; the shape is
+ * fixed so projects/essays append here later without touching any consumer.
+ * Undated items (pages) sort after dated ones.
  */
 export async function getAllItems(): Promise<SiteItem[]> {
   const tools = await getCollection('tools');
-  return tools
-    .map(toolToItem)
-    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+  return [...tools.map(toolToItem), ...PAGE_ITEMS].sort((a, b) =>
+    (b.date ?? '').localeCompare(a.date ?? ''),
+  );
 }
 
 /**

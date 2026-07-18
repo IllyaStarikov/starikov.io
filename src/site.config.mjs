@@ -36,3 +36,61 @@ export const SITE = {
   },
   minCounts: { essays: 50, tools: 1, themeVariants: 10, projects: 4 },
 };
+
+// ---------------------------------------------------------------------------
+// Academia (/academia) — Task 10
+// ---------------------------------------------------------------------------
+
+// The four bound LaTeX volumes. Page counts and slugs are FROZEN (the academia
+// repo is archived). The PDFs live at the ROOT of academia.starikov.io
+// (/curated.pdf, /notes.pdf, …) — NEVER under /latex/. All four were verified
+// HTTP 200 (`application/pdf`) via `curl -sI` before committing (see
+// task-10-report.md). Blurbs come from PORTFOLIO.md's `## Documents` table; the
+// loader cross-checks the parsed page counts against these and warns on drift.
+export const ACADEMIA_PDF_ORIGIN = 'https://academia.starikov.io';
+
+// (No `@type {const}` here: it isn't valid JSDoc — `const` is not a type, so it
+// would erase these to `any` for TS consumers that `.map()` over them. Plain
+// literal inference gives the right element types.)
+export const PDF_VOLUMES = [
+  { slug: 'curated', title: 'Curated', pages: 284, blurb: 'A selection of the best work.' },
+  { slug: 'notes', title: 'Notes', pages: 473, blurb: 'Lecture notes and study materials.' },
+  {
+    slug: 'assignments',
+    title: 'Assignments',
+    pages: 498,
+    blurb: 'Homework assignments with solutions.',
+  },
+  { slug: 'complete', title: 'Complete', pages: 1113, blurb: 'Everything: assignments and notes.' },
+];
+
+// Theme grouping for the Selected Projects showcase. DATA, not code, so the
+// buckets stay tunable without touching the loader. Rules are evaluated in
+// order, first match wins; a project matches a rule if its department code
+// (from the course slug, e.g. `cs5400`) is in `depts` OR any `keyword` is a
+// substring of its lowercased title. Anything unmatched falls to `systems`.
+// Resulting buckets (documented in task-10-report.md):
+//   ai       — Chess AI, Shape Packer, Puzzle Solvers          (cs5400/cs5401)
+//   graphics — Linear Algebra, Lexical Analyzer, Graph Analytics
+//   games    — Splatoonio, Space Invaders
+//   systems  — Knapsack, CFG Tracer, Bolt, CLC Tally, Grading Suite, Camelot
+export const ACADEMIA_THEME_RULES = [
+  { theme: 'ai', depts: ['cs5400', 'cs5401', 'cs5402'], keywords: [] },
+  { theme: 'games', depts: ['cs4096'], keywords: ['invaders', 'game', 'splatoon'] },
+  {
+    theme: 'graphics',
+    depts: ['cs5201'],
+    keywords: ['linear algebra', 'lexical', 'graph analytics', 'automat'],
+  },
+];
+
+/** Theme assigned when no rule matches. */
+export const ACADEMIA_THEME_FALLBACK = 'systems';
+
+/** Render order + display labels for the theme sections (design §3). */
+export const ACADEMIA_THEME_ORDER = [
+  { theme: 'ai', label: 'Artificial intelligence' },
+  { theme: 'graphics', label: 'Graphics & numerics' },
+  { theme: 'games', label: 'Games' },
+  { theme: 'systems', label: 'Systems & tooling' },
+];

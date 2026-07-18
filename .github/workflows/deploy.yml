@@ -23,6 +23,21 @@ jobs:
         with:
           repository: IllyaStarikov/bin
           path: .sources/bin
+      - uses: actions/checkout@v4
+        with:
+          repository: IllyaStarikov/academia
+          path: .sources/academia
+      # Restore transcoded academia media (GIF→mp4/webm + posters, PNGs) keyed
+      # on PORTFOLIO.md so the ffmpeg prebuild runs once per source change, not
+      # every nightly build. MUST come before `npm run build` (the transcode
+      # step's digest cache skips whatever this restored). ffmpeg is preinstalled
+      # on ubuntu-latest; the transcode script hard-fails if it's missing.
+      - uses: actions/cache@v4
+        with:
+          path: public/media
+          key: academia-media-${{ hashFiles('.sources/academia/PORTFOLIO.md') }}
+          restore-keys: |
+            academia-media-
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
