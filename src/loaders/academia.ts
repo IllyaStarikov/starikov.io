@@ -320,6 +320,18 @@ export function latexDirFor(slug: string): string {
   return slug.replace(/-/g, '_');
 }
 
+/** Inverse of latexDirFor: a `latex/` dir name back to a course slug. */
+export function slugFromLatexDir(name: string): string {
+  return name.replace(/_/g, '-');
+}
+
+function listDirNames(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+    .map((e) => e.name)
+    .sort();
+}
+
 // ---------------------------------------------------------------------------
 // Loader shells
 // ---------------------------------------------------------------------------
@@ -413,11 +425,41 @@ export function academiaShowcaseLoader({ root }: { root: string }): Loader {
   };
 }
 
+// A `type` (not `interface`) so it carries an implicit index signature and is
+// assignable to the loader context's `Record<string, unknown>` (parseData /
+// generateDigest) without a cast.
+export type CourseData = {
+  slug: string;
+  code: string;
+  dept: string;
+  number: string;
+  title: string;
+  /** Has source code / assignments in `src/` (vs a notes-only course). */
+  hasCode: boolean;
+  /** Has typeset notes in `latex/`. */
+  hasNotes: boolean;
+  assignmentCount: number;
+  sourceUrl: string;
+};
+
 /**
- * `courses` collection loader. Enumerates `src/<slug>/` directories that parse
- * as courses, sets `hasNotes` from a matching `latex/<underscored>/` directory,
- * and counts assignment subdirectories. A missing `src/` follows the
- * archived-repo policy.
+ * `courses` collection loader. Enumerates the UNION of code-bearing courses in
+ * `src/<slug>/` and notes-only courses in `latex/<underscored>/`, so the course
+ * index reflects the whole degree — including the gen-eds (calculus, physics,
+ * …) that were typeset but carry no source code.
+ *
+ *   - `src/` course dirs are authoritative: `hasCode: true`, assignment count
+ *     from subdirs, `hasNotes` from a matching `latex/` dir. A department can
+ *     hold several src courses (cs1570 has two).
+ *   - a `latex/` course adds a notes-only row (`hasCode: false`,
+ *     `assignmentCount: 0`) ONLY when its department isn't already represented.
+ *     A same-slug latex dir just confirms `hasNotes` (already set); a
+ *     same-department latex dir (e.g. `cs3001_presentations` alongside the
+ *     `cs3001_skills_development` course) is a component of that existing
+ *     course, not a new one, so it's folded rather than double-counted.
+ *
+ * A missing `src/` AND `latex/`, or an empty result, follows the archived-repo
+ * policy.
  */
 export function coursesLoader({ root }: { root: string }): Loader {
   return {
@@ -428,48 +470,69 @@ export function coursesLoader({ root }: { root: string }): Loader {
       const absRoot = resolve(root);
       const srcDir = join(absRoot, 'src');
       const latexDir = join(absRoot, 'latex');
-      if (!existsSync(srcDir)) {
-        failLoud(COURSES_SOURCE, `src/ not found at ${root}; course index is empty`);
-        logger.warn(`${root}/src missing; courses is empty`);
+      if (!existsSync(srcDir) && !existsSync(latexDir)) {
+        failLoud(COURSES_SOURCE, `neither src/ nor latex/ found at ${root}; course index is empty`);
+        logger.warn(`${root} has no src/ or latex/; courses is empty`);
         return;
       }
 
-      const dirs = readdirSync(srcDir, { withFileTypes: true })
-        .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
-        .map((e) => e.name)
-        .sort();
+      const entries = new Map<string, CourseData>();
+      const deptsSeen = new Set<string>();
 
-      let count = 0;
-      for (const name of dirs) {
-        const parts = parseCourseSlug(name);
-        if (!parts) continue; // not a course dir (bolt, clc-tally, …) — skip silently
-
-        const coursePath = join(srcDir, name);
-        const assignmentCount = readdirSync(coursePath, { withFileTypes: true }).filter(
-          (e) => e.isDirectory() && !e.name.startsWith('.'),
-        ).length;
-        const hasNotes = existsSync(join(latexDir, latexDirFor(name)));
-
-        const data = {
-          slug: parts.slug,
-          code: parts.code,
-          dept: parts.dept,
-          number: parts.number,
-          title: parts.title,
-          hasNotes,
-          assignmentCount,
-          sourceUrl: `${ACADEMIA_REPO}/tree/main/src/${name}`,
-        };
-        const validated = await parseData({ id: parts.slug, data, filePath: `src/${name}` });
-        store.set({ id: parts.slug, data: validated, digest: generateDigest(data) });
-        count += 1;
+      // Pass 1: code-bearing courses from src/.
+      if (existsSync(srcDir)) {
+        for (const name of listDirNames(srcDir)) {
+          const parts = parseCourseSlug(name);
+          if (!parts) continue; // not a course dir (bolt, clc-tally, …) — skip silently
+          const assignmentCount = listDirNames(join(srcDir, name)).length;
+          entries.set(parts.slug, {
+            slug: parts.slug,
+            code: parts.code,
+            dept: parts.dept,
+            number: parts.number,
+            title: parts.title,
+            hasCode: true,
+            hasNotes: existsSync(join(latexDir, latexDirFor(name))),
+            assignmentCount,
+            sourceUrl: `${ACADEMIA_REPO}/tree/main/src/${name}`,
+          });
+          deptsSeen.add(parts.dept);
+        }
       }
 
-      if (count === 0) {
-        failLoud(COURSES_SOURCE, 'no course directories matched under src/');
+      // Pass 2: notes-only courses from latex/ (dept-deduped against pass 1).
+      if (existsSync(latexDir)) {
+        for (const dirName of listDirNames(latexDir)) {
+          const parts = parseCourseSlug(slugFromLatexDir(dirName));
+          if (!parts) continue; // not a course dir (assets, teach) — skip silently
+          if (entries.has(parts.slug)) continue; // already merged from src (hasNotes set there)
+          if (deptsSeen.has(parts.dept)) continue; // a component of an existing course, not a new one
+          entries.set(parts.slug, {
+            slug: parts.slug,
+            code: parts.code,
+            dept: parts.dept,
+            number: parts.number,
+            title: parts.title,
+            hasCode: false,
+            hasNotes: true,
+            assignmentCount: 0,
+            sourceUrl: `${ACADEMIA_REPO}/tree/main/latex/${dirName}`,
+          });
+          deptsSeen.add(parts.dept);
+        }
+      }
+
+      if (entries.size === 0) {
+        failLoud(COURSES_SOURCE, 'no course directories matched under src/ or latex/');
         return;
       }
-      logger.info(`loaded ${count} course(s) from ${root}`);
+
+      for (const [slug, data] of entries) {
+        const filePath = data.hasCode ? `src/${slug}` : `latex/${latexDirFor(slug)}`;
+        const validated = await parseData({ id: slug, data, filePath });
+        store.set({ id: slug, data: validated, digest: generateDigest(data) });
+      }
+      logger.info(`loaded ${entries.size} course(s) from ${root}`);
     },
   };
 }

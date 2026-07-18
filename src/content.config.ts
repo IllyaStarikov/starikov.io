@@ -100,9 +100,12 @@ const courses = defineCollection({
     number: z.string(),
     /** Humanized directory title, e.g. `Artificial Intelligence`. */
     title: z.string(),
+    /** True when the course has source code / assignments in `src/`; false for
+     *  a notes-only course that exists only in `latex/` (a gen-ed). */
+    hasCode: z.boolean(),
     /** True when a matching `latex/<underscored>/` notes directory exists. */
     hasNotes: z.boolean(),
-    /** Count of assignment subdirectories. */
+    /** Count of assignment subdirectories (0 for notes-only courses). */
     assignmentCount: z.number(),
     sourceUrl: z.string().url(),
   }),

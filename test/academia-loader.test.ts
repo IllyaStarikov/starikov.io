@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +16,7 @@ import {
   classifyTheme,
   parseCourseSlug,
   latexDirFor,
+  slugFromLatexDir,
   slugify,
   academiaShowcaseLoader,
   coursesLoader,
@@ -255,8 +256,11 @@ describe('parseCourseSlug (dir enumeration regex)', () => {
     expect(parseCourseSlug('makefile')).toBeNull();
   });
 
-  it('maps a slug to its latex notes directory (dashes → underscores)', () => {
+  it('maps a slug to its latex notes directory and back (dashes ↔ underscores)', () => {
     expect(latexDirFor('cs5400-artificial-intelligence')).toBe('cs5400_artificial_intelligence');
+    expect(slugFromLatexDir('math3304_differential_equations')).toBe(
+      'math3304-differential-equations',
+    );
   });
 });
 
@@ -344,34 +348,44 @@ describe('academiaShowcaseLoader', () => {
   });
 });
 
-describe('coursesLoader', () => {
+describe('coursesLoader (src ∪ latex union)', () => {
   let parent: string;
   let root: string;
 
   beforeAll(() => {
     parent = mkdtempSync(join(tmpdir(), 'courses-'));
     root = join(parent, 'academia');
-    // src/: two courses (one with two assignment subdirs) + a non-course dir.
+    // src/: two code courses (one with two assignment subdirs) + a non-course dir.
     mkdirSync(join(root, 'src/cs5400-artificial-intelligence/game-series'), { recursive: true });
     mkdirSync(join(root, 'src/cs5400-artificial-intelligence/puzzle-series'));
     mkdirSync(join(root, 'src/cpe3150-micro-embedded-design/project-1'), { recursive: true });
     mkdirSync(join(root, 'src/bolt'), { recursive: true }); // not a course → skipped
-    // latex/: notes for cs5400 only.
+    // latex/: notes for cs5400 (merges) + a genuinely notes-only gen-ed +
+    // a same-department component that must be FOLDED, not double-counted.
     mkdirSync(join(root, 'latex/cs5400_artificial_intelligence'), { recursive: true });
+    mkdirSync(join(root, 'latex/phys1135_physics_i'), { recursive: true });
+    mkdirSync(join(root, 'latex/cs5400_seminar'), { recursive: true }); // dept cs5400 already present
+    mkdirSync(join(root, 'latex/assets'), { recursive: true }); // not a course → skipped
   });
   afterAll(() => rmSync(parent, { recursive: true, force: true }));
 
-  it('enumerates course dirs, sets hasNotes + assignmentCount, skips non-courses', async () => {
+  it('unions code + notes-only courses, folds same-dept latex components, skips non-courses', async () => {
     const { context, map } = fakeContext();
     await coursesLoader({ root }).load(context);
 
+    // src code courses + the notes-only gen-ed; NOT bolt, NOT cs5400-seminar, NOT assets.
     expect(new Set(map.keys())).toEqual(
-      new Set(['cs5400-artificial-intelligence', 'cpe3150-micro-embedded-design']),
+      new Set([
+        'cs5400-artificial-intelligence',
+        'cpe3150-micro-embedded-design',
+        'phys1135-physics-i',
+      ]),
     );
 
     const cs5400 = map.get('cs5400-artificial-intelligence')!.data as Record<string, any>;
     expect(cs5400.code).toBe('CS 5400');
     expect(cs5400.title).toBe('Artificial Intelligence');
+    expect(cs5400.hasCode).toBe(true);
     expect(cs5400.hasNotes).toBe(true);
     expect(cs5400.assignmentCount).toBe(2);
     expect(cs5400.sourceUrl).toBe(
@@ -379,7 +393,48 @@ describe('coursesLoader', () => {
     );
 
     const cpe = map.get('cpe3150-micro-embedded-design')!.data as Record<string, any>;
+    expect(cpe.hasCode).toBe(true);
     expect(cpe.hasNotes).toBe(false); // no latex/cpe3150_… dir
     expect(cpe.assignmentCount).toBe(1);
+
+    // Notes-only course: derived code + title, hasCode false, hasNotes true,
+    // no assignments, sourced from the latex dir.
+    const phys = map.get('phys1135-physics-i')!.data as Record<string, any>;
+    expect(phys.hasCode).toBe(false);
+    expect(phys.hasNotes).toBe(true);
+    expect(phys.assignmentCount).toBe(0);
+    expect(phys.code).toBe('PHYS 1135');
+    expect(phys.title).toBe('Physics I');
+    expect(phys.sourceUrl).toBe(
+      'https://github.com/IllyaStarikov/academia/tree/main/latex/phys1135_physics_i',
+    );
+  });
+});
+
+// Guarded assertion against the real checkout (skips on a clean clone with no
+// .sources/academia): the whole-degree union is 34 and matches the /academia
+// stat strip. cs3001's `presentations` latex folder is folded into the cs3001
+// course rather than double-counted.
+const REAL_ROOT = join(REPO_ROOT, '.sources/academia');
+const realOrSkip = existsSync(join(REAL_ROOT, 'src')) ? describe : describe.skip;
+realOrSkip('coursesLoader — real academia checkout', () => {
+  it('enumerates the 34-course union including notes-only gen-eds', async () => {
+    const { context, map } = fakeContext();
+    await coursesLoader({ root: REAL_ROOT }).load(context);
+
+    expect(map.size).toBe(34);
+
+    const phys = map.get('phys1135-physics-i')!.data as Record<string, any>;
+    expect(phys.hasCode).toBe(false);
+    expect(phys.hasNotes).toBe(true);
+    expect(phys.code).toBe('PHYS 1135');
+
+    // cs3001 stays a single course (presentations folded, not a 35th row).
+    expect(map.has('cs3001-presentations')).toBe(false);
+    expect((map.get('cs3001-skills-development')!.data as Record<string, any>).hasCode).toBe(true);
+    // a code-bearing course keeps hasCode true.
+    expect((map.get('cs5400-artificial-intelligence')!.data as Record<string, any>).hasCode).toBe(
+      true,
+    );
   });
 });
