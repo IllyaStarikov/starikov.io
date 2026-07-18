@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+.sources/
+.cache/
+src/data/generated/
+src/styles/themes.generated.css
+public/media/
+.superpowers/

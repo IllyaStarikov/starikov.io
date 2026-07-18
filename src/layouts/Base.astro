@@ -1,0 +1,42 @@
+---
+import { SITE } from '../site.config';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = SITE.title, description = SITE.description } = Astro.props;
+
+const gaInlineScript = `
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${SITE.gaId}', { send_page_view: false });
+  document.addEventListener('astro:page-load', () => gtag('event', 'page_view', {
+    page_location: location.href, page_title: document.title }));
+`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#1a1b26" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src https://academia.starikov.io; base-uri 'none'; object-src 'none'"
+    />
+    <slot name="head" />
+    <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${SITE.gaId}`}
+    ></script>
+    <script is:inline set:html={gaInlineScript} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
