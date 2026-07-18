@@ -1,0 +1,15 @@
+{
+  "id": "6a41c259c2404884c996f3f3",
+  "title": "The Lifecycle of a Code Change",
+  "slug": "commit-lifecycle",
+  "url": "https://starikov.co/commit-lifecycle/",
+  "custom_excerpt": "AI writes most of my code now. Here's where I let it, and where I don't.",
+  "excerpt": "AI writes most of my code now. Here's where I let it, and where I don't.",
+  "feature_image": "https://starikov.co/content/images/2026/06/commit_lifecycle_feature.png",
+  "published_at": "2026-07-14T13:01:17.000Z",
+  "reading_time": 14,
+  "tags": [
+    { "id": "a1", "name": "AI", "slug": "ai", "visibility": "public" },
+    { "id": "a2", "name": "Software Engineering", "slug": "software-engineering", "visibility": "public" }
+  ]
+}

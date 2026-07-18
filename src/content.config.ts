@@ -16,6 +16,7 @@ import { glob } from 'astro/loaders';
 import { binToolsLoader } from './loaders/bin-tools';
 import { academiaShowcaseLoader, coursesLoader } from './loaders/academia';
 import { githubMetaLoader } from './loaders/github-meta';
+import { ghostEssaysLoader, ghostTagsLoader } from './loaders/ghost';
 
 const tools = defineCollection({
   loader: binToolsLoader({ root: '.sources/bin' }),
@@ -174,4 +175,46 @@ const projects = defineCollection({
     }),
 });
 
-export const collections = { tools, academiaShowcase, courses, repos, projects };
+// Ghost essays (design spec §6: "Ghost Content API, key as secret"). One
+// shared live fetch behind both loaders (src/loaders/ghost.ts's module-level
+// memo) so a build only ever hits the Content API once, not once per
+// collection. `essays` is keyed by the Ghost slug; `tags` is stored as plain
+// slugs here (the string the essay's OWN entry carries) -- the accent color
+// and display name for a given slug live in `essayTags`, joined on at read
+// time (RelatedEssays doesn't need it; /writing and the home essay rows do).
+const essays = defineCollection({
+  loader: ghostEssaysLoader(),
+  schema: z.object({
+    title: z.string(),
+    /** Canonical starikov.co URL -- essay rows link OUT, never render locally. */
+    url: z.string().url(),
+    excerpt: z.string(),
+    featureImage: z.string().nullable(),
+    publishedAt: z.coerce.date(),
+    /** Whole minutes, as Ghost reports it (or the loader's word-count fallback). */
+    readingTime: z.number(),
+    /** Tag SLUGS, in Ghost's order -- index 0 drives a row's dot color. */
+    tags: z.array(z.string()),
+  }),
+});
+
+// The public Ghost tags (internal/organizational tags, e.g. "#top-10", are
+// dropped by the loader before this collection ever sees them -- design spec:
+// tag color is chrome, never the sole meaning-carrier, and an internal
+// housekeeping tag has no business as a public filter chip).
+const essayTags = defineCollection({
+  loader: ghostTagsLoader(),
+  schema: z.object({
+    name: z.string(),
+    slug: z.string(),
+    /** Ghost's accent_color -- used ONLY for an essay row's 8px dot
+     *  background (design spec: blend-safety, dot only, never text color). */
+    accentColor: z.string().nullable(),
+    description: z.string().nullable(),
+    /** Published-post count -- drives the /writing filter chip list
+     *  (count >= 3, sorted by count desc). */
+    count: z.number(),
+  }),
+});
+
+export const collections = { tools, academiaShowcase, courses, repos, projects, essays, essayTags };

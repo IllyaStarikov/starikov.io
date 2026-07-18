@@ -6,10 +6,14 @@
  * and two mono links (`browse the index →`, `press ⌘K`). Beside it, the live
  * SystemCard -- a neofetch panel whose `theme:` row is the theme picker itself.
  *
- * Below the fold, three ledgers over the shared SiteItem model:
+ * Below the fold, three ledgers:
  *   - Start here      the four front doors (dotfiles, eclecta, mcp, academia)
- *   - Recently updated the six newest items across every collection
- *   - Latest essays    guarded empty until Task 14 -- renders nothing for now
+ *                      (SiteItem model)
+ *   - Recently updated the six newest items across every collection, essays
+ *                      included (SiteItem model)
+ *   - Latest essays    the 3 most recent Ghost posts, queried directly (not
+ *                      via SiteItem) for the tag-dot accent; guarded absent
+ *                      if the essays collection ever loads zero
  *
  * First-visit only, the ledger rows rise in a short stagger (CSS animation,
  * sessionStorage-guarded, reduced-motion disabled globally). No headshot, no
@@ -22,6 +26,7 @@ import Kbd from '../components/Kbd.astro';
 import { getCollection } from 'astro:content';
 import { getAllItems, joinRepos, summarizeRepos } from '../lib/model';
 import { formatRelativeTime } from '../lib/relative-time';
+import { firstTagAccent } from '../lib/essays';
 
 const STATEMENT =
   'Illya Starikov — software engineer. This is the workshop: ten years of dotfiles, tools, coursework, and essays — documented like it matters.';
@@ -88,8 +93,30 @@ const recent = allItems
     };
   });
 
-// -- Latest essays: guarded until Task 14 -- empty now, so the section is absent.
-const essays = allItems.filter((item) => item.type === 'essay').slice(0, 3);
+// -- Latest essays: the 3 most recent Ghost posts, tag dot + relative date --
+// (design spec §3). Queried directly (not via allItems/SiteItem) because the
+// row needs the tag dot's accent, which the uniform SiteItem shape doesn't
+// carry. Guarded absent (design spec §3: right rail's Connections rule
+// applies here too -- no empty affordance) if the essays collection ever
+// loads zero (every fallback tier failed).
+const essayEntries = await getCollection('essays');
+const essayTagMap = new Map(
+  (await getCollection('essayTags')).map((t) => [t.id, { name: t.data.name, accentColor: t.data.accentColor }]),
+);
+const latestEssays = [...essayEntries]
+  .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime())
+  .slice(0, 3)
+  .map((entry) => {
+    const dot = firstTagAccent(entry.data.tags, essayTagMap);
+    const rel = formatRelativeTime(entry.data.publishedAt);
+    return {
+      href: entry.data.url,
+      title: entry.data.title,
+      dek: entry.data.excerpt,
+      tag: dot ? { label: dot.name, accent: dot.accent } : undefined,
+      meta: rel ? [rel] : [],
+    };
+  });
 
 // Global row index so the entrance stagger runs across both ledgers (first 10
 // rows only, per the motion table). Beyond 10, rows get no delay.
@@ -161,7 +188,7 @@ const staggerFor = () => Math.min(rowIndex++, 10);
     </section>
 
     {
-      essays.length > 0 && (
+      latestEssays.length > 0 && (
         <section class="home-section" aria-labelledby="essays-label">
           <div class="section-head">
             <h2 class="section-head__label" id="essays-label">
@@ -170,9 +197,16 @@ const staggerFor = () => Math.min(rowIndex++, 10);
             <span class="section-head__rule" aria-hidden="true" />
           </div>
           <div class="ledger">
-            {essays.map((item) => (
+            {latestEssays.map((item) => (
               <div class="ledger__item">
-                <LedgerRow href={item.href} title={item.title} dek={item.tagline} external />
+                <LedgerRow
+                  href={item.href}
+                  title={item.title}
+                  dek={item.dek}
+                  meta={item.meta}
+                  tag={item.tag}
+                  external
+                />
               </div>
             ))}
           </div>

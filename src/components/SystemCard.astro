@@ -15,7 +15,9 @@
  *   - themes    the WHOLE theme engine's variant/family count, counted from the
  *               committed dotfiles manifest snapshot (17 families / 57 variants)
  *   - theme:    the live theme -- SSR prints the default, the client corrects it
- *   - essays    guarded: rendered only once the essays collection lands (Task 14)
+ *   - essays    the `essays` collection's count; guarded absent if a build
+ *               ever loaded zero (every fallback tier failed) rather than
+ *               print "essays 0"
  *   - latest    the most recent push across every tracked repo, relative
  *   - built     this build's UTC timestamp
  *
@@ -52,9 +54,8 @@ const latest = newestPush ? (formatRelativeTime(newestPush) ?? '—') : '—';
 const nowIso = new Date().toISOString();
 const built = `${nowIso.slice(0, 10)} ${nowIso.slice(11, 16)} UTC`;
 
-// -- essays: guarded until Task 14's collection exists -----------------------
-// TODO(task-14): const essayCount = (await getCollection('essays')).length;
-const essayCount = 0;
+// -- essays: the real essays collection count (Ghost, via src/loaders/ghost.ts) -
+const essayCount = (await getCollection('essays')).length;
 
 // -- theme: SSR prints the default; the client re-reads data-theme on boot ---
 const defaultThemeId = themesData.defaults.dark;

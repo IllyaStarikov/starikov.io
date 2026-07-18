@@ -1,0 +1,1635 @@
+{
+  "posts": [
+    {
+      "title": "The Lifecycle of a Code Change",
+      "slug": "commit-lifecycle",
+      "url": "https://starikov.co/commit-lifecycle/",
+      "excerpt": "AI writes most of my code now. Here's where I let it, and where I don't.",
+      "feature_image": "https://starikov.co/content/images/2026/06/commit_lifecycle_feature.png",
+      "published_at": "2026-07-14T13:01:17.000Z",
+      "reading_time": 14,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "The Commit Checklist",
+      "slug": "commit-checklist",
+      "url": "https://starikov.co/commit-checklist/",
+      "excerpt": "The unglamorous gate between \"works on my machine\" and \"someone else has to read this.\"",
+      "feature_image": "https://starikov.co/content/images/2026/06/commit_checklist_feature.png",
+      "published_at": "2026-07-14T13:00:31.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "Begin a Brag Doc",
+      "slug": "begin-a-brag-doc",
+      "url": "https://starikov.co/begin-a-brag-doc/",
+      "excerpt": "Document the narrative before someone else drafts it.",
+      "feature_image": "https://starikov.co/content/images/2026/05/brag-doc-hero-1.png",
+      "published_at": "2026-07-08T03:14:05.000Z",
+      "reading_time": 7,
+      "tags": [
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "Brag Doc Template",
+      "slug": "brag-doc-template",
+      "url": "https://starikov.co/brag-doc-template/",
+      "excerpt": "A simple template for tracking your engineering impact across a performance cycle.",
+      "feature_image": "https://starikov.co/content/images/2026/05/brag-doc-hero.png",
+      "published_at": "2026-07-08T03:13:49.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "The Vanishing Keystrokes Bug",
+      "slug": "vanishing-keystrokes-bug",
+      "url": "https://starikov.co/vanishing-keystrokes-bug/",
+      "excerpt": "How a faceless background agent ate my typing, and the script that caught it.",
+      "feature_image": "https://starikov.co/content/images/2026/06/vanishing_keystrokes-1.gif",
+      "published_at": "2026-07-02T13:00:02.000Z",
+      "reading_time": 6,
+      "tags": [
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "software-engineering"
+        },
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "Talk To Your TODOs",
+      "slug": "talk-to-todos",
+      "url": "https://starikov.co/talk-to-todos/",
+      "excerpt": "I talk to my TODO list. You should too.",
+      "feature_image": "https://starikov.co/content/images/2026/06/talk_to_todos_demo-3.gif",
+      "published_at": "2026-06-30T13:00:05.000Z",
+      "reading_time": 14,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "AI Won't Replace Software Engineering (Yet)",
+      "slug": "ai-replace-software",
+      "url": "https://starikov.co/ai-replace-software/",
+      "excerpt": "But it will raise the bar.",
+      "feature_image": "https://starikov.co/content/images/2026/05/ai_replace_software_tool-1.png",
+      "published_at": "2026-06-23T13:00:55.000Z",
+      "reading_time": 5,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "There's No Place Like $HOME",
+      "slug": "no-place-like-home",
+      "url": "https://starikov.co/no-place-like-home/",
+      "excerpt": "A ten-year journey of mostly Vim, then VS Code, then back to Vim.",
+      "feature_image": "https://starikov.co/content/images/2026/06/no_place_like_home_feature.png",
+      "published_at": "2026-06-16T13:00:41.000Z",
+      "reading_time": 7,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "Diff Viewer",
+      "slug": "diff",
+      "url": "https://starikov.co/diff/",
+      "excerpt": "Two versions in, every real change out. Reordered keys and trailing whitespace don't count.",
+      "feature_image": "https://starikov.co/content/images/2026/06/diff_viewer.png",
+      "published_at": "2026-06-15T04:37:31.000Z",
+      "reading_time": 66,
+      "tags": [
+        {
+          "slug": "application"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Artificially Unintelligent",
+      "slug": "artificially-unintelligent",
+      "url": "https://starikov.co/artificially-unintelligent/",
+      "excerpt": "mini(wins), max(losses)",
+      "feature_image": "https://starikov.co/content/images/2026/05/09_skull_mask-1.gif",
+      "published_at": "2026-06-09T13:00:17.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "AI Foundations",
+      "slug": "ai-foundations",
+      "url": "https://starikov.co/ai-foundations/",
+      "excerpt": "Ball don't lie, and neither does linear algebra.",
+      "feature_image": "https://starikov.co/content/images/2026/06/bracket_compare-3.png",
+      "published_at": "2026-06-02T13:00:11.000Z",
+      "reading_time": 11,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "The Thunderfury Incident",
+      "slug": "the-thunderfury-incident",
+      "url": "https://starikov.co/the-thunderfury-incident/",
+      "excerpt": "\"Did someone say Thunderfury, Blessed Blade of the Windseeker?\" — The IT Department, probably",
+      "feature_image": "https://starikov.co/content/images/2026/04/thunderfury-1.jpg",
+      "published_at": "2026-05-27T13:00:06.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "missouri-s-t"
+        },
+        {
+          "slug": "self"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Software Engineering is a Team Sport",
+      "slug": "software-is-team-sport",
+      "url": "https://starikov.co/software-is-team-sport/",
+      "excerpt": "To play a team sport, you must learn to be a teammate.",
+      "feature_image": "https://starikov.co/content/images/2026/05/software_is_a_team_sport-2.gif",
+      "published_at": "2026-05-19T13:00:28.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "Token Anxiety",
+      "slug": "token-anxiety",
+      "url": "https://starikov.co/token-anxiety/",
+      "excerpt": "Approaching daily Pro limit · resets in 6h",
+      "feature_image": "https://starikov.co/content/images/2026/05/token_anxiety_low_tank-5.png",
+      "published_at": "2026-05-12T13:00:31.000Z",
+      "reading_time": 5,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "You Should Host a Website",
+      "slug": "host-a-website",
+      "url": "https://starikov.co/host-a-website/",
+      "excerpt": "Not have one. Host one.",
+      "feature_image": "https://starikov.co/content/images/2026/04/digital_ocean-1.png",
+      "published_at": "2026-05-04T03:00:31.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "Academia Portfolio",
+      "slug": "academia-portfolio",
+      "url": "https://starikov.co/academia-portfolio/",
+      "excerpt": "4 years, 10 projects, 91k lines of code. Pain is temporary, GPA is forever.",
+      "feature_image": "https://starikov.co/content/images/2026/04/space_invaders.gif",
+      "published_at": "2026-04-27T18:11:33.000Z",
+      "reading_time": 19,
+      "tags": [
+        {
+          "slug": "missouri-s-t"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "Academia Notes",
+      "slug": "academia-notes",
+      "url": "https://starikov.co/academia-notes/",
+      "excerpt": "4 years, 29 courses, 1,113 pages. Because who doesn't love compiler errors from their notes?",
+      "feature_image": "https://starikov.co/content/images/2026/04/academia_notes.png",
+      "published_at": "2026-04-20T18:11:38.000Z",
+      "reading_time": 5,
+      "tags": [
+        {
+          "slug": "missouri-s-t"
+        },
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "self"
+        }
+      ]
+    },
+    {
+      "title": "How to Code on iPad",
+      "slug": "code-on-ipad",
+      "url": "https://starikov.co/code-on-ipad/",
+      "excerpt": "iPad is the best coding computer, which is why I always code on Mac.",
+      "feature_image": "https://starikov.co/content/images/2026/04/code_on_ipad-1.png",
+      "published_at": "2026-04-13T18:11:01.000Z",
+      "reading_time": 5,
+      "tags": [
+        {
+          "slug": "technology"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "Flap Flap",
+      "slug": "flap-flap",
+      "url": "https://starikov.co/flap-flap/",
+      "excerpt": "\n\nSound: On Reset High Score\n\nPress Space or tap to flap\n\n",
+      "feature_image": "https://starikov.co/content/images/2026/01/flap_flap.png",
+      "published_at": "2026-01-10T20:00:23.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "She Said Yes",
+      "slug": "she-said-yes",
+      "url": "https://starikov.co/she-said-yes/",
+      "excerpt": "",
+      "feature_image": "https://starikov.co/content/images/2026/01/she_said_yes-1.png",
+      "published_at": "2026-01-01T01:13:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "self"
+        }
+      ]
+    },
+    {
+      "title": "Markdown Cheatsheet",
+      "slug": "markdown-cheatsheet",
+      "url": "https://starikov.co/markdown-cheatsheet/",
+      "excerpt": "A comprehensive reference for every Markdown flavor",
+      "feature_image": "https://starikov.co/content/images/2025/12/markdown_reference.png",
+      "published_at": "2025-12-07T07:56:29.000Z",
+      "reading_time": 24,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "TODO",
+      "slug": "todo",
+      "url": "https://starikov.co/todo/",
+      "excerpt": "\n\n\n\n\nTODO\n\n📤 Export 📥 Import Clear Completed\n🔍 All Tasks 0📥 Inbox 0⭐ Starred 0📅 Today 0📆 Upcoming 0⏸️ Deferred 0✅ Completed 0\nNew task Add Task\n+ Due Today + Due Tomorrow + Starred\n\n\nAdvanced Filters\n\nClear AllSearch Label All LabelsDue Date Defer Date Has Due Date AnyYesNoHas Defer Date AnyYesNoIs Starred AnyYesNoStatus AnyActiveCompleted📝\n\nNo tasks yet. Add one to get started!\n\n\nLabels\n\n+ Add Label\n\n\nEdit Task\n\n✕\nTask ⭐ Star this taskDue Date Defer Until Task will be hidden until this d",
+      "feature_image": "https://starikov.co/content/images/2026/01/todo.png",
+      "published_at": "2025-11-29T19:11:53.000Z",
+      "reading_time": 17,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Sorting Algorithms",
+      "slug": "sorting-algorithms",
+      "url": "https://starikov.co/sorting-algorithms/",
+      "excerpt": "sort<Algorithm>(from: bubble, to: Tim)",
+      "feature_image": "https://starikov.co/content/images/2026/01/counting_sort.gif",
+      "published_at": "2025-11-22T19:11:14.000Z",
+      "reading_time": 49,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Dice",
+      "slug": "dice",
+      "url": "https://starikov.co/dice/",
+      "excerpt": "Roll With It",
+      "feature_image": "https://starikov.co/content/images/2025/11/dice.png",
+      "published_at": "2025-11-17T08:07:39.000Z",
+      "reading_time": 17,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Home Row",
+      "slug": "home-row",
+      "url": "https://starikov.co/home-row/",
+      "excerpt": "112 WPM. Take that, typing teacher!",
+      "feature_image": "https://starikov.co/content/images/2025/11/home_row.png",
+      "published_at": "2025-11-16T06:55:40.000Z",
+      "reading_time": 34,
+      "tags": [
+        {
+          "slug": "technology"
+        },
+        {
+          "slug": "self"
+        },
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "iPhone (17?) Air, One Month Later",
+      "slug": "iphone-air",
+      "url": "https://starikov.co/iphone-air/",
+      "excerpt": "I fear I am about to feel what iPhone Mini people feel.",
+      "feature_image": "https://starikov.co/content/images/2025/10/iphone_weights-1.png",
+      "published_at": "2025-10-29T07:15:10.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "technology"
+        },
+        {
+          "slug": "self"
+        }
+      ]
+    },
+    {
+      "title": "Solo at Tahoe",
+      "slug": "solo-tahoe",
+      "url": "https://starikov.co/solo-tahoe/",
+      "excerpt": "1 tent, 13km hike, 1000 calorie breakfasts. No service, no pants, no worries.",
+      "feature_image": "https://starikov.co/content/images/2025/10/nature-6-1.jpeg",
+      "published_at": "2025-10-02T07:08:28.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "travel"
+        },
+        {
+          "slug": "self"
+        }
+      ]
+    },
+    {
+      "title": "Same Old Story",
+      "slug": "same-old-story",
+      "url": "https://starikov.co/same-old-story/",
+      "excerpt": " 1. SAME thing every time I open LinkedIn\n 2. OLD posts, new posts claim \"AI takes all jobs in six months\"\n 3. STORY after story flow for half a year that says the...\n 4. GOTO 1",
+      "feature_image": "https://starikov.co/content/images/2025/09/sad_robot.png",
+      "published_at": "2025-09-09T03:15:32.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "Peg Solitaire",
+      "slug": "peg-solitaire",
+      "url": "https://starikov.co/peg-solitaire/",
+      "excerpt": "Leave The Last Peg Standing",
+      "feature_image": "https://starikov.co/content/images/2025/07/peg_solitaire.png",
+      "published_at": "2025-07-18T20:08:26.000Z",
+      "reading_time": 28,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Meet Zuko",
+      "slug": "meet-zuko",
+      "url": "https://starikov.co/meet-zuko/",
+      "excerpt": "Crowned Prince of the Fire Nation 🔥",
+      "feature_image": "https://starikov.co/content/images/2025/07/zuko_3-1.JPG",
+      "published_at": "2025-07-06T00:21:23.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "pets"
+        },
+        {
+          "slug": "interests"
+        }
+      ]
+    },
+    {
+      "title": "Tea Brewing Guide",
+      "slug": "brew-tea",
+      "url": "https://starikov.co/brew-tea/",
+      "excerpt": "If you are cold, tea will warm you; if you are too heated, it will cool you; if you are depressed, it will cheer you; if you are excited, it will calm you.",
+      "feature_image": "https://starikov.co/content/images/2025/06/tea.png",
+      "published_at": "2025-06-29T18:11:31.000Z",
+      "reading_time": 30,
+      "tags": [
+        {
+          "slug": "interests"
+        },
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Background Eraser",
+      "slug": "background-eraser",
+      "url": "https://starikov.co/background-eraser/",
+      "excerpt": "Remove white backgrounds from your images; background be gone!",
+      "feature_image": "https://starikov.co/content/images/2025/11/background_eraser.png",
+      "published_at": "2025-06-21T18:11:34.000Z",
+      "reading_time": 7,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Image Format Converter",
+      "slug": "image-converter",
+      "url": "https://starikov.co/image-converter/",
+      "excerpt": "Convert any image format with zero quality loss (i.e., where pixels go to change their clothes).",
+      "feature_image": "https://starikov.co/content/images/2025/11/image_converter.png",
+      "published_at": "2025-06-14T18:11:10.000Z",
+      "reading_time": 7,
+      "tags": [
+        {
+          "slug": "application"
+        },
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "AI Trivia Game",
+      "slug": "ai-trivia-game",
+      "url": "https://starikov.co/ai-trivia-game/",
+      "excerpt": "These are today's contestants... Claude, ChatGPT, and Gemini",
+      "feature_image": "https://starikov.co/content/images/2025/11/ai_trivia_game.png",
+      "published_at": "2025-06-11T00:15:08.000Z",
+      "reading_time": 16,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Unicodex",
+      "slug": "unicodex",
+      "url": "https://starikov.co/unicodex/",
+      "excerpt": "Gotta glyph 'em all!",
+      "feature_image": "https://starikov.co/content/images/2025/11/unicodex.png",
+      "published_at": "2025-06-08T18:11:49.000Z",
+      "reading_time": 17,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "YourTube History",
+      "slug": "yourtube-history",
+      "url": "https://starikov.co/yourtube-history/",
+      "excerpt": "Like and subscribe to find out what you've subscribed to!",
+      "feature_image": "https://starikov.co/content/images/2025/11/yourtube_history.png",
+      "published_at": "2025-06-07T18:11:18.000Z",
+      "reading_time": 33,
+      "tags": [
+        {
+          "slug": "application"
+        },
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "RSS for the Rest of Us",
+      "slug": "rss-fieldguide",
+      "url": "https://starikov.co/rss-fieldguide/",
+      "excerpt": "The feed that feeds your mind.",
+      "feature_image": "https://starikov.co/content/images/2025/11/rss_reading.png",
+      "published_at": "2025-06-01T18:11:38.000Z",
+      "reading_time": 12,
+      "tags": [
+        {
+          "slug": "technology"
+        },
+        {
+          "slug": "interests"
+        }
+      ]
+    },
+    {
+      "title": "Color Clipper",
+      "slug": "color-clipper",
+      "url": "https://starikov.co/color-clipper/",
+      "excerpt": "When hue need the exact colour.",
+      "feature_image": "https://starikov.co/content/images/2025/11/color_clipper.png",
+      "published_at": "2025-05-31T18:11:07.000Z",
+      "reading_time": 5,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Pomodoro Timer",
+      "slug": "pomodoro",
+      "url": "https://starikov.co/pomodoro/",
+      "excerpt": "A Pomodoro a day keeps the procrastination away.",
+      "feature_image": "https://starikov.co/content/images/2025/11/pomodoro.png",
+      "published_at": "2025-05-26T18:11:00.000Z",
+      "reading_time": 32,
+      "tags": [
+        {
+          "slug": "application"
+        }
+      ]
+    },
+    {
+      "title": "Missouri // 2025",
+      "slug": "missouri-2025",
+      "url": "https://starikov.co/missouri-2025/",
+      "excerpt": "Home is where memories eclipse photographs.",
+      "feature_image": "https://starikov.co/content/images/2025/11/blackwell_home_1-1.jpg",
+      "published_at": "2025-05-25T18:11:46.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "travel"
+        }
+      ]
+    },
+    {
+      "title": "Ukrainian Alphabet",
+      "slug": "ukrainian-alphabet",
+      "url": "https://starikov.co/ukrainian-alphabet/",
+      "excerpt": "33 letters, one language, one millennium.",
+      "feature_image": null,
+      "published_at": "2025-05-24T18:12:37.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "ukraine"
+        }
+      ]
+    },
+    {
+      "title": "Ukrainian Anthem",
+      "slug": "ukrainian-anthem",
+      "url": "https://starikov.co/ukrainian-anthem/",
+      "excerpt": "Ukraine’s glory has not yet perished, nor her freedom.",
+      "feature_image": null,
+      "published_at": "2025-05-24T18:11:26.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "ukraine"
+        }
+      ]
+    },
+    {
+      "title": "Project Starline takes a cosmic leap forward as Google Beam",
+      "slug": "hello-google-beam",
+      "url": "https://starikov.co/hello-google-beam/",
+      "excerpt": "Google's AI-first 3D video communication platform.",
+      "feature_image": "https://starikov.co/content/images/2025/05/google_beam-1.png",
+      "published_at": "2025-05-21T07:28:50.000Z",
+      "reading_time": 6,
+      "tags": [
+        {
+          "slug": "google"
+        }
+      ]
+    },
+    {
+      "title": "The Zero-Width Space-Place",
+      "slug": "zero-width-space",
+      "url": "https://starikov.co/zero-width-space/",
+      "excerpt": "Nothing to​​ see here.",
+      "feature_image": "https://starikov.co/content/images/2025/11/zero_width_space.png",
+      "published_at": "2025-05-18T19:00:12.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "technology"
+        },
+        {
+          "slug": "application"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "RSS: RSS Starter Set",
+      "slug": "rss-starter-set",
+      "url": "https://starikov.co/rss-starter-set/",
+      "excerpt": "My recommended RSS feeds—thoughtfully curated over a decade of reading.",
+      "feature_image": "https://starikov.co/content/images/2025/11/rss_reading-1.png",
+      "published_at": "2025-05-17T11:20:27.000Z",
+      "reading_time": 9,
+      "tags": [
+        {
+          "slug": "technology"
+        },
+        {
+          "slug": "interests"
+        }
+      ]
+    },
+    {
+      "title": "Wordleconomics",
+      "slug": "wordleconomics",
+      "url": "https://starikov.co/wordleconomics/",
+      "excerpt": "When in doubt, SLATE it out.",
+      "feature_image": "https://starikov.co/content/images/2025/11/positional_letter_counts.png",
+      "published_at": "2025-05-10T23:16:32.000Z",
+      "reading_time": 7,
+      "tags": [
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "Maposaurus, Napoleon, and 327,010 Steps",
+      "slug": "garmin-super-bowl",
+      "url": "https://starikov.co/garmin-super-bowl/",
+      "excerpt": "Evil Maposaurus prepare to meet your doom. Our hero has the power, glovebox is your tomb. Grab your Garmin take on the world.",
+      "feature_image": "https://starikov.co/content/images/2025/11/garmin_super_bowl.jpg",
+      "published_at": "2025-05-04T19:00:14.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "garmin"
+        },
+        {
+          "slug": "self"
+        }
+      ]
+    },
+    {
+      "title": "Happy Birthday, Bodie",
+      "slug": "happy-birthday-bodie",
+      "url": "https://starikov.co/happy-birthday-bodie/",
+      "excerpt": "Orange is the sky’s way of smiling before it says goodnight.",
+      "feature_image": "https://starikov.co/content/images/2025/11/bodie_i_1.jpg",
+      "published_at": "2025-05-04T01:34:28.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "pets"
+        }
+      ]
+    },
+    {
+      "title": "University of Missouri At Rolla featured in The Simpsons",
+      "slug": "university-of-missouri-at-rolla-featured-in-the-simpsons",
+      "url": "https://starikov.co/university-of-missouri-at-rolla-featured-in-the-simpsons/",
+      "excerpt": "It’s not often my college — Missouri University of Science and Technology, aka Missouri S&T — makes an appearance in pop culture. When it does, it’s kind of a big deal; at least me.\n\nSo I was incredibly happy to discover that Missouri S&T was featured in the Simpsons. This Reddit thread is where I found this, which lays out the premise:\n\nLisa was increasing her college tuition budget by gambling online. Every time she won more money, she changed her sweater to a \"better\" college. We [Rolla] are ",
+      "feature_image": "https://starikov.co/content/images/2025/04/lisa_university_of_missouri_at_rolla-2.png",
+      "published_at": "2025-04-26T23:14:50.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "missouri-s-t"
+        }
+      ]
+    },
+    {
+      "title": "Missouri // 2024",
+      "slug": "missouri-2024",
+      "url": "https://starikov.co/missouri-2024/",
+      "excerpt": "Last week I traveled back to my parents. After a rewarding yet exhausting month at work, travel, and COVID, I felt it was time to reconnect with nature.\n\nMy mom and I moved to Missouri in April of 2001, where I would remain until I graduated high school. The house has belong to my dad’s family for over 40 years now, it bears a lot of memories in its wooden bones.\n\nThe house is as rural as they come: the closest neighbor is a mile away and the closest town fifteen, everyone asks how you are even ",
+      "feature_image": "https://starikov.co/content/images/2025/11/blackwell_home_1.jpg",
+      "published_at": "2024-04-02T07:13:38.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "travel"
+        }
+      ]
+    },
+    {
+      "title": "Bookmarked Books",
+      "slug": "books",
+      "url": "https://starikov.co/books/",
+      "excerpt": "So many books, so little time.",
+      "feature_image": null,
+      "published_at": "2024-03-01T10:08:53.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "self"
+        },
+        {
+          "slug": "interests"
+        }
+      ]
+    },
+    {
+      "title": "Ukrainian Holidays 🇺🇦",
+      "slug": "ukrainian-holidays",
+      "url": "https://starikov.co/ukrainian-holidays/",
+      "excerpt": " * New Year’s Day Новий Рік January 1\n * Unity Day January 16\n * Cyborg Remembrance Day January 20\n * Mourning Day of the Beginning of the Russian invasion of Ukraine February 24\n * International Women’s Day Міжнародний жіночий день March 8\n * Labour Day День праці May 1\n * Easter\n * Second World War Remembrance Day May 7\n * Victory Day (over Nazism in World War II) ‌День пам'яті та перемоги над нацизмом у Другій світовій війні May 8\n * Trinity (Pentecost) Трійця\n * Constitution Day День Констит",
+      "feature_image": null,
+      "published_at": "2024-02-26T06:14:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "ukraine"
+        }
+      ]
+    },
+    {
+      "title": "Ukrainian Movies & Shows 🇺🇦",
+      "slug": "ukrainian-movies-shows",
+      "url": "https://starikov.co/ukrainian-movies-shows/",
+      "excerpt": " * Servant of the People Netflix\n * Chernobyl HBO\n * Babushkas of Chernobyl\n * Mavka: The Forest Song Hulu\n\nThe following are films about the 2014 invasion-present day war. Viewer discretion advised.\n\n * 20 Days In Mariupol\n * Donbass\n * Winter on Fire: Ukraine's Fight For Freedom Netflix\n * Breaking Point\n * Freedom on Fire\n * Heroes Never Die Tubi\n * Klondike (2022)\n * A House Made of Splinters\n * Sniper. The White Raven Prime",
+      "feature_image": null,
+      "published_at": "2024-02-26T06:13:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "ukraine"
+        }
+      ]
+    },
+    {
+      "title": "Ukrainian Clothing 🇺🇦",
+      "slug": "ukrainian-clothing",
+      "url": "https://starikov.co/ukrainian-clothing/",
+      "excerpt": "Directly from Ukraine\n\n * ETNODIM\n * Aviatsiya Halychyny\n * Shkoura\n * Sleeper (women only)\n * O.TAJE (women only)\n\nSupport Ukraine directly\n\n * Saint Javelin\n * NAFO",
+      "feature_image": null,
+      "published_at": "2024-02-26T06:12:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "ukraine"
+        }
+      ]
+    },
+    {
+      "title": "Ukrainian Books 🇺🇦",
+      "slug": "ukrainian-books",
+      "url": "https://starikov.co/ukrainian-books/",
+      "excerpt": "Non-Fiction\n\n * The Gates of Europe: A History of Ukraine Serhii Plokhy\n * The Russo-Ukrainian War: The Return of History Serhii Plokhy\n * Red Famine Anne Applebaum.\n * Bloodlands\n * Ukraine: What Everyone Needs to Know\n * Voices of Chernobyl\n * Midnight in Chernobyl: The Untold Story of the World's Greatest Nuclear Disaster\n\nFiction\n\n * Death and the Penguin Andrey Kurkov\n * I Will Die in a Foreign Land\n\nCookbooks\n\n * Mamushka",
+      "feature_image": null,
+      "published_at": "2024-02-26T06:10:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "ukraine"
+        }
+      ]
+    },
+    {
+      "title": "Mallory",
+      "slug": "mallory",
+      "url": "https://starikov.co/mallory/",
+      "excerpt": "Birthday February 3rd, 2019\n\nNicknames велика свиня, Bubs, Mal, Chunky Monkey, Stench Under The Bench, Fatness BellyQueen\n\nLikes\n\n * Food\n * Belly rubs\n * Being alone with you\n\nDislikes\n\n * Not getting food\n * Being picked up\n * Petting in ears\n\nFavorite Spots\n\n * Under the main bed\n * In the main bedroom closet\n * Under blankets on the couch/bed",
+      "feature_image": "https://starikov.co/content/images/2025/11/mallory.jpg",
+      "published_at": "2024-02-25T08:00:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "pets"
+        },
+        {
+          "slug": "interests"
+        }
+      ]
+    },
+    {
+      "title": "Bodie",
+      "slug": "bodie",
+      "url": "https://starikov.co/bodie/",
+      "excerpt": "Birthday May 3rd, 2011\n\nNicknames Mr. Bodie, Bad Cat, Orange Cat\n\nBodie came into my life after my partner’s parents retired. They asked if we wanted him, and we said “Of course”.\n\nAt first, it was not an easy transition. He didn’t get along with Mallory. He gets upset in the middle of the night and cries. He gets upset in the middle of the day and cries.\n\nBut now he is an integral part of this family.\n\nLikes\n\n * Sous-vide meats, chicken, steak, etc.\n * Being near people\n * Being outside\n * Back",
+      "feature_image": "https://starikov.co/content/images/2025/11/bodie_2.jpg",
+      "published_at": "2024-02-25T08:00:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "pets"
+        },
+        {
+          "slug": "interests"
+        }
+      ]
+    },
+    {
+      "title": "Two Years of War",
+      "slug": "two-years-of-war",
+      "url": "https://starikov.co/two-years-of-war/",
+      "excerpt": "I hate this time of year.\n\nThere is a strange part of me deep down that knows it’s time. Time to mourn. Time to have anxiety. Time to feel not in control.\n\n2022 was the worst year in many of our lives. Every year I do my best to pull myself together, bit my bit. And I largely succeed, until February.\n\nEvery February I start feeling in control, but come March I’m in a much worse place. It’s a force that drags me under and keeps me there.\n\nNow that 2.24 has passed, I find myself picking up the pie",
+      "feature_image": null,
+      "published_at": "2024-02-24T23:17:26.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "ukraine"
+        }
+      ]
+    },
+    {
+      "title": "Hello, World",
+      "slug": "hello-world",
+      "url": "https://starikov.co/hello-world/",
+      "excerpt": "Hello👋 I’m Illya Starikov. Welcome to my personal blog.\n\nOver the years, I’ve made many iterations of blogs. Blogs about Apple, technology, programming, portfolios, entertainment. This one is just about me.\n\nMy interests, that I will likely write about, include:\n\n * Cats\n * Programming\n * Technology\n * Traveling\n * Video games\n * Running, lifting, basketball\n * Photography\n\nHope you enjoy!\n\nThere is no greater agony than bearing an untold story inside you. Maya Angelou",
+      "feature_image": null,
+      "published_at": "2024-02-20T10:01:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "self"
+        }
+      ]
+    },
+    {
+      "title": "Google Beam",
+      "slug": "google-beam",
+      "url": "https://starikov.co/google-beam/",
+      "excerpt": "Feel like you're there, together.",
+      "feature_image": "https://starikov.co/content/images/2025/04/project-starline-official-1.jpeg",
+      "published_at": "2023-09-01T07:00:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "google"
+        },
+        {
+          "slug": "work"
+        }
+      ]
+    },
+    {
+      "title": "GDL-60",
+      "slug": "gdl60",
+      "url": "https://starikov.co/gdl60/",
+      "excerpt": "Streamline your flight prep, and enjoy your aircraft more with the GDL 60 datalink and PlaneSync™ technology.",
+      "feature_image": "https://starikov.co/content/images/2024/02/GDL60_cutout_d.png",
+      "published_at": "2023-07-24T07:00:00.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "garmin"
+        },
+        {
+          "slug": "work"
+        }
+      ]
+    },
+    {
+      "title": "Pixel Tablet",
+      "slug": "pixel-tablet",
+      "url": "https://starikov.co/pixel-tablet/",
+      "excerpt": "Meet the new Google Pixel Tablet that’s helpful in your hands and at home.",
+      "feature_image": "https://starikov.co/content/images/2025/04/pixel_tablet_cutout_d.png",
+      "published_at": "2023-07-20T07:00:00.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "google"
+        },
+        {
+          "slug": "work"
+        }
+      ]
+    },
+    {
+      "title": "Pixel Buds Pro (I & II)",
+      "slug": "pixel-buds-pro",
+      "url": "https://starikov.co/pixel-buds-pro/",
+      "excerpt": "Loud and clear, Pixel Buds Pro are here.",
+      "feature_image": "https://starikov.co/content/images/2025/04/pixel_buds_pro_cutout_d.png",
+      "published_at": "2022-07-28T07:00:00.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "google"
+        },
+        {
+          "slug": "work"
+        }
+      ]
+    },
+    {
+      "title": "Nest Indoor Camera",
+      "slug": "nest-camera",
+      "url": "https://starikov.co/nest-camera/",
+      "excerpt": "Nest Cam tells you more about what’s going on inside.",
+      "feature_image": "https://starikov.co/content/images/2024/03/nest_cam_cutout_h.png",
+      "published_at": "2021-10-05T07:00:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "google"
+        },
+        {
+          "slug": "work"
+        }
+      ]
+    },
+    {
+      "title": "Garmin Epitaph",
+      "slug": "garmin-epitaph",
+      "url": "https://starikov.co/garmin-epitaph/",
+      "excerpt": "The following is my goodbye email to Garmin, with names censored.\n\nI joined Garmin in 2017, during my junior year of college. Bright eyed and bushy tailed, I drove to Los Angeles for my first internship at the Los Angeles office. It was an awesome opportunity, and I can’t thank S.S. enough for it.\n\nShortly after, I joined the Rolla office under T.S. I got my first taste of aviation software, working on an uncertified tool for Interfaces. I learned a lot from my mentor, A.H., and just as much fro",
+      "feature_image": null,
+      "published_at": "2019-11-05T00:09:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "garmin"
+        }
+      ]
+    },
+    {
+      "title": "Evolutionary Algorithms Endgame Dynamics",
+      "slug": "ea-endgame",
+      "url": "https://starikov.co/ea-endgame/",
+      "excerpt": "Adaptive Restarts and Termination Conditions",
+      "feature_image": null,
+      "published_at": "2018-11-13T19:11:00.000Z",
+      "reading_time": 6,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "Evolutionary Algorithms Recombination Operators",
+      "slug": "ea-operators",
+      "url": "https://starikov.co/ea-operators/",
+      "excerpt": "Permutation, Integer, and Real-Valued Crossover",
+      "feature_image": "https://starikov.co/content/images/2025/11/davis_crossover-1.gif",
+      "published_at": "2018-11-11T19:11:00.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "Steepest-Ascent Hill-Climbing",
+      "slug": "steepest-ascent-hill-climbing",
+      "url": "https://starikov.co/steepest-ascent-hill-climbing/",
+      "excerpt": "Search algorithms have a tendency to be complicated. Genetic algorithms have a lot of theory behind them. Adversarial algorithms[^1] have to account for two, conflicting agents. Informed search relies heavily on heuristics. Well, there is one algorithm that is quite easy to grasp right off the bat.\n\nImagine you are at the bottom of a hill; you have no idea where to go. A decent place to start would be to go up the hill to survey the landscape. Then, restart to find a higher peak until you find t",
+      "feature_image": "https://starikov.co/content/images/2025/11/hill_climbing_simple-1.png",
+      "published_at": "2018-11-02T18:11:00.000Z",
+      "reading_time": 6,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "The Importance of Parameter Tuning In Evolutionary Algorithms",
+      "slug": "ea-parameter-tuning",
+      "url": "https://starikov.co/ea-parameter-tuning/",
+      "excerpt": "This is an extension of a blog post I wrote a couple months ago. You can find it here.\n\nOne of the big takeaways in my introduction to Evolutionary Algorithms was the sheer number of numerical parameters.\n\n * \\(\\mu\\) And \\(\\lambda\\)\n * Mutation Rate\n * \\(k\\) in k-Tournament Selection\n\nNot only this, but the sheer number of parameters:\n\n * The genotype\n * The mutator operator\n * The survivor selection algorithm\n\nAnd one might be wondering, what is the best operator for \\(x\\) or \\(y\\)? Let’s look ",
+      "feature_image": "https://starikov.co/content/images/2025/11/ea_parameter_tuning-1.png",
+      "published_at": "2018-10-04T00:33:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "The Reusability Of Evolutionary Algorithms",
+      "slug": "ea-reuse",
+      "url": "https://starikov.co/ea-reuse/",
+      "excerpt": "3-SAT Solving With EAs",
+      "feature_image": "https://starikov.co/content/images/2025/11/sat_result.png",
+      "published_at": "2018-10-01T18:11:00.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "On Being Passionate About Tools",
+      "slug": "being-passionate-about-tools",
+      "url": "https://starikov.co/being-passionate-about-tools/",
+      "excerpt": "Get to work. Grab a cup of coffee, some water. Possibly breakfast.\n\nSit down at my desk. Log into my computer, look at i3wm.\n\nLaunch a new terminal session. ranger. Enter. Navigate to project. nvim. Enter.\n\nspace f. Use fzf to open necessary file.\n\nThis is a daily workflow for me. Before I start typing code, I use about four tools to get to it. Notice, I haven’t mentioned touching the mouse once yet; Because I haven't touched the mouse yet.\n\nThroughout my academic and professional career as a so",
+      "feature_image": null,
+      "published_at": "2018-09-27T23:40:00.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "software-engineering"
+        }
+      ]
+    },
+    {
+      "title": "A Curious Shebang",
+      "slug": "curious-shebang",
+      "url": "https://starikov.co/curious-shebang/",
+      "excerpt": "If you've ever written a shell script, you'd top your script with your interpreter of choice (i.e. #!/bin/python or #!/bin/bash). What you might not know is that rm is also a valid interpreter. Take the following script.\n\n#!/bin/rm\necho \"Hello, world\"\n\n\nIt would simply interpret to be removed. Useful? No. Hilarious? Yes.",
+      "feature_image": null,
+      "published_at": "2018-09-27T22:50:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Calculating Euler's Number",
+      "slug": "calculating-eulers-number",
+      "url": "https://starikov.co/calculating-eulers-number/",
+      "excerpt": "We are well aware of Euler’s famous number,\n\n$$\ne = 2.71828182845\n$$\n\nThere are also quite a few ways of deriving Euler’s Number. There’s the Taylor expansion method:\n\n$$\ne = \\sum _{k=0} ^{\\infty} \\frac{1}{k!}\n$$\n\nThere is also the classical limit form:\n\n$$\ne = \\lim_{n \\rightarrow \\infty} \\left( 1 + \\frac{1}{n} \\right)^n\n$$\n\nThen there is another. Let \\(R\\) be a random number generated between \\([0, 1]\\), inclusive. Then \\(e\\) is the average of the number of \\(R\\)s it takes to sum greater than \\",
+      "feature_image": "https://starikov.co/content/images/2025/11/calculating_eulers_number-1.png",
+      "published_at": "2018-09-24T00:31:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "mathematics"
+        }
+      ]
+    },
+    {
+      "title": "An Evolutionary Approach To Problem Solving",
+      "slug": "ea-intro",
+      "url": "https://starikov.co/ea-intro/",
+      "excerpt": "Arguably the first (and most successful) problem solver we know of is Evolution. Humans (along with other species) all share a common problem: becoming the best at surviving our environment.\n\nJust as Darwinian finches evolved their beaks to survive different parts of the Galápagos Islands, we too evolved to survive different parts of the world. And we can program a computer to do the same.\n\nEvolution inspired a whole generation of problem solving, commonly known as Evolutionary Algorithms (EAs).",
+      "feature_image": "https://starikov.co/content/images/2025/11/ea_intro.png",
+      "published_at": "2018-09-13T02:59:00.000Z",
+      "reading_time": 11,
+      "tags": [
+        {
+          "slug": "ai"
+        },
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "My LaTeX Preamble",
+      "slug": "my-latex-preamble",
+      "url": "https://starikov.co/my-latex-preamble/",
+      "excerpt": "One of the most valuable skills I have learned in the past year is undoubtedly LaTeX — so much so that I have moved almost all of my notetaking and document writing to LaTeX or Pandoc.\n\nHowever, with almost any markup language, I ran into friction: constantly importing headers and defining commands I used in every document. Some commands have become muscle memory. When I got compiler errors every time I forgot to redefine them, I became quite frustrated. So I caved: I made a preamble that I appe",
+      "feature_image": null,
+      "published_at": "2018-09-12T23:49:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Computer Science Advice From A Computer Science Graduate",
+      "slug": "cs-advice-cs-graduate",
+      "url": "https://starikov.co/cs-advice-cs-graduate/",
+      "excerpt": "Reminiscing on my academic career, there are certainly things I did right; however, there are certainly things I did wrong. Aside from the rights and the wrongs, there are things I had wished I had done sooner. Today, I hope to shed some light on some of these things.\n\nFor context, as of a month ago I am an alumnus of Missouri University of Science and Technology, an engineering college in Missouri. It has equipped me very well in mathematics[1], physics[2], and computer science[3]. I wrote roug",
+      "feature_image": null,
+      "published_at": "2018-08-11T05:57:00.000Z",
+      "reading_time": 3,
+      "tags": [
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "Missouri S&T Satellite Team: Mr & Mrs Satellite",
+      "slug": "mr-mrs-sat",
+      "url": "https://starikov.co/mr-mrs-sat/",
+      "excerpt": "Missouri made. Space grade.",
+      "feature_image": "https://starikov.co/content/images/2025/11/mr_mrs_sat.jpg",
+      "published_at": "2018-06-04T18:11:00.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "missouri-s-t"
+        },
+        {
+          "slug": "work"
+        }
+      ]
+    },
+    {
+      "title": "Sorting Algorithms Compared",
+      "slug": "sorting-algorithms-compared",
+      "url": "https://starikov.co/sorting-algorithms-compared/",
+      "excerpt": "Ever wondered how sorting algorithms look in Swift? I did too—so I implemented some. Below you can find the following:\n\n * Bubble Sort\n * Selection Sort\n * Insertion Sort\n * Merge Sort\n * Quicksort\n\nAs a preface: some of the algorithms use a custom swap function—it is as follows:\n\nextension Array {\n    mutating func swap(i: Int, _ j: Int) {\n        (self[i], self[j]) = (self[j], self[i])\n    }\n}\n\n\n\nBubble Sort\n\nfunc bubbleSort(var unsorted: Array<Int>) -> Array<Int> {\n    for i in 0..<unsorted.c",
+      "feature_image": null,
+      "published_at": "2017-11-12T19:11:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "computer-science"
+        }
+      ]
+    },
+    {
+      "title": "On Understanding, Not Just Memorizing",
+      "slug": "understand-not-memorize",
+      "url": "https://starikov.co/understand-not-memorize/",
+      "excerpt": "Throughout my undergraduate studies, I've become good at digging deeper until I completely understand a subject. But when I look around me, I realize I'm in the minority. Often, students only want to know how to get from question to answer without any intermediate thinking. I can't pinpoint a definitive reason why, but I have one hypothesis: encapsulation[1].\n\nThe most famous example I've encountered is the derivative of any trigonometric function besides \\(\\sin x\\) or \\(\\cos x\\). As any student",
+      "feature_image": null,
+      "published_at": "2017-11-11T19:11:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "mathematics"
+        }
+      ]
+    },
+    {
+      "title": "House of Cards (Kattis Problem)",
+      "slug": "house-of-cards-problem",
+      "url": "https://starikov.co/house-of-cards-problem/",
+      "excerpt": "It’s not so often I come across a problem that works out so beautifully yet requires so many different aspects in competitive programming. One particular problem, courtesy of Kattis, really did impress me.\n\nThe problem was House of Cards, and the problem was this (skip for TL;DR at bottom):\n\nBrian and Susan are old friends, and they always dare each other to do reckless things. Recently Brian had the audacity to take the bottom right exit out of their annual maze race, instead of the usual top l",
+      "feature_image": "https://starikov.co/content/images/2025/11/house_of_cards.png",
+      "published_at": "2017-06-26T00:50:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Avoid The Mac App Store via The Terminal",
+      "slug": "macos-software-update",
+      "url": "https://starikov.co/macos-software-update/",
+      "excerpt": "I avoid the Mac App Store as much as possible. It's buggy. It's slow. Apps are getting pulled from it left and right. But I couldn't avoid it permanently because of software updates. As macOS Sierra 10.12 rolled out, I clicked on the App Store, followed by updates, and...\n\nI couldn't get the updates page to open. Killed App Store. Restarted computer. Everything.\n\nAfter doing some research, I discovered there's a way to update software from the terminal: softwareupdate. So, after running one comm",
+      "feature_image": null,
+      "published_at": "2017-06-17T07:25:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "C++ Syntactic Peculiarities",
+      "slug": "cpp-syntactic-peculiarities",
+      "url": "https://starikov.co/cpp-syntactic-peculiarities/",
+      "excerpt": "After using a fairly large, mature language for a reasonable period of time, finding peculiarities in the language or its libraries is guaranteed to happen. However, given its history, I have to say C++ definitely allows for some of the strangest peculiarities in its syntax. Below I list three that are my favorite.\n\n\nTernaries Returning lvalues\n\nYou might be familiar with ternaries as condition ? do something : do something else, and they become quite useful in comparison to the standard if-else",
+      "feature_image": null,
+      "published_at": "2017-06-17T07:15:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Vim Autorun",
+      "slug": "vim-autorun-2",
+      "url": "https://starikov.co/vim-autorun-2/",
+      "excerpt": "One of the reasons I kept CodeRunner handy was its ability to quickly compile code. With a single click of a button, I could run any of my frequently used languages. It didn’t matter if it was an interpreted or compiled language, so I could virtually run anything, like:\n\n * C/C++\n * Python\n * Lua\n * LaTeX\n * Perl\n\nHowever, in the last few months I started using Vim. Heavily. So much so I was trying to use Vim commands in the CodeRunner buffers. So I decided I wanted to have the functionality, an",
+      "feature_image": null,
+      "published_at": "2017-06-17T07:15:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Trailing Whitespace",
+      "slug": "trailing-whitespace",
+      "url": "https://starikov.co/trailing-whitespace/",
+      "excerpt": "One of the most frustrating things to deal with is the trailing space. Trailing spaces are such a pain because\n\n * They can screw up string literals\n * They can break expectations in a text editor (i.e. jumping to a new line or the end of the line)\n * They can actually break programming languages\n * They are just unflattering\n\nHowever, in Vim, it takes one autocmd to alleviate this.\n\naugroup spaces\nautocmd!\nautocmd BufWritePre \\* %s/s+$//e\naugroup END\n\n\nOn every buffer save substitute spaces at ",
+      "feature_image": null,
+      "published_at": "2017-05-24T02:47:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Mercedes-Benz NTG5 STAR2",
+      "slug": "garmin-ntg5-star2",
+      "url": "https://starikov.co/garmin-ntg5-star2/",
+      "excerpt": "Fully integrated high-end multimedia system with 6-disc DVD changer, hard-drive navigation system, internet browser, telephony plus DVD video and Music Register, shown on high-resolution 21.3 cm colour TFT display.",
+      "feature_image": "https://starikov.co/content/images/2024/02/NTG5-STAR2.jpeg",
+      "published_at": "2017-05-01T07:00:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "garmin"
+        },
+        {
+          "slug": "work"
+        }
+      ]
+    },
+    {
+      "title": "Avoiding eqnarray",
+      "slug": "avoid-eqnarray",
+      "url": "https://starikov.co/avoid-eqnarray/",
+      "excerpt": "Since reading about its faults in The Not So Short Introduction to LaTeX (highly recommended read), I've avidly stayed away from eqnarray. However, I don't think the book conveys the ideas as well as it should. Its suggestion was IEEEeqnarray, as opposed to the classically recommended align. This article from the TeX Users Group conveys them more eloquently and provides better alternatives.",
+      "feature_image": null,
+      "published_at": "2017-03-29T19:13:00.000Z",
+      "reading_time": 0,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "latexerr",
+      "slug": "latexerr",
+      "url": "https://starikov.co/latexerr/",
+      "excerpt": "The most frustrating thing about compiling LaTeX in a terminal is the wall of text that gets written to stdout. An easy solution would be piping to /dev/null—except then you wouldn't be able to get error messages (even if you only pipe stdout to /dev/null and keep stderr). So, I made a solution that handles compiling by piping error messages to less. The syntax latexerr FILENAME will compile the file. Passing --clean will delete temporary LaTeX files.\n\n#!/bin/bash\n\n# USAGE: ./script FILE --clean",
+      "feature_image": null,
+      "published_at": "2017-03-10T18:34:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "computer-science"
+        },
+        {
+          "slug": "code"
+        }
+      ]
+    },
+    {
+      "title": "Painting Gabriel’s Horn",
+      "slug": "gabriels-horn",
+      "url": "https://starikov.co/gabriels-horn/",
+      "excerpt": "A horn you can fill with paint, but you can't paint the surface.",
+      "feature_image": "https://starikov.co/content/images/2025/11/gabriels_horn.png",
+      "published_at": "2016-10-10T18:11:00.000Z",
+      "reading_time": 1,
+      "tags": [
+        {
+          "slug": "mathematics"
+        }
+      ]
+    },
+    {
+      "title": "The Monty Hall Problem",
+      "slug": "monty-hall-problem",
+      "url": "https://starikov.co/monty-hall-problem/",
+      "excerpt": "The Monty Hall Problem\n\nYou've seen it in movies or read about it in books: the Monty Hall Problem. Here's how it works: you're on a game show. There are three doors—behind one is a prize, behind the other two is nothing but disappointment. You pick a door. The host, Monty Hall, opens one of the other doors and reveals there's no prize behind it. Keeping the other two doors closed, he asks if you'd like to switch your choice or stick with your original pick. What should you do? Ben Campbell has ",
+      "feature_image": "https://starikov.co/content/images/2025/11/monty_hall-1.png",
+      "published_at": "2016-09-16T21:17:00.000Z",
+      "reading_time": 2,
+      "tags": [
+        {
+          "slug": "code"
+        },
+        {
+          "slug": "mathematics"
+        }
+      ]
+    },
+    {
+      "title": "Apps of 2014",
+      "slug": "apps-of-2014",
+      "url": "https://starikov.co/apps-of-2014/",
+      "excerpt": "My favorites from a landmark year.",
+      "feature_image": null,
+      "published_at": "2014-12-24T19:11:00.000Z",
+      "reading_time": 5,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "iOS 8 Guide",
+      "slug": "ios-8",
+      "url": "https://starikov.co/ios-8/",
+      "excerpt": "Your complete guide to iOS 8.",
+      "feature_image": null,
+      "published_at": "2014-09-17T18:11:00.000Z",
+      "reading_time": 4,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "Apple Keynote: September 9th, 2014",
+      "slug": "apple-keynote-september-2014",
+      "url": "https://starikov.co/apple-keynote-september-2014/",
+      "excerpt": "iPhone 6, Apple Pay, and One More Thing.",
+      "feature_image": null,
+      "published_at": "2014-09-09T18:11:00.000Z",
+      "reading_time": 6,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "Into The Rabbit Hole of Markdown Editors",
+      "slug": "markdown-editors",
+      "url": "https://starikov.co/markdown-editors/",
+      "excerpt": "My deep dive into Markdown editors.",
+      "feature_image": null,
+      "published_at": "2014-01-12T19:11:00.000Z",
+      "reading_time": 11,
+      "tags": [
+        {
+          "slug": "technology"
+        }
+      ]
+    },
+    {
+      "title": "Breakdown of My Homescreen",
+      "slug": "homescreen-breakdown",
+      "url": "https://starikov.co/homescreen-breakdown/",
+      "excerpt": "A method to the madness.",
+      "feature_image": null,
+      "published_at": "2014-01-11T19:11:00.000Z",
+      "reading_time": 7,
+      "tags": [
+        {
+          "slug": "technology"
+        },
+        {
+          "slug": "self"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Google",
+      "slug": "google",
+      "accent_color": "#3DDC84",
+      "description": "One curious user's notes on the hardware of everyday computing. Opinions are my own.",
+      "count": 5
+    },
+    {
+      "name": "Ukraine",
+      "slug": "ukraine",
+      "accent_color": "#FFDD00",
+      "description": "A standing tribute to Ukrainian culture and language, and the joyful work of remembering where you come from.",
+      "count": 7
+    },
+    {
+      "name": "Garmin",
+      "slug": "garmin",
+      "accent_color": "#6DCFF6",
+      "description": "Dispatches from a former life building embedded hardware, the kind with no undo button once it leaves the factory. Opinions are my own.",
+      "count": 4
+    },
+    {
+      "name": "Missouri S&T",
+      "slug": "missouri-s-t",
+      "accent_color": "#154734",
+      "description": "Four years at an engineering school, and the projects that turned lecture-hall theory into something that switches on.",
+      "count": 5
+    },
+    {
+      "name": "Pets",
+      "slug": "pets",
+      "accent_color": "#F6AF7B",
+      "description": "In defense of the household animal, who contributes nothing, demands everything, and is adored regardless.",
+      "count": 4
+    },
+    {
+      "name": "Travel",
+      "slug": "travel",
+      "accent_color": "#87CEEB",
+      "description": "Notes from the road and the trail, on the underrated art of going somewhere with no particular agenda.",
+      "count": 3
+    },
+    {
+      "name": "Code",
+      "slug": "code",
+      "accent_color": "#00D084",
+      "description": "Notes from the keyboard on the craft of building software, where the simplest idea is usually the one that survives.",
+      "count": 23
+    },
+    {
+      "name": "Technology",
+      "slug": "technology",
+      "accent_color": "#C4B7FF",
+      "description": "Gadgets, tools, and the small obsessions of a life lived through good hardware. Enthusiasm, applied responsibly.",
+      "count": 20
+    },
+    {
+      "name": "Mathematics",
+      "slug": "mathematics",
+      "accent_color": "#FF9AA2",
+      "description": "The quiet thrill of a proof that finally clicks. Puzzles, paradoxes, and the strange beauty hiding in plain arithmetic.",
+      "count": 4
+    },
+    {
+      "name": "Application",
+      "slug": "application",
+      "accent_color": "#0A84FF",
+      "description": "Small software that does one thing and then gets out of your way. Browser tools and toys, with no accounts and no ulterior motives.",
+      "count": 16
+    },
+    {
+      "name": "Computer Science",
+      "slug": "computer-science",
+      "accent_color": "#A8E6C0",
+      "description": "The ideas under the software: algorithms, theory, and the comforting news that the fundamentals never really change.",
+      "count": 22
+    },
+    {
+      "name": "Self",
+      "slug": "self",
+      "accent_color": "#FDFD96",
+      "description": "The personal file: milestones, missteps, and a few lessons that took embarrassingly long to learn.",
+      "count": 10
+    },
+    {
+      "name": "Interests",
+      "slug": "interests",
+      "accent_color": "#5DBB63",
+      "description": "The good, unproductive corners of life, and what's worth your time when nothing at all is due.",
+      "count": 7
+    },
+    {
+      "name": "AI",
+      "slug": "ai",
+      "accent_color": "#F9A8D4",
+      "description": "What the machines can do, what they can't, and why the gap is the whole story. The long view on AI, hold the hype.",
+      "count": 14
+    },
+    {
+      "name": "Work",
+      "slug": "work",
+      "accent_color": null,
+      "description": "The day job, told honestly: the projects, the people, and the quiet pleasure of shipping something real.",
+      "count": 7
+    },
+    {
+      "name": "Software Engineering",
+      "slug": "software-engineering",
+      "accent_color": "#7FE5F0",
+      "description": "Building software is the easy part. Building it with other people is the job. Notes from the trade.",
+      "count": 10
+    }
+  ]
+}

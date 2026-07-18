@@ -1,0 +1,217 @@
+---
+/*
+ * /writing -- the Ghost essay index (design spec §3): "~94 Ghost essays,
+ * year-grouped, tag filter; rows link out to starikov.co". No local essay
+ * routes in v1 (design spec §10: "Essays: link-out in v1; stubs in v1.1") --
+ * every row is an external link, `rel="noopener"`, marked with `↗`.
+ *
+ * Year groups are newest-first, rows within a year newest-first (pure logic
+ * in `src/lib/essays.ts`, unit-tested). The tag filter chips are a
+ * progressive enhancement: every row renders visible with no JS (a plain,
+ * complete index), and `src/scripts/writing.ts` toggles the `hidden`
+ * attribute per row (no layout thrash) once it wires up. A year section with
+ * zero visible rows after filtering hides too, so filtering never leaves an
+ * orphan "2019" heading over nothing.
+ */
+import { getCollection } from 'astro:content';
+import Shell from '../../layouts/Shell.astro';
+import LedgerRow from '../../components/LedgerRow.astro';
+import {
+  groupByYear,
+  filterableTagChips,
+  firstTagAccent,
+  formatEssayDate,
+  type EssayRow,
+} from '../../lib/essays';
+
+const essayEntries = await getCollection('essays');
+const tagEntries = await getCollection('essayTags');
+const tagBySlug = new Map(
+  tagEntries.map((t) => [t.id, { name: t.data.name, accentColor: t.data.accentColor }]),
+);
+
+const rows: EssayRow[] = essayEntries.map((e) => ({
+  slug: e.id,
+  title: e.data.title,
+  url: e.data.url,
+  publishedAt: e.data.publishedAt,
+  readingTime: e.data.readingTime,
+  tags: e.data.tags,
+}));
+
+const years = groupByYear(rows);
+const count = rows.length;
+
+// Filter chips: only tags with >= 3 essays (design spec), sorted by count
+// descending -- a tag with one or two posts isn't worth a chip.
+const chips = filterableTagChips(
+  tagEntries.map((t) => ({
+    slug: t.id,
+    name: t.data.name,
+    accentColor: t.data.accentColor,
+    count: t.data.count,
+  })),
+);
+---
+
+<Shell
+  title="writing — starikov.io"
+  description="Essays on software, systems, and the occasional detour -- written and read at starikov.co."
+  crumbs={[{ href: '/writing', label: 'writing' }]}
+  pageType="writing"
+>
+  <div class="writing">
+    <header class="writing__head">
+      <h1>Writing</h1>
+      <p class="writing__note">Essays live at starikov.co — this is the index.</p>
+    </header>
+
+    {
+      count === 0 ? (
+        <p class="writing__empty">
+          No essays loaded for this build -- read directly at{' '}
+          <a href="https://starikov.co" target="_blank" rel="noopener noreferrer">
+            starikov.co ↗
+          </a>
+          .
+        </p>
+      ) : (
+        <>
+          {chips.length > 0 && (
+            <div class="writing__chips" role="group" aria-label="Filter essays by tag">
+              <button type="button" class="chip" data-tag-filter="all" aria-pressed="true">
+                All <span class="chip__count">{count}</span>
+              </button>
+              {chips.map((c) => (
+                <button type="button" class="chip" data-tag-filter={c.slug} aria-pressed="false">
+                  {c.name} <span class="chip__count">{c.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {years.map((group) => (
+            <section class="writing__year" data-year-group>
+              <h2 class="writing__year-label">{group.year}</h2>
+              <div class="writing__list">
+                {group.rows.map((row) => {
+                  const dot = firstTagAccent(row.tags, tagBySlug);
+                  return (
+                    <div class="writing__row" data-writing-row data-tags={row.tags.join(',')}>
+                      <LedgerRow
+                        href={row.url}
+                        title={row.title}
+                        meta={[`${row.readingTime} min read`, formatEssayDate(row.publishedAt)]}
+                        tag={dot ? { label: dot.name, accent: dot.accent } : undefined}
+                        external
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </>
+      )
+    }
+  </div>
+</Shell>
+
+<script>
+  import '../../scripts/writing.ts';
+</script>
+
+<style>
+  .writing {
+    max-width: 720px;
+  }
+
+  .writing__head {
+    margin-bottom: var(--s-6);
+  }
+
+  .writing__head h1 {
+    margin-top: var(--s-2);
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+
+  .writing__note {
+    margin-top: var(--s-3);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+  }
+
+  .writing__empty {
+    color: var(--text-secondary);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Filter chips -- progressive enhancement, see src/scripts/writing.ts.
+   * ------------------------------------------------------------------- */
+  .writing__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-bottom: var(--s-6);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    padding: var(--s-1) var(--s-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    line-height: 1.6;
+    cursor: pointer;
+    transition:
+      border-color var(--dur-2) var(--ease-out),
+      background var(--dur-2) var(--ease-out),
+      color var(--dur-2) var(--ease-out);
+  }
+
+  .chip:hover,
+  .chip:focus-visible {
+    color: var(--fg);
+    border-color: var(--accent);
+  }
+
+  /* The selected chip: NOT the tag's own accent (chips are the site's own
+     control, not a per-tag surface -- blend-safety keeps arbitrary Ghost
+     accent colors confined to the row dot). */
+  .chip[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--fg);
+  }
+
+  .chip__count {
+    opacity: 0.7;
+    font-size: var(--fs-12);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Year groups
+   * ------------------------------------------------------------------- */
+  .writing__year {
+    margin-top: var(--s-7);
+  }
+
+  .writing__year:first-of-type {
+    margin-top: 0;
+  }
+
+  .writing__year-label {
+    padding-bottom: var(--s-2);
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+    font: 600 var(--fs-16) / 1 var(--font-mono);
+    color: var(--text-secondary);
+  }
+</style>

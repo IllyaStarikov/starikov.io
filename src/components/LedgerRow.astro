@@ -5,7 +5,13 @@
  * and a mono meta trail. External rows link out with a `↗`. The whole row is a
  * link target; meta chips sit to the right on wide viewports.
  *
- * A shell primitive; the pages that lay these into lists arrive in later tasks.
+ * The optional `tag` prop is the tag-dot convention /writing and the home
+ * essay rows use (design spec §3): an 8px dot in the tag's Ghost accent color
+ * -- set as an inline `--dot` custom property, never a class per color, since
+ * the palette is open-ended -- followed by the tag name in `--text-secondary`.
+ * The accent is used ONLY for the dot background; the name stays the ledger's
+ * normal meta color (blend-safety: color is chrome, never the sole
+ * meaning-carrier, and never applied as a text color).
  */
 interface Props {
   href: string;
@@ -15,8 +21,10 @@ interface Props {
   external?: boolean;
   /** Render the title in the mono identity font (e.g. a command name in /bin). */
   mono?: boolean;
+  /** An 8px accent dot + tag name, rendered first among the meta chips. */
+  tag?: { label: string; accent: string };
 }
-const { href, title, dek, meta = [], external = false, mono = false } = Astro.props;
+const { href, title, dek, meta = [], external = false, mono = false, tag } = Astro.props;
 const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
 ---
 
@@ -29,8 +37,14 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
     {dek && <span class="ledger-row__dek">{dek}</span>}
   </span>
   {
-    meta.length > 0 && (
+    (tag || meta.length > 0) && (
       <span class="ledger-row__meta">
+        {tag && (
+          <span class="ledger-row__chip ledger-row__tag" style={`--dot:${tag.accent}`}>
+            <span class="ledger-row__dot" aria-hidden="true" />
+            {tag.label}
+          </span>
+        )}
         {meta.map((m) => (
           <span class="ledger-row__chip">{m}</span>
         ))}
@@ -98,5 +112,21 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
     font-size: var(--fs-12);
     color: var(--text-secondary);
     white-space: nowrap;
+  }
+
+  /* Tag dot: the ONLY place the tag's Ghost accent color appears -- the label
+     text stays --text-secondary like every other meta chip (blend-safety). */
+  .ledger-row__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .ledger-row__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--dot, var(--accent));
+    flex-shrink: 0;
   }
 </style>

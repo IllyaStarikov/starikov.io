@@ -82,6 +82,23 @@ function toolToItem(entry: ToolEntry): SiteItem {
   };
 }
 
+type EssayEntry = CollectionEntry<'essays'>;
+
+/** An essay's `href` points OUT to starikov.co (design spec §13: essays are
+ *  read there, not mirrored locally) -- the one SiteItem type whose href
+ *  isn't a site-local route, which is why `getAllItems`' consumers (the home
+ *  "recently updated" ledger) mark `external: item.type === 'essay'`. */
+function essayToItem(entry: EssayEntry): SiteItem {
+  return {
+    type: 'essay',
+    slug: entry.id,
+    title: entry.data.title,
+    tagline: entry.data.excerpt,
+    href: entry.data.url,
+    date: entry.data.publishedAt.toISOString(),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Projects: curated MDX + joined `repos` metadata
 //
@@ -113,19 +130,19 @@ const PAGE_ITEMS: SiteItem[] = [
 ];
 
 /**
- * Every site item, newest-first. Tools + projects + static pages today; essays
- * append here when Task 14's collection lands, without touching any consumer.
+ * Every site item, newest-first: tools + projects + essays + static pages.
  * Undated items (pages) sort after dated ones.
  */
 export async function getAllItems(): Promise<SiteItem[]> {
   const tools = await getCollection('tools');
   const projects = (await getCollection('projects')).filter((p) => !p.data.draft);
   const repos = await getCollection('repos');
+  const essays = await getCollection('essays');
   const projectItems = projects.map((entry) =>
     projectToItem(entry, summarizeRepos(joinRepos(repoNames(entry.data), repos)).updated),
   );
-  return [...tools.map(toolToItem), ...projectItems, ...PAGE_ITEMS].sort((a, b) =>
-    (b.date ?? '').localeCompare(a.date ?? ''),
+  return [...tools.map(toolToItem), ...projectItems, ...essays.map(essayToItem), ...PAGE_ITEMS].sort(
+    (a, b) => (b.date ?? '').localeCompare(a.date ?? ''),
   );
 }
 
@@ -178,6 +195,12 @@ export async function getProjectPage(slug: string): Promise<ProjectPage | null> 
   const essays = await resolveRelatedEssays({
     essays: entry.data.essays,
     essayTags: entry.data.essayTags,
+    // Matches the string projects/[...slug].astro already builds for the
+    // ProvenanceFooter's overlay link -- one convention for "this overlay's
+    // source file", not `entry.filePath` (which the glob loader also sets,
+    // but this keeps the two call sites' text identical without a second
+    // source of truth for the same fact).
+    filename: `src/content/projects/${entry.id}.mdx`,
   });
 
   return {

@@ -11,6 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, not the default shallow clone -- provenance dates
+          # (ProvenanceFooter, /colophon's build disclosure) need real commit
+          # history on THIS repo, same reason as the sparse dotfiles/bin/
+          # academia checkouts below already pull real refs to read from.
+          fetch-depth: 0
       - uses: actions/checkout@v4
         with:
           repository: IllyaStarikov/.dotfiles
@@ -42,7 +48,12 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run build
-        env: { BUILD_STRICT: "1" }
+        env:
+          BUILD_STRICT: "1"
+          # Harmless while unset (Task 14: no Content API key exists yet --
+          # ghost.ts's fetchLive fails fast and the build falls back to the
+          # committed vendor snapshot with a warning, never an error).
+          GHOST_CONTENT_API_KEY: ${{ secrets.GHOST_CONTENT_API_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:
