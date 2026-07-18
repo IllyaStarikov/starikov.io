@@ -11,6 +11,7 @@
  * Pages import Shell only; Shell wraps Base (which owns <head>, CSP, theme boot,
  * ClientRouter). Pages supply their own <h1> in the default slot.
  */
+import { getCollection } from 'astro:content';
 import Base from './Base.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
@@ -25,6 +26,13 @@ interface TocItem {
   id: string;
   label: string;
 }
+interface Fact {
+  label: string;
+  value: string;
+  href?: string;
+  external?: boolean;
+  badge?: boolean;
+}
 interface Connection {
   href: string;
   label: string;
@@ -35,24 +43,35 @@ interface Props {
   description?: string;
   crumbs?: Crumb[];
   toc?: TocItem[];
+  facts?: Fact[];
   connections?: Connection[];
   pageType?: string;
-  /* tools injected Task 9 (getCollection('tools')) -- empty until then. */
+  /* Override the sidebar Tools group; defaults to the whole tools collection
+     so every page's sidebar lists every tool without per-page wiring. */
   tools?: ToolRef[];
 }
+
+// The Tools group is populated centrally from the collection (the seam Task 7
+// left as an optional `tools` prop). Loading here -- not in each page -- is what
+// makes "a new tool in the bin repo appears in the sidebar everywhere" hold on
+// every route, including the persisted sidebar after a hard refresh.
+const toolRefs: ToolRef[] = (await getCollection('tools'))
+  .map((t) => ({ slug: t.id, title: t.data.name, updated: t.data.updated }))
+  .sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''));
 
 const {
   title,
   description,
   crumbs,
   toc = [],
+  facts = [],
   connections = [],
   pageType,
-  tools = [],
+  tools = toolRefs,
 } = Astro.props;
 
 const pathname = Astro.url.pathname;
-const hasRail = toc.length > 0 || connections.length >= 2;
+const hasRail = toc.length > 0 || facts.length > 0 || connections.length >= 2;
 ---
 
 <Base title={title} description={description}>
@@ -98,7 +117,7 @@ const hasRail = toc.length > 0 || connections.length >= 2;
     {
       hasRail && (
         <div class="rail-col">
-          <RightRail toc={toc} connections={connections} />
+          <RightRail toc={toc} facts={facts} connections={connections} />
         </div>
       )
     }

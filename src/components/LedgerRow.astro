@@ -13,14 +13,16 @@ interface Props {
   dek?: string;
   meta?: string[];
   external?: boolean;
+  /** Render the title in the mono identity font (e.g. a command name in /bin). */
+  mono?: boolean;
 }
-const { href, title, dek, meta = [], external = false } = Astro.props;
+const { href, title, dek, meta = [], external = false, mono = false } = Astro.props;
 const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
 ---
 
 <a class="ledger-row" href={href} {...linkAttrs}>
   <span class="ledger-row__main">
-    <span class="ledger-row__title">
+    <span class:list={['ledger-row__title', { 'ledger-row__title--mono': mono }]}>
       {title}
       {external && <span class="ledger-row__ext" aria-hidden="true">↗</span>}
     </span>
@@ -68,6 +70,12 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
     font-weight: 600;
     font-size: var(--fs-16);
     line-height: 1.3;
+  }
+
+  .ledger-row__title--mono {
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    letter-spacing: -0.01em;
   }
 
   .ledger-row__ext {

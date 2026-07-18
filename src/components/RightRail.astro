@@ -4,15 +4,25 @@
  *
  *   TOC: scrollspy list (IntersectionObserver in shell.ts). The active entry's
  *        colour flips instantly; a 2px marker slides between entries (180ms).
+ *   Facts: a compact label/value list of page facts (e.g. a tool's language,
+ *        dependency badge, license, updated date). Rendered when non-empty.
  *   Connections: rendered ONLY at ≥2 resolved links -- never an empty
  *        affordance (design spec §3). Enforced here, not by the caller.
  *
- * The whole rail is omitted when there is neither a TOC nor a valid Connections
- * block, so the grid can drop to two columns.
+ * The whole rail is omitted when there is no TOC, no facts, and no valid
+ * Connections block, so the grid can drop to two columns.
  */
 interface TocItem {
   id: string;
   label: string;
+}
+interface Fact {
+  label: string;
+  value: string;
+  href?: string;
+  external?: boolean;
+  /** Renders the value as an accent mono pill (e.g. `stdlib-only`). */
+  badge?: boolean;
 }
 interface Connection {
   href: string;
@@ -21,15 +31,17 @@ interface Connection {
 }
 interface Props {
   toc?: TocItem[];
+  facts?: Fact[];
   connections?: Connection[];
 }
-const { toc = [], connections = [] } = Astro.props;
+const { toc = [], facts = [], connections = [] } = Astro.props;
 const showToc = toc.length > 0;
+const showFacts = facts.length > 0;
 const showConnections = connections.length >= 2;
 ---
 
 {
-  (showToc || showConnections) && (
+  (showToc || showFacts || showConnections) && (
     <div class="rail">
       {showToc && (
         <nav class="toc" aria-label="On this page" data-toc>
@@ -45,6 +57,34 @@ const showConnections = connections.length >= 2;
             ))}
           </ul>
         </nav>
+      )}
+
+      {showFacts && (
+        <div class="facts">
+          <p class="rail-label">Facts</p>
+          <dl>
+            {facts.map((f) => (
+              <div class="facts__row">
+                <dt>{f.label}</dt>
+                <dd>
+                  {f.href ? (
+                    <a
+                      href={f.href}
+                      {...(f.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    >
+                      {f.value}
+                      {f.external && <span aria-hidden="true"> ↗</span>}
+                    </a>
+                  ) : f.badge ? (
+                    <span class="facts__badge">{f.value}</span>
+                  ) : (
+                    <span>{f.value}</span>
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       )}
 
       {showConnections && (
@@ -148,6 +188,60 @@ const showConnections = connections.length >= 2;
     .toc[data-spy='on'] .toc__marker {
       transition: none;
     }
+  }
+
+  /* -- Facts --------------------------------------------------------------- */
+  .facts dl {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+
+  .facts__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .facts__row dt {
+    font: 500 11px / 1.4 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .facts__row dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    color: var(--fg);
+    text-align: right;
+  }
+
+  .facts__row dd a {
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .facts__row dd a:hover,
+  .facts__row dd a:focus-visible {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+
+  /* stdlib-only style badge: accent mono chip, drawn from raw ANSI tokens. */
+  .facts__badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    font-size: var(--fs-12);
+    line-height: 1.4;
   }
 
   .connections li a {

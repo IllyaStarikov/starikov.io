@@ -1,0 +1,81 @@
+---
+/*
+ * /bin -- the tool index. The bin repo's Scripts table, elevated into a ledger:
+ * one row per tool, command name in mono, tagline, language chip. Fully auto --
+ * a new tool directory in the bin repo appears here on the next build with no
+ * edit to this file.
+ */
+import Shell from '../../layouts/Shell.astro';
+import LedgerRow from '../../components/LedgerRow.astro';
+import { getCollection } from 'astro:content';
+
+const tools = (await getCollection('tools')).sort((a, b) =>
+  (b.data.updated ?? '').localeCompare(a.data.updated ?? ''),
+);
+
+const count = tools.length;
+---
+
+<Shell
+  title="bin — command-line tools — starikov.io"
+  description="Small standalone command-line tools, one man-page per tool, generated from the bin repo."
+  crumbs={[{ href: '/bin', label: 'bin' }]}
+  pageType="tools"
+>
+  <div class="bin-index">
+    <header class="bin-index__head">
+      <h1>bin</h1>
+      <p class="bin-index__intro">
+        Standalone command-line tools — the one-off utilities worth keeping findable. Each has its
+        own man-page, generated straight from its README.
+      </p>
+    </header>
+
+    {
+      count > 0 ? (
+        <div class="bin-index__list">
+          {tools.map((tool) => (
+            <LedgerRow
+              href={`/bin/${tool.id}`}
+              title={tool.data.name}
+              mono
+              dek={tool.data.tagline}
+              meta={tool.data.language ? [tool.data.language] : []}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="bin-index__empty">No tools yet. Push one to the bin repo and it lands here.</p>
+      )
+    }
+  </div>
+</Shell>
+
+<style>
+  .bin-index__head {
+    margin-bottom: var(--s-6);
+  }
+
+  .bin-index__head h1 {
+    margin-top: var(--s-2);
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+
+  .bin-index__intro {
+    margin-top: var(--s-3);
+    max-width: 60ch;
+    color: var(--text-secondary);
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+  }
+
+  .bin-index__list {
+    /* Rows own their own bottom rule; lift the top one to sit under the head. */
+    border-top: 1px solid var(--border);
+  }
+
+  .bin-index__empty {
+    color: var(--text-secondary);
+  }
+</style>

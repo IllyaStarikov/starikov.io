@@ -19,6 +19,10 @@ jobs:
             config/themes.json
             src/theme
           sparse-checkout-cone-mode: false
+      - uses: actions/checkout@v4
+        with:
+          repository: IllyaStarikov/bin
+          path: .sources/bin
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci

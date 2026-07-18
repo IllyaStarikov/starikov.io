@@ -1,0 +1,341 @@
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import {
+  parseToolDir,
+  stripSubsectionTable,
+  detectLanguage,
+  binToolsLoader,
+} from '../src/loaders/bin-tools';
+import { report } from '../src/loaders/lib/report';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(__dirname, '..');
+const POCKETCASTS_README = readFileSync(
+  join(REPO_ROOT, 'test/fixtures/bin/pocketcasts-reset-README.md'),
+  'utf8',
+);
+
+afterEach(() => {
+  // The loader emits warnings through the shared report module; drain them so
+  // one test's warnings never leak into another's assertions.
+  report.flush();
+  delete process.env.GITHUB_ACTIONS;
+});
+
+// ---------------------------------------------------------------------------
+// detectLanguage -- file-extension -> language, else undefined
+// ---------------------------------------------------------------------------
+describe('detectLanguage', () => {
+  it('maps .py to Python', () => {
+    expect(detectLanguage(['pocketcasts_reset.py', 'test_pocketcasts_reset.py', 'README.md'])).toBe(
+      'Python',
+    );
+  });
+
+  it('maps .sh and .zsh to Shell', () => {
+    expect(detectLanguage(['backup.sh'])).toBe('Shell');
+    expect(detectLanguage(['prompt.zsh'])).toBe('Shell');
+  });
+
+  it('maps .rs to Rust', () => {
+    expect(detectLanguage(['main.rs', 'Cargo.toml'])).toBe('Rust');
+  });
+
+  it('returns undefined when no known source extension is present', () => {
+    expect(detectLanguage(['README.md', 'notes.txt', 'data.json'])).toBeUndefined();
+    expect(detectLanguage([])).toBeUndefined();
+  });
+
+  it('picks the language with the most files, tie-breaking by priority', () => {
+    // Shell dominates by count.
+    expect(detectLanguage(['a.sh', 'b.sh', 'main.py'])).toBe('Shell');
+    // A 1-1 tie resolves to the higher-priority language (Python).
+    expect(detectLanguage(['one.py', 'two.rs'])).toBe('Python');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stripSubsectionTable -- both paths of the options-table removal
+// ---------------------------------------------------------------------------
+describe('stripSubsectionTable', () => {
+  it('removes an "### Options" heading and its table (removal succeeds path)', () => {
+    const md = [
+      'Run it like this.',
+      '',
+      '```bash',
+      'tool --dry-run',
+      '```',
+      '',
+      '### Options',
+      '',
+      '| Flag | Description |',
+      '| ---- | ----------- |',
+      '| `--dry-run` | Do nothing. |',
+      '',
+      '### After',
+      '',
+      'Trailing prose.',
+      '',
+    ].join('\n');
+
+    const { text, removed } = stripSubsectionTable(md, 'options');
+    expect(removed).toBe(true);
+    expect(text).not.toContain('### Options');
+    expect(text).not.toContain('| Flag | Description |');
+    expect(text).not.toContain('Do nothing.');
+    // Content on either side of the removed block survives.
+    expect(text).toContain('Run it like this.');
+    expect(text).toContain('### After');
+    expect(text).toContain('Trailing prose.');
+  });
+
+  it('leaves markdown untouched when the heading is absent (fallback path)', () => {
+    const md = ['Run it like this.', '', '```bash', 'tool', '```', ''].join('\n');
+    const { text, removed } = stripSubsectionTable(md, 'options');
+    expect(removed).toBe(false);
+    expect(text).toBe(md);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseToolDir -- real fixture + synthetic edge cases
+// ---------------------------------------------------------------------------
+describe('parseToolDir -- real pocketcasts-reset README', () => {
+  const tool = parseToolDir({
+    readme: POCKETCASTS_README,
+    entries: ['pocketcasts_reset.py', 'test_pocketcasts_reset.py', 'README.md'],
+  });
+
+  it('is not skipped (has an H1)', () => {
+    expect(tool).not.toBeNull();
+  });
+
+  it('reads the name from the H1', () => {
+    expect(tool!.name).toBe('pocketcasts-reset');
+  });
+
+  it('derives a first-sentence tagline fallback from the intro', () => {
+    expect(tool!.tagline).toBe(
+      'Unfollow every podcast in your Pocket Casts account in one go, so you can start fresh.',
+    );
+  });
+
+  it('detects the language from the .py files', () => {
+    expect(tool!.language).toBe('Python');
+  });
+
+  it('flags stdlib-only from the Requirements section', () => {
+    expect(tool!.stdlibOnly).toBe(true);
+  });
+
+  it('extracts the license name from the License section link', () => {
+    expect(tool!.license).toBe('MIT');
+  });
+
+  it('parses all four options with flag + description (removal-succeeds path)', () => {
+    expect(tool!.options.map((o) => o.flag)).toEqual([
+      '--dry-run',
+      '--yes',
+      '--email EMAIL',
+      '--delay SECONDS',
+    ]);
+    expect(tool!.options[0].description).toContain('List what would be unfollowed');
+    expect(tool!.optionsDropped).toBe(false);
+  });
+
+  it('strips the options table out of the rendered Usage markdown (no duplication)', () => {
+    expect(tool!.sections.usage).toBeDefined();
+    expect(tool!.sections.usage).not.toContain('### Options');
+    expect(tool!.sections.usage).not.toContain('Skip the confirmation prompt');
+    expect(tool!.sections.usage).not.toContain('| Flag | Description |');
+    // The rest of Usage (Credentials H3, the two command blocks) is preserved.
+    expect(tool!.sections.usage).toContain('### Credentials');
+    expect(tool!.sections.usage).toContain('POCKETCASTS_EMAIL');
+  });
+
+  it('keeps How it works and Caveats as present sections; Requirements too', () => {
+    expect(tool!.sections.howItWorks).toContain('/user/login');
+    expect(tool!.sections.caveats).toContain('unofficial');
+    expect(tool!.sections.requirements).toContain('standard library only');
+  });
+});
+
+describe('parseToolDir -- synthetic edge cases', () => {
+  it('returns null when the README has no H1 (malformed -> skip)', () => {
+    const md = ['No title here.', '', '## Usage', '', 'Run it.', ''].join('\n');
+    expect(parseToolDir({ readme: md, entries: ['x.py'] })).toBeNull();
+  });
+
+  it('renders a no-options tool without an options table or drop warning', () => {
+    const md = [
+      '# tiny-tool',
+      '',
+      'Does one small thing.',
+      '',
+      '## Usage',
+      '',
+      'Run it like this.',
+      '',
+      '## License',
+      '',
+      '[MIT](LICENSE)',
+      '',
+    ].join('\n');
+
+    const tool = parseToolDir({ readme: md, entries: ['tiny.sh'] });
+    expect(tool).not.toBeNull();
+    expect(tool!.options).toEqual([]);
+    expect(tool!.optionsDropped).toBe(false);
+    expect(tool!.sections.usage).toBe('Run it like this.');
+    expect(tool!.language).toBe('Shell');
+    expect(tool!.license).toBe('MIT');
+    expect(tool!.stdlibOnly).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// binToolsLoader -- enumeration, skip, cross-check, tagline-from-table
+// (fake LoaderContext + a temp fixture directory mirroring the bin layout)
+// ---------------------------------------------------------------------------
+interface StoredEntry {
+  id: string;
+  data: Record<string, unknown>;
+  digest?: string | number;
+  filePath?: string;
+}
+
+function fakeContext() {
+  const map = new Map<string, StoredEntry>();
+  const store = {
+    set: (entry: StoredEntry) => {
+      map.set(entry.id, entry);
+      return true;
+    },
+    get: (key: string) => map.get(key),
+    keys: () => [...map.keys()],
+    values: () => [...map.values()],
+    entries: () => [...map.entries()],
+    has: (key: string) => map.has(key),
+    delete: (key: string) => void map.delete(key),
+    clear: () => map.clear(),
+    addModuleImport: () => {},
+  };
+  const logger = { info() {}, warn() {}, error() {}, debug() {}, options: {}, label: 'test', fork: () => logger };
+  return {
+    map,
+    context: {
+      collection: 'tools',
+      store,
+      logger,
+      meta: new Map(),
+      config: {} as never,
+      parseData: async ({ data }: { data: Record<string, unknown> }) => data,
+      renderMarkdown: async (content: string) => ({ html: `<render>${content}</render>` }),
+      generateDigest: (input: Record<string, unknown> | string) =>
+        `digest:${typeof input === 'string' ? input.length : 'obj'}`,
+    } as never,
+  };
+}
+
+describe('binToolsLoader', () => {
+  let parent: string;
+  let root: string;
+
+  beforeAll(() => {
+    // Root the fixture at a `bin`-named dir so the source URL derivation
+    // (repo = directory basename) is exercised exactly as it is for .sources/bin.
+    parent = mkdtempSync(join(tmpdir(), 'bin-loader-'));
+    root = join(parent, 'bin');
+    mkdirSync(root);
+    // Root README with a Scripts table that lists a real tool AND a phantom
+    // one (no directory) to exercise both cross-check directions.
+    writeFileSync(
+      join(root, 'README.md'),
+      [
+        '# bin',
+        '',
+        '## Scripts',
+        '',
+        '| Script | What it does |',
+        '| ------ | ------------ |',
+        '| [`pocketcasts-reset`](pocketcasts-reset/) | Unfollow every podcast, table-sourced tagline. |',
+        '| [`ghost-tool`](ghost-tool/) | Listed but has no directory. |',
+        '',
+      ].join('\n'),
+    );
+    // Real tool, in the table.
+    mkdirSync(join(root, 'pocketcasts-reset'));
+    writeFileSync(join(root, 'pocketcasts-reset', 'README.md'), POCKETCASTS_README);
+    writeFileSync(join(root, 'pocketcasts-reset', 'pocketcasts_reset.py'), '# no execution\n');
+    // Valid tool NOT in the table -> "not listed" warning.
+    mkdirSync(join(root, 'extra-tool'));
+    writeFileSync(
+      join(root, 'extra-tool', 'README.md'),
+      ['# extra-tool', '', 'An extra thing.', '', '## Usage', '', 'Use it.', ''].join('\n'),
+    );
+    // Malformed tool (no H1) -> skipped with a warning.
+    mkdirSync(join(root, 'broken'));
+    writeFileSync(join(root, 'broken', 'README.md'), 'Just prose, no heading.\n');
+    // A hidden dir must be ignored entirely.
+    mkdirSync(join(root, '.git'));
+    writeFileSync(join(root, '.git', 'README.md'), '# not a tool\n');
+  });
+
+  afterAll(() => {
+    rmSync(parent, { recursive: true, force: true });
+  });
+
+  it('loads valid tools, skips malformed ones, and ignores hidden dirs', async () => {
+    const { context, map } = fakeContext();
+    await binToolsLoader({ root }).load(context);
+
+    expect(new Set(map.keys())).toEqual(new Set(['pocketcasts-reset', 'extra-tool']));
+    expect(map.has('broken')).toBe(false);
+    expect(map.has('.git')).toBe(false);
+  });
+
+  it('prefers the root Scripts-table tagline over the first-sentence fallback', async () => {
+    const { context, map } = fakeContext();
+    await binToolsLoader({ root }).load(context);
+
+    expect(map.get('pocketcasts-reset')!.data.tagline).toBe(
+      'Unfollow every podcast, table-sourced tagline.',
+    );
+    // extra-tool is not in the table -> first-sentence fallback.
+    expect(map.get('extra-tool')!.data.tagline).toBe('An extra thing.');
+  });
+
+  it('renders sections to HTML, populates options, and builds a source URL', async () => {
+    const { context, map } = fakeContext();
+    await binToolsLoader({ root }).load(context);
+
+    const data = map.get('pocketcasts-reset')!.data as Record<string, any>;
+    expect(data.language).toBe('Python');
+    expect(data.options).toHaveLength(4);
+    expect(data.sections.usage).toContain('<render>');
+    expect(data.sourceUrl).toBe(
+      'https://github.com/IllyaStarikov/bin/tree/main/pocketcasts-reset',
+    );
+    expect(map.get('pocketcasts-reset')!.digest).toBeTruthy();
+  });
+
+  it('warns for a malformed tool, an unlisted tool, and a phantom table entry', async () => {
+    const { context } = fakeContext();
+    report.flush();
+    await binToolsLoader({ root }).load(context);
+    // broken (no H1) + extra-tool (not in table) + ghost-tool (in table, no dir).
+    expect(report.flush().warnings).toBe(3);
+  });
+
+  it('produces an empty collection and one warning when the root is missing', async () => {
+    const { context, map } = fakeContext();
+    report.flush();
+    await binToolsLoader({ root: join(root, 'does-not-exist') }).load(context);
+    expect(map.size).toBe(0);
+    expect(report.flush().warnings).toBe(1);
+  });
+});

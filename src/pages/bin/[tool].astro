@@ -1,0 +1,384 @@
+---
+/*
+ * /bin/<tool> -- man-page-meets-tldr for one tool, generated entirely from its
+ * README (design spec section 6). Anatomy, in order, each part rendered ONLY
+ * when it has content (no empty scaffolding):
+ *
+ *   NAME       h1 command name + tagline callout + lead description
+ *   SYNOPSIS   the Usage section, commands copy-able
+ *   OPTIONS    two-column flag reference (accent mono pills)
+ *   HOW IT WORKS / CAVEATS   when the README has them
+ *   SOURCE     link to the tool on GitHub + a git clone one-liner
+ *
+ * Right rail (>=1280px): a TOC of the present sections + a facts block
+ * (language, stdlib-only badge, license, updated). The same facts render inline
+ * under the title on narrower screens where the rail is hidden.
+ */
+import Shell from '../../layouts/Shell.astro';
+import MetadataStrip from '../../components/MetadataStrip.astro';
+import { getCollection } from 'astro:content';
+import { getToolPage } from '../../lib/model';
+
+export async function getStaticPaths() {
+  const tools = await getCollection('tools');
+  return Promise.all(
+    tools.map(async (tool) => ({
+      params: { tool: tool.id },
+      props: { page: await getToolPage(tool.id) },
+    })),
+  );
+}
+
+const { page } = Astro.props;
+// getStaticPaths only ever produces slugs that resolve, so `page` is present.
+const { slug, data } = page!;
+const { name, tagline, description, sections, options, sourceUrl, language, license, stdlibOnly } =
+  data;
+
+const cloneUrl = `${sourceUrl.split('/tree/')[0]}.git`;
+const cloneCmd = `git clone ${cloneUrl}`;
+
+function formatDate(iso: string | undefined): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? undefined
+    : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+const updated = formatDate(data.updated);
+
+// TOC: present sections only, in page order (NAME is the title, not a jump).
+const toc = [
+  sections.usage && { id: 'synopsis', label: 'Synopsis' },
+  options.length > 0 && { id: 'options', label: 'Options' },
+  sections.howItWorks && { id: 'how-it-works', label: 'How it works' },
+  sections.caveats && { id: 'caveats', label: 'Caveats' },
+  { id: 'source', label: 'Source' },
+].filter((x): x is { id: string; label: string } => Boolean(x));
+
+// Facts (rail + inline strip).
+const facts = [
+  language && { label: 'Language', value: language },
+  stdlibOnly && { label: 'Deps', value: 'stdlib-only', badge: true },
+  license && { label: 'License', value: license },
+  updated && { label: 'Updated', value: updated },
+].filter((x): x is { label: string; value: string; badge?: boolean } => Boolean(x));
+
+const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toLowerCase()} ${f.value}` }));
+---
+
+<Shell
+  title={`${name} — bin — starikov.io`}
+  description={tagline}
+  crumbs={[
+    { href: '/bin', label: 'bin' },
+    { href: `/bin/${slug}`, label: slug },
+  ]}
+  toc={toc}
+  facts={facts}
+  pageType="tool"
+>
+  <article class="tool">
+    <!-- NAME -->
+    <header class="tool__head">
+      <h1 class="tool__name">{name}</h1>
+      <p class="tool__tagline">{tagline}</p>
+      {stripItems.length > 0 && <div class="tool__meta"><MetadataStrip items={stripItems} /></div>}
+      {description && <div class="prose tool__lead" set:html={description} />}
+    </header>
+
+    {
+      sections.usage && (
+        <section id="synopsis" class="tool__section">
+          <h2 class="tool__label">Synopsis</h2>
+          <div class="prose" data-synopsis set:html={sections.usage} />
+        </section>
+      )
+    }
+
+    {
+      options.length > 0 && (
+        <section id="options" class="tool__section">
+          <h2 class="tool__label">Options</h2>
+          <table class="options">
+            <tbody>
+              {options.map((opt) => (
+                <tr>
+                  <th scope="row" class="options__flag">
+                    <code class="flag">{opt.flag}</code>
+                  </th>
+                  <td class="options__desc">{opt.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )
+    }
+
+    {
+      sections.howItWorks && (
+        <section id="how-it-works" class="tool__section">
+          <h2 class="tool__label">How it works</h2>
+          <div class="prose" set:html={sections.howItWorks} />
+        </section>
+      )
+    }
+
+    {
+      sections.caveats && (
+        <section id="caveats" class="tool__section">
+          <h2 class="tool__label">Caveats</h2>
+          <div class="prose" set:html={sections.caveats} />
+        </section>
+      )
+    }
+
+    <!-- SOURCE (always present) -->
+    <section id="source" class="tool__section">
+      <h2 class="tool__label">Source</h2>
+      <p class="tool__source-line">
+        <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+          View <code>{slug}</code> on GitHub<span aria-hidden="true"> ↗</span>
+        </a>
+      </p>
+      <div class="clone">
+        <code id="clone-cmd" class="clone__cmd"><span class="clone__prompt" aria-hidden="true">$ </span>{cloneCmd}</code>
+        <button
+          type="button"
+          class="copy-btn"
+          data-copy-target="#clone-cmd"
+          aria-label="Copy git clone command"></button>
+      </div>
+    </section>
+  </article>
+</Shell>
+
+<script>
+  import '../../scripts/tool.ts';
+</script>
+
+<style>
+  .tool {
+    max-width: 720px;
+  }
+
+  /* -- NAME ---------------------------------------------------------------- */
+  .tool__name {
+    font-family: var(--font-mono);
+    font-size: var(--fs-32);
+    letter-spacing: -0.02em;
+    word-break: break-word;
+  }
+
+  .tool__tagline {
+    margin-top: var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--r-2);
+    background: var(--surface);
+    color: var(--fg);
+    font-size: var(--fs-20);
+    line-height: 1.4;
+  }
+
+  .tool__meta {
+    margin-top: var(--s-4);
+  }
+
+  /* The inline facts strip is a fallback for viewports without the rail. */
+  @media (min-width: 1280px) {
+    .tool__meta {
+      display: none;
+    }
+  }
+
+  .tool__lead {
+    margin-top: var(--s-5);
+  }
+
+  /* -- Sections ------------------------------------------------------------ */
+  .tool__section {
+    margin-top: var(--s-7);
+    scroll-margin-top: var(--s-5);
+  }
+
+  .tool__label {
+    margin-bottom: var(--s-4);
+    padding-bottom: var(--s-2);
+    border-bottom: 1px solid var(--border);
+    font: 500 var(--fs-13) / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  /* -- OPTIONS ------------------------------------------------------------- */
+  .options {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .options tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .options tr:last-child {
+    border-bottom: 0;
+  }
+
+  .options__flag {
+    padding: var(--s-3) var(--s-4) var(--s-3) 0;
+    text-align: left;
+    vertical-align: baseline;
+    white-space: nowrap;
+    font-weight: 400;
+  }
+
+  .flag {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    border-radius: var(--r-1);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    line-height: 1.5;
+  }
+
+  .options__desc {
+    padding: var(--s-3) 0;
+    vertical-align: baseline;
+    color: var(--fg);
+    font-size: var(--fs-14);
+    line-height: 1.5;
+  }
+
+  /* Stack the two columns on narrow screens. */
+  @media (max-width: 640px) {
+    .options,
+    .options tbody,
+    .options tr,
+    .options th,
+    .options td {
+      display: block;
+    }
+    .options__flag {
+      padding: var(--s-3) 0 var(--s-1);
+    }
+    .options__desc {
+      padding: 0 0 var(--s-3);
+    }
+  }
+
+  /* -- SOURCE -------------------------------------------------------------- */
+  .tool__source-line {
+    margin-bottom: var(--s-3);
+    font-size: var(--fs-14);
+  }
+
+  .tool__source-line code {
+    font-size: 0.95em;
+  }
+
+  .clone {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: var(--s-3) var(--s-4);
+    padding-right: calc(var(--s-7) + var(--s-2));
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    overflow-x: auto;
+  }
+
+  .clone__cmd {
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    white-space: nowrap;
+    color: var(--fg);
+  }
+
+  .clone__prompt {
+    color: var(--text-secondary);
+    user-select: none;
+  }
+
+  /* -- Copy button (SYNOPSIS blocks + clone line) -------------------------- */
+  .tool :global(.code-block) {
+    position: relative;
+  }
+
+  .tool :global(.copy-btn) {
+    position: absolute;
+    top: var(--s-2);
+    right: var(--s-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    color: var(--text-secondary);
+    background: var(--surface-raised, var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--r-1);
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      opacity var(--dur-2) var(--ease-out),
+      color var(--dur-2) var(--ease-out),
+      border-color var(--dur-2) var(--ease-out);
+  }
+
+  /* The clone line's button sits centered in its own row and is always shown. */
+  .clone :global(.copy-btn) {
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    opacity: 1;
+  }
+
+  .tool :global(.code-block:hover .copy-btn),
+  .tool :global(.code-block:focus-within .copy-btn),
+  .tool :global(.copy-btn:focus-visible) {
+    opacity: 1;
+  }
+
+  /* Touch devices can't hover; keep the copy affordance always visible. */
+  @media (hover: none) {
+    .tool :global(.copy-btn) {
+      opacity: 1;
+    }
+  }
+
+  .tool :global(.copy-btn:hover) {
+    color: var(--fg);
+    border-color: var(--accent);
+  }
+
+  .tool :global(.copy-btn.is-copied) {
+    color: var(--ok, var(--accent));
+    border-color: var(--ok, var(--accent));
+    opacity: 1;
+  }
+
+  .tool :global(.copy-btn.is-copied svg) {
+    animation: copy-pop var(--dur-3) var(--ease-out);
+  }
+
+  @keyframes copy-pop {
+    0% {
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.15);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+</style>
