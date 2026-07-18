@@ -47,6 +47,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      # Task 15 CARRIED FINDING (Task 10 review): CI never ran the test suite,
+      # so a broken pure-logic change could still deploy as long as the build
+      # itself didn't throw. Gate the deploy on it -- fast (< 1s locally) and
+      # runs BEFORE the build so a red suite fails cheaply, before spending
+      # time on theme generation / media transcode / astro build.
+      - run: npx vitest run
       - run: npm run build
         env:
           BUILD_STRICT: "1"

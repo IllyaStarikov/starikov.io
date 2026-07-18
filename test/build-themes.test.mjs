@@ -1,21 +1,43 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..');
 const SCRIPT = join(REPO_ROOT, 'scripts/build-themes.mjs');
 const OK_FIXTURE = join(REPO_ROOT, 'test/fixtures/themes-ok');
 const CORRUPT_FIXTURE = join(REPO_ROOT, 'test/fixtures/themes-corrupt');
-const OUT_CSS = join(REPO_ROOT, 'src/styles/themes.generated.css');
-const OUT_JSON = join(REPO_ROOT, 'src/data/generated/themes.json');
+
+// THEMES_OUT_DIR (build-themes.mjs) redirects both generated outputs under a
+// scratch root for the whole suite. Before this, every `it()` here ran the
+// real script against the real src/styles/themes.generated.css + src/data/
+// generated/themes.json -- so simply running `npx vitest run` clobbered
+// whatever a genuine `npm run build` had generated (the full 8-family curated
+// set) with this suite's reduced two-family fixture, corrupting local dev
+// state and making test/theme-boot.test.mjs's catppuccin-dependent assertion
+// order-dependent (hence its `it.skipIf(!PAIRS.catppuccin)` guard). Isolating
+// the output directory here removes the corruption at the source.
+let OUT_DIR;
+let OUT_CSS;
+let OUT_JSON;
+
+beforeAll(() => {
+  OUT_DIR = mkdtempSync(join(tmpdir(), 'build-themes-out-'));
+  OUT_CSS = join(OUT_DIR, 'src/styles/themes.generated.css');
+  OUT_JSON = join(OUT_DIR, 'src/data/generated/themes.json');
+});
+
+afterAll(() => {
+  rmSync(OUT_DIR, { recursive: true, force: true });
+});
 
 function runBuild(env) {
   return execFileSync('node', [SCRIPT], {
     cwd: REPO_ROOT,
-    env: { ...process.env, ...env },
+    env: { ...process.env, THEMES_OUT_DIR: OUT_DIR, ...env },
     encoding: 'utf8',
   });
 }

@@ -27,6 +27,22 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..');
 const PORTFOLIO = readFileSync(join(REPO_ROOT, 'test/fixtures/academia/PORTFOLIO.md'), 'utf8');
 
+// academiaShowcaseLoader/coursesLoader call report.count(...), which writes
+// under COUNTS_DIR (src/data/generated/counts/ by default -- see report.ts).
+// Redirect it to a scratch dir for this whole file so the suite never
+// overwrites the real, gitignored counts a genuine `astro build` produced.
+let countsDir: string;
+
+beforeAll(() => {
+  countsDir = mkdtempSync(join(tmpdir(), 'academia-loader-counts-'));
+  process.env.COUNTS_DIR = countsDir;
+});
+
+afterAll(() => {
+  delete process.env.COUNTS_DIR;
+  rmSync(countsDir, { recursive: true, force: true });
+});
+
 afterEach(() => {
   report.flush();
   delete process.env.GITHUB_ACTIONS;

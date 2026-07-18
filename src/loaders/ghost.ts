@@ -358,6 +358,7 @@ export function ghostEssaysLoader(options: GhostLoaderOptions = {}): Loader {
           report.warn('ghost-essays', `post "${id}" rejected by schema (${(err as Error).message}); omitting`);
         }
       }
+      report.count('essays', loaded);
       logger.info(`loaded ${loaded}/${result.data.posts.length} essay(s)${result.stale ? ' (stale)' : ''}`);
     },
   };
@@ -399,6 +400,7 @@ export function ghostTagsLoader(options: GhostLoaderOptions = {}): Loader {
           report.warn('ghost-tags', `tag "${id}" rejected by schema (${(err as Error).message}); omitting`);
         }
       }
+      report.count('essayTags', loaded);
       logger.info(`loaded ${loaded}/${result.data.tags.length} tag(s)${result.stale ? ' (stale)' : ''}`);
     },
   };

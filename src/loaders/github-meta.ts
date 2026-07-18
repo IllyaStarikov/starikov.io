@@ -226,6 +226,7 @@ export function githubMetaLoader(options: GithubMetaLoaderOptions = {}): Loader 
         }
       }
 
+      report.count('repos', loaded);
       logger.info(`loaded ${loaded}/${repos.length} repo metadata entr${loaded === 1 ? 'y' : 'ies'}`);
     },
   };

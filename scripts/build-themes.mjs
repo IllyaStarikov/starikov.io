@@ -30,8 +30,19 @@ const REPO_ROOT = join(__dirname, '..');
 
 const LIVE_DIR = join(REPO_ROOT, '.sources/dotfiles');
 const SNAPSHOT_DIR = join(REPO_ROOT, 'src/data/vendor/themes-snapshot');
-const OUT_CSS = join(REPO_ROOT, 'src/styles/themes.generated.css');
-const OUT_JSON = join(REPO_ROOT, 'src/data/generated/themes.json');
+
+// THEMES_OUT_DIR (tests only) redirects both outputs under one scratch root
+// instead of the real, gitignored src/ paths. Task 5's build-themes.test.mjs
+// used to run this script against the real OUT_CSS/OUT_JSON every time the
+// suite ran, silently overwriting whatever a real `npm run build` had last
+// generated (a two-family fixture in place of the full 8-family curated set)
+// -- corrupting local dev state and making test/theme-boot.test.mjs's
+// catppuccin-dependent assertion flaky (it has to skipIf(!PAIRS.catppuccin)
+// to survive). THEMES_OUT_DIR is how the test now opts out of touching the
+// real paths at all; unset (the real build), OUT_CSS/OUT_JSON are unchanged.
+const OUT_ROOT = process.env.THEMES_OUT_DIR ?? REPO_ROOT;
+const OUT_CSS = join(OUT_ROOT, 'src/styles/themes.generated.css');
+const OUT_JSON = join(OUT_ROOT, 'src/data/generated/themes.json');
 
 const MIN_SURVIVING_VARIANTS = SITE.minCounts.themeVariants;
 
@@ -242,6 +253,11 @@ function main() {
       sourceSha: usedKind === 'live' || usedKind === 'env' ? readSourceSha(usedDir) : null,
       source: usedKind,
       generatedAt: new Date().toISOString(),
+      // Total emitted variants across every family -- Task 15's
+      // scripts/validate-dist.mjs reads THIS (not counts.json) for the
+      // `minCounts.themeVariants` gate, since theme generation is a separate
+      // build step from the content-collection loaders counts.json covers.
+      variantCount: emitted.length,
     },
   };
 

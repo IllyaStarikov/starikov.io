@@ -420,6 +420,7 @@ export function academiaShowcaseLoader({ root }: { root: string }): Loader {
         store.set({ id, data: validated, digest: generateDigest(data), filePath });
       }
 
+      report.count('academiaShowcase', projects.length);
       logger.info(`loaded ${projects.length} academia project(s) from ${root}`);
     },
   };
@@ -532,6 +533,7 @@ export function coursesLoader({ root }: { root: string }): Loader {
         const validated = await parseData({ id: slug, data, filePath });
         store.set({ id: slug, data: validated, digest: generateDigest(data) });
       }
+      report.count('courses', entries.size);
       logger.info(`loaded ${entries.size} course(s) from ${root}`);
     },
   };

@@ -390,6 +390,10 @@ export function binToolsLoader({ root }: { root: string }): Loader {
         }
       }
 
+      // 'tools' (not SOURCE/'bin-tools') -- the counts manifest is keyed by
+      // COLLECTION name (content.config.ts), matching what validate-dist.mjs
+      // reads it back as.
+      report.count('tools', loaded.size, [...loaded].sort());
       logger.info(`loaded ${loaded.size} tool(s) from ${root}`);
     },
   };

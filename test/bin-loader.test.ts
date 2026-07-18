@@ -44,6 +44,23 @@ const DROP_README = [
   '',
 ].join('\n');
 
+// binToolsLoader() calls report.count('tools', ...), which writes a small
+// JSON file under COUNTS_DIR (src/data/generated/counts/ by default -- see
+// report.ts). Point it at a scratch directory for the whole file so this
+// suite never overwrites the real, gitignored counts a genuine `astro build`
+// produced (the same footgun class build-themes.test.mjs had before Task 15).
+let countsDir: string;
+
+beforeAll(() => {
+  countsDir = mkdtempSync(join(tmpdir(), 'bin-loader-counts-'));
+  process.env.COUNTS_DIR = countsDir;
+});
+
+afterAll(() => {
+  delete process.env.COUNTS_DIR;
+  rmSync(countsDir, { recursive: true, force: true });
+});
+
 afterEach(() => {
   // The loader emits warnings through the shared report module; drain them so
   // one test's warnings never leak into another's assertions.
