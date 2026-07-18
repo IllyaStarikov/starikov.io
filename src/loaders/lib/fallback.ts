@@ -6,10 +6,12 @@
  * Every remote source in this site follows the same three-tier cascade (design
  * spec §7 "resilience matrix"):
  *
- *   1. LIVE -- call `fetchLive()`. On success, `validate` the shape and persist
- *      it to `cachePath` (gitignored `.cache/`, parent directories created as
- *      needed) so a later run on this machine/CI job can fall back to it.
- *      Returns `{stale: false}`.
+ *   1. LIVE -- call `fetchLive()`. On success, `validate` the shape and return
+ *      `{stale: false}`. Persisting that data to `cachePath` (gitignored
+ *      `.cache/`, parent directories created as needed) so a later run on
+ *      this machine/CI job can fall back to it is a SEPARATE, best-effort
+ *      side effect: a write failure there only warns -- it never turns a
+ *      successful live fetch into a stale/failed result.
  *   2. CACHE -- on live failure (network error, non-2xx, bad shape), read and
  *      validate `cachePath`. Success returns `{stale: true}` with a warning;
  *      a missing/unreadable/invalid-shape cache falls through to tier 3.
@@ -81,15 +83,33 @@ function tryReadValidate<T>(path: string, validate: (x: unknown) => T): Attempt<
 export async function withFallback<T>(opts: FallbackOptions<T>): Promise<FallbackResult<T>> {
   const { source, fetchLive, cachePath, vendorPath, validate, onVendor = 'warn' } = opts;
 
-  // Tier 1: live.
+  // Tier 1: live. Fetching + validating is ONE failure domain (any failure
+  // here means "no live data" -> fall through to cache). Persisting that
+  // already-validated data to the cache file is a SEPARATE, best-effort side
+  // effect: a write failure (permissions, full disk, a racing writer) must
+  // never discard live data that was already successfully fetched and
+  // validated, and must never be reported as though the live fetch itself
+  // failed -- it only means the NEXT run won't have this to fall back to.
+  let live: Attempt<T>;
   try {
-    const data = validate(await fetchLive());
-    mkdirSync(dirname(cachePath), { recursive: true });
-    writeFileSync(cachePath, JSON.stringify(data, null, 2));
-    return { data, stale: false };
+    live = { ok: true, data: validate(await fetchLive()) };
   } catch (liveErr) {
-    report.warn(source, `live fetch failed (${errMsg(liveErr)}); trying cached snapshot`);
+    live = { ok: false, error: liveErr };
   }
+
+  if (live.ok) {
+    try {
+      mkdirSync(dirname(cachePath), { recursive: true });
+      writeFileSync(cachePath, JSON.stringify(live.data, null, 2));
+    } catch (writeErr) {
+      report.warn(
+        source,
+        `live fetch succeeded but writing the cache file at ${cachePath} failed (${errMsg(writeErr)}); continuing with live data, uncached`,
+      );
+    }
+    return { data: live.data, stale: false };
+  }
+  report.warn(source, `live fetch failed (${errMsg(live.error)}); trying cached snapshot`);
 
   // Tier 2: cache.
   const cache = tryReadValidate(cachePath, validate);

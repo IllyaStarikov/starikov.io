@@ -112,6 +112,13 @@ describe('validateFor', () => {
     expect(() => validateFor('IllyaStarikov/bin')(42)).toThrow();
     expect(() => validateFor('IllyaStarikov/bin')(null)).toThrow();
   });
+
+  it('rejects an unparseable pushedAt even though every other field is well-shaped', () => {
+    // Guards against a corrupted/hand-edited cache or vendor JSON file
+    // reaching content.config.ts's z.coerce.date() (which would throw an
+    // AstroError there instead, too late for withFallback's cascade to help).
+    expect(() => validateFor('IllyaStarikov/bin')({ ...meta, pushedAt: 'not-a-date' })).toThrow();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -126,7 +133,14 @@ interface StoredEntry {
   digest?: string | number;
 }
 
-function fakeContext() {
+interface FakeContextOverrides {
+  /** Defaults to the identity function. Override to simulate the real
+   *  collection schema (content.config.ts) rejecting a shape -- e.g. to prove
+   *  a parseData throw for one repo doesn't take the whole load() down. */
+  parseData?: (args: { id: string; data: Record<string, unknown> }) => Promise<Record<string, unknown>>;
+}
+
+function fakeContext(overrides: FakeContextOverrides = {}) {
   const map = new Map<string, StoredEntry>();
   const store = {
     set: (entry: StoredEntry) => {
@@ -159,7 +173,7 @@ function fakeContext() {
       logger,
       meta: new Map(),
       config: {} as never,
-      parseData: async ({ data }: { data: Record<string, unknown> }) => data,
+      parseData: overrides.parseData ?? (async ({ data }: { data: Record<string, unknown> }) => data),
       renderMarkdown: async (content: string) => ({ html: `<render>${content}</render>` }),
       generateDigest: (input: unknown) => `digest:${JSON.stringify(input).length}`,
     } as never,
@@ -320,6 +334,74 @@ describe('githubMetaLoader', () => {
     ).resolves.not.toThrow();
 
     expect(map.size).toBe(0);
+    expect(report.flush().warnings).toBeGreaterThan(0);
+  });
+
+  it('a vendor entry with an unparseable pushedAt is rejected at the validate tier -- that repo is skipped, others still load, never throws', async () => {
+    cacheRoot = join(parent, 'bad-pushed-at', 'cache');
+    vendorPath = join(parent, 'bad-pushed-at', 'vendor.json');
+    mkdirSync(cacheRoot, { recursive: true });
+    // bin's vendor entry is corrupted (pushedAt isn't a parseable date);
+    // eclecta's is fine. Live + cache both fail for everyone, so this forces
+    // the vendor tier -- where GithubRepoMetaSchema's pushedAt refinement
+    // must reject bin's entry while still letting eclecta's through.
+    writeFileSync(
+      vendorPath,
+      JSON.stringify({
+        'illyastarikov/bin': { ...metaFor('IllyaStarikov/bin'), pushedAt: 'not-a-date' },
+        'illyastarikov/eclecta': metaFor('IllyaStarikov/eclecta'),
+      }),
+    );
+
+    const { context, map } = fakeContext();
+    report.flush();
+    const fetchRepo = async () => {
+      throw new Error('offline');
+    };
+
+    await expect(
+      githubMetaLoader({
+        repos: ['IllyaStarikov/bin', 'IllyaStarikov/eclecta'],
+        cacheRoot,
+        vendorPath,
+        fetchRepo,
+      }).load(context),
+    ).resolves.not.toThrow();
+
+    expect(map.has('illyastarikov/bin')).toBe(false);
+    expect(map.has('illyastarikov/eclecta')).toBe(true);
+    expect(report.flush().warnings).toBeGreaterThan(0);
+  });
+
+  it('never throws even when parseData (the collection schema) rejects one repo -- omits just that repo, keeps the rest', async () => {
+    cacheRoot = join(parent, 'parsedata-throws', 'cache');
+    vendorPath = join(parent, 'parsedata-throws', 'vendor.json');
+    mkdirSync(cacheRoot, { recursive: true });
+    writeFileSync(vendorPath, JSON.stringify({}));
+
+    // Simulates content.config.ts's real Zod schema throwing on an otherwise
+    // withFallback-valid result (the belt-and-suspenders half of the fix:
+    // parseData/store.set now live INSIDE the per-repo try/catch).
+    const { context, map } = fakeContext({
+      parseData: async ({ id, data }) => {
+        if (id === 'illyastarikov/bin') throw new Error('schema rejected this entry');
+        return data;
+      },
+    });
+    report.flush();
+    const fetchRepo = async (full: string) => metaFor(full);
+
+    await expect(
+      githubMetaLoader({
+        repos: ['IllyaStarikov/bin', 'IllyaStarikov/eclecta'],
+        cacheRoot,
+        vendorPath,
+        fetchRepo,
+      }).load(context),
+    ).resolves.not.toThrow();
+
+    expect(map.has('illyastarikov/bin')).toBe(false);
+    expect(map.has('illyastarikov/eclecta')).toBe(true);
     expect(report.flush().warnings).toBeGreaterThan(0);
   });
 });

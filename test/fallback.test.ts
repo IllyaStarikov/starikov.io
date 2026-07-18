@@ -175,10 +175,11 @@ describe('withFallback', () => {
     ).rejects.toThrow(/strict-source/);
   });
 
-  it('does not touch the cache or vendor files when the live fetch succeeds', async () => {
+  it('live success overwrites the cache file with fresh data but leaves the vendor snapshot untouched', async () => {
     cachePath = join(parent, 'live-ok-2', 'cache.json');
     vendorPath = join(parent, 'live-ok-2', 'vendor.json');
     mkdirSync(join(parent, 'live-ok-2'), { recursive: true });
+    writeFileSync(cachePath, JSON.stringify({ value: 'stale-cache-should-be-overwritten' }));
     writeFileSync(vendorPath, JSON.stringify({ value: 'stale-vendor-should-be-ignored' }));
 
     const result = await withFallback<Payload>({
@@ -190,9 +191,61 @@ describe('withFallback', () => {
     });
 
     expect(result).toEqual({ data: { value: 'fresh' }, stale: false });
-    // vendor file is untouched (still holds its original content, not overwritten)
+    // the cache file IS written on live success -- overwritten with the fresh data.
+    expect(JSON.parse(readFileSync(cachePath, 'utf8'))).toEqual({ value: 'fresh' });
+    // vendor file is untouched (still holds its original content, not overwritten).
     expect(JSON.parse(readFileSync(vendorPath, 'utf8'))).toEqual({
       value: 'stale-vendor-should-be-ignored',
     });
+  });
+
+  it('cache is preferred over vendor when both exist with different values', async () => {
+    cachePath = join(parent, 'tier-order', 'cache.json');
+    vendorPath = join(parent, 'tier-order', 'vendor.json');
+    mkdirSync(join(parent, 'tier-order'), { recursive: true });
+    writeFileSync(cachePath, JSON.stringify({ value: 'from-cache' }));
+    writeFileSync(vendorPath, JSON.stringify({ value: 'from-vendor' }));
+
+    const result = await withFallback<Payload>({
+      source: 'test-source',
+      fetchLive: async () => {
+        throw new Error('network down');
+      },
+      cachePath,
+      vendorPath,
+      validate,
+    });
+
+    // Tier 2 (cache) wins over tier 3 (vendor) even though both are valid.
+    expect(result).toEqual({ data: { value: 'from-cache' }, stale: true });
+  });
+
+  it('live success returns stale:false with live data (and warns) even when the cache write fails', async () => {
+    const parentDir = join(parent, 'cache-write-fails');
+    mkdirSync(parentDir, { recursive: true });
+    vendorPath = join(parentDir, 'vendor.json');
+    writeFileSync(vendorPath, JSON.stringify({ value: 'vendor-untouched' }));
+
+    // Point cachePath's PARENT at a path that is itself a plain FILE, so
+    // `mkdirSync(dirname(cachePath), {recursive:true})` fails with ENOTDIR --
+    // an unwritable cache location without needing OS-level permission games.
+    const blockerFile = join(parentDir, 'blocker');
+    writeFileSync(blockerFile, 'not a directory');
+    cachePath = join(blockerFile, 'nested', 'cache.json');
+
+    const result = await withFallback<Payload>({
+      source: 'test-source',
+      fetchLive: async () => ({ value: 'from-live' }),
+      cachePath,
+      vendorPath,
+      validate,
+    });
+
+    // The already-validated live data is NOT discarded by the cache-write
+    // failure: still stale:false, still the live value.
+    expect(result).toEqual({ data: { value: 'from-live' }, stale: false });
+    expect(report.flush().warnings).toBeGreaterThan(0);
+    // Vendor was never read/touched -- live succeeded.
+    expect(JSON.parse(readFileSync(vendorPath, 'utf8'))).toEqual({ value: 'vendor-untouched' });
   });
 });

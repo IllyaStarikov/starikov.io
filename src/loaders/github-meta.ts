@@ -13,17 +13,21 @@
  * out of it). `onVendor: 'warn'` because this metadata is pure decoration
  * (stars, last-pushed, topics): a stale badge is fine, an empty build is not.
  *
- * **Never breaks `astro build` offline.** Each repo's withFallback call is
- * wrapped in its own try/catch inside the loop: a repo that fails all three
- * tiers (no network, no prior cache, and no entry for it in the vendor
- * snapshot -- e.g. a repo added to SITE.projectRepos after the last vendor
- * refresh) is simply omitted from the collection with a warning, and every
- * other repo still loads normally. In the worst case (every repo fails every
- * tier -- e.g. a from-scratch checkout with no `.cache/` and a stale/missing
- * vendor file) `load()` still resolves with an empty store plus one warning
- * per repo, never a thrown error out of the loader. This is a deliberate
- * choice: /projects pages read repo metadata as decoration (Task 12), not as
- * something a missing entry should fail the whole site over.
+ * **Never breaks `astro build` offline.** Each repo's ENTIRE pipeline --
+ * withFallback's cascade AND the parseData/store.set that turns the result
+ * into a stored entry -- is wrapped in one try/catch inside the loop. A repo
+ * that fails all three withFallback tiers (no network, no prior cache, and no
+ * entry for it in the vendor snapshot -- e.g. a repo added to
+ * SITE.projectRepos after the last vendor refresh) OR that fails parseData
+ * (e.g. content.config.ts's schema rejects a shape that slipped through --
+ * see GithubRepoMetaSchema's pushedAt refinement for why that specific case
+ * shouldn't happen, but the catch covers the class of failure regardless) is
+ * simply omitted from the collection with a warning, and every other repo
+ * still loads normally. In the worst case (every repo fails) `load()` still
+ * resolves with an empty store plus one warning per repo, never a thrown
+ * error out of the loader. This is a deliberate choice: /projects pages read
+ * repo metadata as decoration (Task 12), not as something a missing entry
+ * should fail the whole site over.
  */
 
 import { join } from 'node:path';
@@ -63,7 +67,16 @@ const GithubRepoMetaSchema = z.object({
   fullName: z.string(),
   description: z.string().nullable(),
   stars: z.number(),
-  pushedAt: z.string(),
+  // Rejects unparseable garbage (a hand-edited or corrupted cache/vendor
+  // JSON file) HERE, at the withFallback validate tier, where a bad tier
+  // still falls through to the next one. Catching it only later, when
+  // content.config.ts's `z.coerce.date()` parses the stored entry, would be
+  // too late: parseData runs outside withFallback's cascade, so throwing
+  // there has no fallback left to fall through to (see the loader's
+  // per-repo try/catch for the belt-and-suspenders half of this fix).
+  pushedAt: z.string().refine((s) => !Number.isNaN(Date.parse(s)), {
+    message: 'pushedAt must be a parseable date string',
+  }),
   language: z.string().nullable(),
   topics: z.array(z.string()),
   archived: z.boolean(),
@@ -182,9 +195,16 @@ export function githubMetaLoader(options: GithubMetaLoaderOptions = {}): Loader 
 
       for (const full of repos) {
         const source = `${SOURCE}:${full}`;
-        let result: { data: GithubRepoMeta; stale: boolean };
+        // The WHOLE per-repo pipeline -- withFallback AND parseData/store.set
+        // -- lives inside this one try/catch. parseData runs the collection's
+        // Zod schema (content.config.ts), which can itself throw (an
+        // AstroError) on a shape it doesn't like; if that happened outside
+        // this catch it would abort the entire `load()` call and take every
+        // OTHER repo down with it, breaking the "never breaks astro build
+        // offline" guarantee documented above. One repo's failure -- at any
+        // stage -- only ever costs that one repo.
         try {
-          result = await withFallback<GithubRepoMeta>({
+          const result = await withFallback<GithubRepoMeta>({
             source,
             fetchLive: () => fetchRepo(full),
             cachePath: join(cacheRoot, cacheFileFor(full)),
@@ -192,19 +212,18 @@ export function githubMetaLoader(options: GithubMetaLoaderOptions = {}): Loader 
             validate: validateFor(full),
             onVendor: 'warn',
           });
+
+          const id = full.toLowerCase();
+          const data = { ...result.data, stale: result.stale };
+          const validated = await parseData({ id, data });
+          store.set({ id, data: validated, digest: generateDigest(data) });
+          loaded += 1;
         } catch (err) {
           report.warn(
             source,
-            `unavailable from live, cache, and vendor snapshot (${(err as Error).message}); omitting from the repos collection`,
+            `unavailable or unusable (${(err as Error).message}); omitting from the repos collection`,
           );
-          continue;
         }
-
-        const id = full.toLowerCase();
-        const data = { ...result.data, stale: result.stale };
-        const validated = await parseData({ id, data });
-        store.set({ id, data: validated, digest: generateDigest(data) });
-        loaded += 1;
       }
 
       logger.info(`loaded ${loaded}/${repos.length} repo metadata entr${loaded === 1 ? 'y' : 'ies'}`);
