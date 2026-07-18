@@ -19,7 +19,10 @@ const { essays } = Astro.props;
 
 {
   essays.length > 0 && (
-    <section class="related" aria-labelledby="related-essays">
+    <!-- data-pagefind-ignore: an auto-generated cross-link tail, not the
+         project's own content -- search should surface the project page once,
+         for its own words, not once per related-essay title it happens to link. -->
+    <section class="related" aria-labelledby="related-essays" data-pagefind-ignore>
       <h2 id="related-essays" class="related__label">
         Related essays
       </h2>

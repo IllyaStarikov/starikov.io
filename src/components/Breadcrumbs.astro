@@ -15,7 +15,11 @@ const { crumbs } = Astro.props;
 const segments: Crumb[] = [{ href: '/', label: '~' }, ...crumbs];
 ---
 
-<nav class="breadcrumbs" aria-label="Breadcrumb">
+<!-- data-pagefind-ignore: content-adjacent chrome, not page content. Belt-and-
+     suspenders -- Breadcrumbs already renders outside Shell's data-pagefind-body
+     <main>, so it's excluded from the index regardless, but this keeps it
+     excluded even if that structure ever changes. -->
+<nav class="breadcrumbs" aria-label="Breadcrumb" data-pagefind-ignore>
   <ol>
     {
       segments.map((crumb, i) => {

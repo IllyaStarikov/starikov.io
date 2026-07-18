@@ -83,6 +83,25 @@ const {
 
 const pathname = Astro.url.pathname;
 const hasRail = toc.length > 0 || facts.length > 0 || connections.length >= 2;
+
+// Pagefind filter (Task 16): every page that renders Shell carries its own
+// `pageType` string ('home', 'tool', 'project', 'tools', 'academia', ...) for
+// CSS/topbar hooks -- narrower than the three-value facet search should filter
+// on. Collapse it down to the SiteItemType-shaped bucket the ⌘K palette will
+// facet by (Task 17): tool pages and project pages keep their identity,
+// everything else (including index pages and 404) is just 'page'. Essays are
+// never Shell-rendered (they link out to starikov.co), so 'essay' never
+// appears here -- consistent with the brief's "essays are not in the Pagefind
+// index" resolution.
+const pagefindType = pageType === 'tool' ? 'tool' : pageType === 'project' ? 'project' : 'page';
+
+// The 404 page renders through Shell like everything else but has no content
+// worth surfacing in search ("404 -- not found" would just be search noise).
+// Pagefind's rule: once ANY page on the site opts into data-pagefind-body,
+// every page that does NOT carry that attribute is skipped entirely (not
+// partially indexed) -- so omitting it here, rather than pairing it with
+// data-pagefind-ignore, is what actually keeps this page out of the index.
+const isErrorPage = pageType === '404';
 ---
 
 <Base title={title} description={description}>
@@ -120,7 +139,13 @@ const hasRail = toc.length > 0 || facts.length > 0 || connections.length >= 2;
 
     <div class="content-col">
       {crumbs && crumbs.length > 0 && <Breadcrumbs crumbs={crumbs} />}
-      <main id="main" class:list={{ 'main--home': pageType === 'home' }} data-pagefind-body>
+      <main
+        id="main"
+        class:list={{ 'main--home': pageType === 'home' }}
+        data-pagefind-body={isErrorPage ? undefined : true}
+        data-pagefind-filter={`type:${pagefindType}`}
+        data-pagefind-meta={`title:${title}`}
+      >
         <slot />
       </main>
     </div>

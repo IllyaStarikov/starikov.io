@@ -16,12 +16,15 @@
  *   laptop): does every tools entry have a real dist/bin/<slug>/ page; does
  *   dist/writing/index.html actually contain >= minCounts.essays links out;
  *   did the curated theme CSS actually ship (the --code-comment sentinel);
- *   does sitemap-index.xml exist; does dist/pagefind/ exist WHEN the
- *   pagefind integration is wired up (Task 16 -- feature-flagged by grepping
- *   astro.config.mjs for now, since the integration doesn't exist yet); is
- *   dist/CNAME present and pointed at the real origin. These are pure build
- *   correctness -- nothing here should ever depend on network access, so
- *   there is no "offline dev build" excuse for any of them being broken.
+ *   does sitemap-index.xml exist; does dist/pagefind/ contain a real index
+ *   (pagefind.js + at least one .pf_index/.pf_fragment chunk) WHEN the
+ *   pagefind integration is wired up -- feature-flagged by grepping
+ *   astro.config.mjs for "pagefind" (pagefindEnabled()), which is what makes
+ *   this an unconditional, always-on gate since Task 16 actually added the
+ *   astro-pagefind integration there; is dist/CNAME present and pointed at
+ *   the real origin. These are pure build correctness -- nothing here should
+ *   ever depend on network access, so there is no "offline dev build" excuse
+ *   for any of them being broken.
  *
  *   BUILD_STRICT-gated (network + content-threshold gates, CI-only by
  *   default so an offline/WIP local build isn't blocked): the four academia
@@ -31,8 +34,9 @@
  *   independent, so it doesn't need dist/ or a loader to have counted it).
  *
  * Every pure decision below (occurrences/compareSlugs/withNote/toolsCheckRow/
- * anyContains/pagefindEnabled/isDraftFrontmatter/cnameMatchesOrigin/
- * checkMinCounts/formatSummaryTable/annotationLine/checkUrls) is exported and
+ * anyContains/pagefindEnabled/pagefindIndexReady/isDraftFrontmatter/
+ * cnameMatchesOrigin/checkMinCounts/formatSummaryTable/annotationLine/
+ * checkUrls) is exported and
  * unit-tested in test/validate-dist.test.mjs with plain data -- no real
  * dist/, no network (checkUrls takes an INJECTED head-check function; main()'s
  * real run is the only place a real `fetch` appears). main() itself is the
@@ -52,7 +56,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE, ACADEMIA_PDF_ORIGIN, PDF_VOLUMES } from '../src/site.config.mjs';
 
@@ -150,6 +154,25 @@ export function pagefindEnabled(astroConfigSource) {
   return /pagefind/i.test(astroConfigSource);
 }
 
+/**
+ * Task 16: strengthens the bare "does dist/pagefind/ exist" check -- an empty
+ * directory (or one left over from a previous build after pagefind silently
+ * failed to write anything) would pass a plain existsSync() and still leave
+ * the ⌘K palette (Task 17) with nothing to query. `entries` is every file
+ * path under dist/pagefind/, relative to that directory (e.g. 'pagefind.js',
+ * 'index/en_5969d2a.pf_index', 'fragment/en_c9c22f4.pf_fragment') -- gathered
+ * by main() via a recursive readdir, never touched here. Requires BOTH
+ * pagefind.js (the runtime the palette will import) AND at least one real
+ * index chunk file (Pagefind's own on-disk shapes: '.pf_index' under index/,
+ * or '.pf_fragment' under fragment/ -- either one proves the index actually
+ * has indexed content, not just the static runtime assets). PURE.
+ */
+export function pagefindIndexReady(entries) {
+  const hasRuntime = entries.includes('pagefind.js');
+  const chunkCount = entries.filter((e) => e.endsWith('.pf_index') || e.endsWith('.pf_fragment')).length;
+  return { ready: hasRuntime && chunkCount > 0, hasRuntime, chunkCount };
+}
+
 /** True when an MDX file's frontmatter sets `draft: true`. PURE. */
 export function isDraftFrontmatter(mdxSource) {
   const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(mdxSource);
@@ -244,6 +267,22 @@ function toolSlugsInDist() {
   return readdirSync(binDir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => e.name);
+}
+
+/** Every file path under `dir`, relative to `dir` (e.g. 'index/en_x.pf_index'),
+ *  recursing into subdirectories. Feeds pagefindIndexReady(). */
+function listFilesRecursive(dir, base = dir) {
+  if (!existsSync(dir)) return [];
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listFilesRecursive(full, base));
+    } else {
+      out.push(relative(base, full));
+    }
+  }
+  return out;
 }
 
 function projectCountFromSource() {
@@ -345,11 +384,21 @@ async function main() {
     fail('sitemap', 'validate-dist', 'dist/sitemap-index.xml does not exist');
   }
 
-  // ---- 5. pagefind/ exists, ONLY if the integration is wired up -----------
+  // ---- 5. pagefind/ has a real index, ONLY if the integration is wired up -
   const astroConfigSource = readFileSync(join(REPO_ROOT, 'astro.config.mjs'), 'utf8');
   if (pagefindEnabled(astroConfigSource)) {
-    if (existsSync(join(DIST, 'pagefind'))) {
-      pass('pagefind', 'dist/pagefind/ exists');
+    const pagefindDir = join(DIST, 'pagefind');
+    if (existsSync(pagefindDir)) {
+      const { ready, hasRuntime, chunkCount } = pagefindIndexReady(listFilesRecursive(pagefindDir));
+      if (ready) {
+        pass('pagefind', `dist/pagefind/pagefind.js exists with ${chunkCount} index chunk file(s)`);
+      } else {
+        fail(
+          'pagefind',
+          'validate-dist',
+          `dist/pagefind/ exists but is incomplete (pagefind.js present: ${hasRuntime}, index chunk files: ${chunkCount})`,
+        );
+      }
     } else {
       fail('pagefind', 'validate-dist', 'astro.config.mjs enables pagefind but dist/pagefind/ is missing');
     }

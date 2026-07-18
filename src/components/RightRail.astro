@@ -88,7 +88,11 @@ const showConnections = connections.length >= 2;
       )}
 
       {showConnections && (
-        <nav class="connections" aria-label="Connections">
+        // data-pagefind-ignore: a curated cross-link list, not the page's own
+        // content -- see Breadcrumbs.astro's note. The rail already renders
+        // outside Shell's data-pagefind-body <main>, so this is belt-and-
+        // suspenders, matching the other three excluded chrome blocks.
+        <nav class="connections" aria-label="Connections" data-pagefind-ignore>
           <p class="rail-label">Connections</p>
           <ul>
             {connections.map((c) => (

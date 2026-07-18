@@ -6,6 +6,7 @@ import {
   toolsCheckRow,
   anyContains,
   pagefindEnabled,
+  pagefindIndexReady,
   isDraftFrontmatter,
   cnameMatchesOrigin,
   checkMinCounts,
@@ -146,6 +147,42 @@ describe('pagefindEnabled (Task 16 feature flag)', () => {
   it('true once astro.config.mjs mentions pagefind, case-insensitively', () => {
     expect(pagefindEnabled(`import pagefind from 'astro-pagefind';`)).toBe(true);
     expect(pagefindEnabled(`// PAGEFIND enabled`)).toBe(true);
+  });
+});
+
+/*
+ * pagefindIndexReady -- Task 16's strengthened check. A bare existsSync() on
+ * dist/pagefind/ would still pass for a directory pagefind partially wrote to
+ * before crashing, or one left over stale from a previous build with the
+ * integration since removed -- neither has anything the ⌘K palette (Task 17)
+ * could actually query. These reproduce the real dist/pagefind/ shape (a real
+ * `npm run build` produced pagefind.js at the top level, one .pf_index chunk
+ * per language under index/, and one .pf_fragment per indexed page under
+ * fragment/ -- see task-16-report.md for the full listing).
+ */
+describe('pagefindIndexReady (Task 16: dist/pagefind/ has a real index, not just an empty/stale dir)', () => {
+  it('ready when pagefind.js is present alongside at least one .pf_index chunk', () => {
+    const entries = ['pagefind.js', 'pagefind-entry.json', 'index/en_5969d2a.pf_index'];
+    expect(pagefindIndexReady(entries)).toEqual({ ready: true, hasRuntime: true, chunkCount: 1 });
+  });
+
+  it('ready via .pf_fragment chunks too (one per indexed page, no .pf_index needed for this check)', () => {
+    const entries = ['pagefind.js', 'fragment/en_a.pf_fragment', 'fragment/en_b.pf_fragment'];
+    expect(pagefindIndexReady(entries)).toEqual({ ready: true, hasRuntime: true, chunkCount: 2 });
+  });
+
+  it('not ready when pagefind.js is missing (a stale index/ dir with no runtime to load it)', () => {
+    const entries = ['index/en_5969d2a.pf_index'];
+    expect(pagefindIndexReady(entries)).toEqual({ ready: false, hasRuntime: false, chunkCount: 1 });
+  });
+
+  it('not ready when there are no index chunks at all (an empty or half-written build)', () => {
+    const entries = ['pagefind.js', 'pagefind-entry.json'];
+    expect(pagefindIndexReady(entries)).toEqual({ ready: false, hasRuntime: true, chunkCount: 0 });
+  });
+
+  it('not ready for a totally empty directory', () => {
+    expect(pagefindIndexReady([])).toEqual({ ready: false, hasRuntime: false, chunkCount: 0 });
   });
 });
 

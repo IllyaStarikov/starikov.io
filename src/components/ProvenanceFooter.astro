@@ -65,7 +65,10 @@ const sourceLine =
       : null;
 ---
 
-<footer class="provenance">
+<!-- data-pagefind-ignore: build provenance, not page content ("Auto-generated
+     from owner/repo@sha" would otherwise be indexed verbatim on every project
+     page and swamp genuine matches on repo names/shas). -->
+<footer class="provenance" data-pagefind-ignore>
   {sourceLine && <span>{sourceLine}</span>}
   {
     edited && (
