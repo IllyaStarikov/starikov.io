@@ -16,6 +16,7 @@ import Base from './Base.astro';
 import Sidebar from '../components/Sidebar.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import RightRail from '../components/RightRail.astro';
+import Palette from '../components/Palette.astro';
 import { sortProjects } from '../lib/model';
 import type { ToolRef, ProjectRef } from '../lib/nav';
 
@@ -178,6 +179,10 @@ const isErrorPage = pageType === '404';
     </button>
     <Sidebar pathname={pathname} tools={tools} projects={projects} variant="sheet" />
   </dialog>
+
+  <!-- ⌘K command palette: one instance per route (Shell renders on every page).
+       Its module + index are lazy; the always-loaded bootstrap lives inside. -->
+  <Palette />
 </Base>
 
 <script>

@@ -61,7 +61,11 @@ export function buildBootSrc(pairs: Pairs, defaults: Defaults, bg: Record<string
   const B = JSON.stringify(bg);
   // Runs pre-paint AND on every re-execution (data-astro-rerun re-runs it per swap).
   // Listener registration is guarded by a window flag so swaps don't stack duplicates.
-  return `(function(){var P=${P},D=${D},BG=${B};function resolve(f,m){var sysDark=matchMedia("(prefers-color-scheme: dark)").matches;var mode=(m==="system"||!m)?(sysDark?"dark":"light"):m;var fam=P[f]?f:D.family;var v=(P[fam]&&P[fam][mode])||P[D.family][mode];return fam+"-"+v;}function apply(){var f,m;try{f=localStorage.getItem("theme:family");m=localStorage.getItem("theme:mode");}catch(e){}var t=resolve(f||D.family,m||"system");document.documentElement.dataset.theme=t;var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute("content",BG[t]||"");}apply();window.__applyTheme=apply;if(!window.__themeBooted){window.__themeBooted=true;try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){var m;try{m=localStorage.getItem("theme:mode");}catch(e){}if((m||"system")==="system")apply();});}catch(e){}document.addEventListener("astro:after-swap",apply);}})();`;
+  // resolve() hardening (Task 17): only "light"/"dark" are honored as explicit
+  // modes; "system", empty, null AND any corrupt string all fall through to the
+  // OS scheme. Coercing here means P[fam][mode] can never key on a bogus mode and
+  // emit a "<family>-undefined" attribute.
+  return `(function(){var P=${P},D=${D},BG=${B};function resolve(f,m){var sysDark=matchMedia("(prefers-color-scheme: dark)").matches;var mode=(m==="light"||m==="dark")?m:(sysDark?"dark":"light");var fam=P[f]?f:D.family;var v=(P[fam]&&P[fam][mode])||P[D.family][mode];return fam+"-"+v;}function apply(){var f,m;try{f=localStorage.getItem("theme:family");m=localStorage.getItem("theme:mode");}catch(e){}var t=resolve(f||D.family,m||"system");document.documentElement.dataset.theme=t;var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute("content",BG[t]||"");}apply();window.__applyTheme=apply;if(!window.__themeBooted){window.__themeBooted=true;try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){var m;try{m=localStorage.getItem("theme:mode");}catch(e){}if((m||"system")==="system")apply();});}catch(e){}document.addEventListener("astro:after-swap",apply);}})();`;
 }
 
 const THEME_BOOT_SRC = buildBootSrc(PAIRS, DEFAULTS, BG);

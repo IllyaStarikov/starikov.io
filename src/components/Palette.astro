@@ -1,0 +1,332 @@
+---
+/*
+ * Palette -- the ⌘K command palette shell (design §8).
+ *
+ * Renders the static frame of the <command-palette> custom element (overlay,
+ * dialog panel, combobox input, empty listbox, footer legend, live region) plus
+ * a tiny always-loaded bootstrap that owns the global triggers and defers the
+ * palette module (src/scripts/palette.ts) until browser idle or the first
+ * ⌘K / "/" / open-palette event. Mounted once by Shell so it exists on every
+ * route; the element's hard state lives in the module (see palette.ts), so the
+ * fresh element ClientRouter swaps in per navigation reuses the cached index.
+ *
+ * The rows are built client-side, so their styles are global (rooted at the
+ * `command-palette` tag, which scopes them just as effectively as Astro's
+ * per-file hashing would) rather than Astro-scoped. data-pagefind-ignore keeps
+ * the palette's own markup out of the search index.
+ */
+---
+
+<command-palette hidden data-pagefind-ignore>
+  <div class="cmdk-overlay" data-cmdk-overlay></div>
+  <div
+    class="cmdk-panel"
+    data-cmdk-panel
+    role="dialog"
+    aria-modal="true"
+    aria-label="Command palette"
+  >
+    <div class="cmdk-input-row">
+      <span class="cmdk-prompt" aria-hidden="true">❯</span>
+      <input
+        type="text"
+        class="cmdk-input"
+        data-cmdk-input
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="cmdk-list"
+        aria-autocomplete="list"
+        aria-label="Search pages, essays, themes, and actions"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="Jump to a page, essay, theme, or action…"
+      />
+      <kbd class="cmdk-esc" aria-hidden="true">esc</kbd>
+    </div>
+
+    <div
+      class="cmdk-list"
+      id="cmdk-list"
+      role="listbox"
+      aria-label="Results"
+      data-cmdk-list
+    >
+    </div>
+
+    <div class="cmdk-foot" aria-hidden="true">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>⌘</kbd><kbd>↵</kbd> new tab</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+
+    <div class="sr-only" aria-live="polite" data-cmdk-live></div>
+  </div>
+</command-palette>
+
+<script>
+  // Always-loaded ⌘K bootstrap. Owns the global triggers and lazy-imports the
+  // palette module (a separate, hashed chunk that self-registers
+  // <command-palette>) on first use or browser idle.
+  let mod: Promise<unknown> | null = null;
+  const load = () => (mod ??= import('../scripts/palette.ts'));
+
+  async function trigger(toggle: boolean): Promise<void> {
+    await load();
+    const el = document.querySelector('command-palette') as
+      | (HTMLElement & { open(): void; close(): void })
+      | null;
+    if (!el) return;
+    if (toggle && el.hasAttribute('data-open')) el.close();
+    else el.open();
+  }
+
+  document.addEventListener('open-palette', () => trigger(false));
+
+  document.addEventListener('keydown', (e) => {
+    const meta = e.metaKey || e.ctrlKey;
+    if (meta && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      trigger(true);
+    } else if (e.key === '/' && !meta && !e.altKey) {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || t?.isContentEditable) return;
+      e.preventDefault();
+      trigger(false);
+    }
+  });
+
+  // Warm the module (and, via its connectedCallback, the index) on idle so the
+  // first open is instant.
+  const idle =
+    (window as Window & { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback || ((cb: () => void) => window.setTimeout(cb, 1500));
+  idle(() => load());
+</script>
+
+<style is:global>
+  /* All selectors are rooted at the custom-element tag, which scopes them to the
+     palette subtree -- necessary because the option rows are created in JS and
+     would miss Astro's per-file scoping attribute. */
+  command-palette {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12vh var(--s-4) var(--s-4);
+  }
+
+  command-palette[hidden] {
+    display: none;
+  }
+
+  .cmdk-overlay {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg) 58%, transparent);
+    opacity: 0;
+    transition: opacity 120ms linear;
+  }
+
+  command-palette[data-open] .cmdk-overlay {
+    opacity: 1;
+  }
+
+  .cmdk-panel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: min(560px, 100%);
+    max-height: 76vh;
+    background: var(--surface-raised, var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    /* The single sanctioned shadow in the system (design §4): floating layers. */
+    box-shadow: 0 16px 48px rgb(0 0 0 / 0.36);
+    overflow: hidden;
+    opacity: 0;
+    transform: scale(0.98);
+    transition:
+      opacity 160ms var(--ease-out),
+      transform 160ms var(--ease-out);
+  }
+
+  command-palette[data-open] .cmdk-panel {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Reduced motion: no fade, no scale -- open/close is instant. */
+  @media (prefers-reduced-motion: reduce) {
+    .cmdk-overlay,
+    .cmdk-panel {
+      transition: none;
+    }
+  }
+
+  .cmdk-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cmdk-prompt {
+    font-family: var(--font-mono);
+    font-size: var(--fs-16);
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .cmdk-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: var(--fg);
+    /* 16px keeps iOS Safari from zooming the viewport on focus. */
+    font: 400 var(--fs-16) / 1.4 var(--font-sans);
+  }
+
+  .cmdk-input::placeholder {
+    color: var(--text-secondary);
+  }
+
+  .cmdk-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--s-2);
+  }
+
+  .cmdk-group {
+    padding: var(--s-2) var(--s-2) var(--s-1);
+    font: 500 11px / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .cmdk-list > [role='group']:not(:first-child) .cmdk-group {
+    margin-top: var(--s-2);
+  }
+
+  .cmdk-opt {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-2);
+    cursor: pointer;
+  }
+
+  .cmdk-opt.is-active {
+    background: var(--surface-hover, var(--surface));
+    /* Echoes the sidebar's 2px active bar -- one structural language. */
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .cmdk-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: var(--r-pill);
+  }
+
+  .cmdk-opt__text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cmdk-opt__title {
+    font-size: var(--fs-14);
+    color: var(--fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cmdk-opt__sub {
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cmdk-opt__hint {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+
+  .cmdk-empty {
+    padding: var(--s-5) var(--s-4);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  .cmdk-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-4);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+
+  .cmdk-foot span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  command-palette kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.4em;
+    padding: 1px 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-1);
+  }
+
+  command-palette .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 640px) {
+    command-palette {
+      padding-top: 8vh;
+    }
+  }
+</style>
