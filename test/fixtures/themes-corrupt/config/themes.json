@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "version": 1,
+  "defaults": {
+    "light": "tokyonight_day",
+    "dark": "tokyonight_storm"
+  },
+  "families": {
+    "tokyonight": {
+      "name": "Tokyo Night",
+      "url": "https://github.com/folke/tokyonight.nvim",
+      "neovim_plugin": "folke/tokyonight.nvim",
+      "variants": {
+        "day": {
+          "display_name": "Day",
+          "mode": "light",
+          "neovim_colorscheme": "tokyonight-day",
+          "neovim_style": "day",
+          "bat_theme": "tokyonight_day"
+        },
+        "night": {
+          "display_name": "Night",
+          "mode": "dark",
+          "neovim_colorscheme": "tokyonight-night",
+          "neovim_style": "night",
+          "bat_theme": "tokyonight_night"
+        },
+        "moon": {
+          "display_name": "Moon",
+          "mode": "dark",
+          "neovim_colorscheme": "tokyonight-moon",
+          "neovim_style": "moon",
+          "bat_theme": "tokyonight_moon"
+        },
+        "storm": {
+          "display_name": "Storm",
+          "mode": "dark",
+          "neovim_colorscheme": "tokyonight-storm",
+          "neovim_style": "storm",
+          "bat_theme": "tokyonight_storm"
+        }
+      }
+    }
+  },
+  "aliases": {
+    "light": "defaults.light",
+    "dark": "defaults.dark",
+    "day": "tokyonight_day",
+    "night": "tokyonight_night",
+    "moon": "tokyonight_moon",
+    "storm": "tokyonight_storm",
+    "latte": "catppuccin_latte",
+    "frappe": "catppuccin_frappe",
+    "macchiato": "catppuccin_macchiato",
+    "mocha": "catppuccin_mocha",
+    "mirage": "ayu_mirage",
+    "palenight": "material_palenight",
+    "oceanic": "material_oceanic"
+  }
+}
