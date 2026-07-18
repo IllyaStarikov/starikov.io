@@ -171,6 +171,11 @@ function wireControl(root: HTMLElement): void {
 
   function open(): void {
     if (isOpen()) return;
+    // Defense in depth: if this control lives in a hidden subtree (the sidebar is
+    // display:none below 1024px), opening would unhide a popover no one can see
+    // and dispatch a bogus "open" state. offsetParent === null on the trigger
+    // means the whole control is not displayed -- do nothing at all.
+    if (trigger.offsetParent === null) return;
     popover.removeAttribute('hidden');
     trigger.setAttribute('aria-expanded', 'true');
     const active =

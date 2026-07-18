@@ -103,13 +103,16 @@ const ansi = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan'];
     <dd>{latest}</dd>
 
     <dt class="sys__theme-key">theme</dt>
-    <dd>
+    <dd class="sys__theme-cell" data-theme-map={displayMapJson}>
+      {/* The picker trigger, shown only where its popover exists (≥1024px, the
+          sidebar breakpoint). Below it, the sidebar that owns #theme-popover is
+          display:none, so presenting a button here would announce a dialog that
+          can never open -- the static variant below replaces it, purely by CSS. */}
       <button
         type="button"
-        class="sys__theme"
+        class="sys__theme sys__theme--interactive"
         data-theme-open
         data-system-theme
-        data-theme-map={displayMapJson}
         aria-haspopup="dialog"
         aria-controls="theme-popover"
         aria-expanded="false"
@@ -117,6 +120,9 @@ const ansi = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan'];
         <span class="sys__theme-name">{defaultThemeLabel}</span>
         <span class="sys__caret" aria-hidden="true">▾</span>
       </button>
+      <span class="sys__theme-static" data-system-theme>
+        <span class="sys__theme-name">{defaultThemeLabel}</span>
+      </span>
     </dd>
 
     <dt>built</dt>
@@ -141,10 +147,13 @@ const ansi = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan'];
 
   function syncThemeLabels(): void {
     const id = document.documentElement.dataset.theme || '';
+    // Both theme-row variants (the ≥1024px button and the <1024px static span)
+    // carry data-system-theme; the map lives once on their shared [data-theme-map]
+    // cell. Update whichever is rendered so the label is right at every width.
     document.querySelectorAll<HTMLElement>('[data-system-theme]').forEach((el) => {
       let map: Record<string, string> = {};
       try {
-        map = JSON.parse(el.dataset.themeMap || '{}');
+        map = JSON.parse(el.closest<HTMLElement>('[data-theme-map]')?.dataset.themeMap || '{}');
       } catch {
         /* malformed map: keep the SSR label */
       }
@@ -267,6 +276,30 @@ const ansi = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan'];
   .sys__caret {
     color: var(--accent);
     font-size: 0.85em;
+  }
+
+  /* Honest at every width: below the sidebar breakpoint the popover the button
+     targets does not exist, so the button is removed from the DOM's a11y tree
+     (display:none) and a plain, non-interactive label takes its place. The swap
+     is pure CSS -- no JS, no aria to keep in sync, no phantom dialog. */
+  .sys__theme-static {
+    display: inline-flex;
+    align-items: baseline;
+    color: var(--fg);
+  }
+
+  .sys__theme--interactive {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .sys__theme--interactive {
+      display: inline-flex;
+    }
+
+    .sys__theme-static {
+      display: none;
+    }
   }
 
   /* Neofetch signature: the terminal's ANSI palette painted along the bottom.
