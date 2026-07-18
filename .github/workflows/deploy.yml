@@ -11,6 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: IllyaStarikov/.dotfiles
+          path: .sources/dotfiles
+          sparse-checkout: |
+            config/themes.json
+            src/theme
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
