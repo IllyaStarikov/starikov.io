@@ -55,4 +55,25 @@ describe('report.count()', () => {
     report.count('essays', 94);
     expect(report.flush()).toEqual({ warnings: 0, errors: 0 });
   });
+
+  // Task 15 code-review fix: every loader early-return/catch path now calls
+  // count() with an explicit 0 and a provenance note, so a source's absence
+  // is always distinguishable from "the source loaded fine but is empty".
+  it('writes {count, slugs, note} when a note is given alongside slugs (bin-tools.ts\'s missing-root path)', () => {
+    report.count('tools', 0, [], 'source checkout not found at .sources/bin');
+    const written = JSON.parse(readFileSync(join(dir, 'tools.json'), 'utf8'));
+    expect(written).toEqual({ count: 0, slugs: [], note: 'source checkout not found at .sources/bin' });
+  });
+
+  it('writes {count, note} (no slugs key) when a note is given without slugs (academia/ghost\'s early-return paths)', () => {
+    report.count('essays', 0, undefined, 'Ghost snapshot unavailable: offline');
+    const written = JSON.parse(readFileSync(join(dir, 'essays.json'), 'utf8'));
+    expect(written).toEqual({ count: 0, note: 'Ghost snapshot unavailable: offline' });
+  });
+
+  it('omits the note field entirely when none is given (no "note": null/undefined leaking into counts.json)', () => {
+    report.count('courses', 34);
+    const written = JSON.parse(readFileSync(join(dir, 'courses.json'), 'utf8'));
+    expect(Object.hasOwn(written, 'note')).toBe(false);
+  });
 });

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   occurrences,
   compareSlugs,
+  withNote,
+  toolsCheckRow,
   anyContains,
   pagefindEnabled,
   isDraftFrontmatter,
@@ -48,6 +50,76 @@ describe('compareSlugs (tools: counts.json slugs vs dist/bin/*/ dirs)', () => {
 
   it('handles both empty', () => {
     expect(compareSlugs([], [])).toEqual({ missing: [], extra: [] });
+  });
+});
+
+describe('withNote (root-cause hint formatting)', () => {
+  it('returns the text unchanged when there is no note', () => {
+    expect(withNote('0 < 1', undefined)).toBe('0 < 1');
+  });
+
+  it('appends the note in parens when given', () => {
+    expect(withNote('0 < 1', 'source checkout not found at .sources/bin')).toBe(
+      '0 < 1 (source checkout not found at .sources/bin)',
+    );
+  });
+});
+
+/*
+ * toolsCheckRow -- Task 15 code-review fix. A reviewer reproduced a build
+ * where `.sources/bin` had been renamed away and the build re-run WITHOUT
+ * cleaning first: a stale tools.json (count:1, slugs:['pocketcasts-reset'])
+ * from a PREVIOUS build survived, and the resulting "tools HTML" row read
+ * "dist/bin/ is missing HTML for: pocketcasts-reset" -- which reads exactly
+ * like a rendering defect (a page failed to generate), not the real root
+ * cause (the source checkout is gone). These tests prove the fix: once a
+ * loader's early-return path writes an explicit `{count:0, slugs:[],
+ * note:'...'}` (report.ts's report.count(..., note)) instead of leaving the
+ * stale file in place (scripts/lib/counts-integration.mjs's clearCounts()
+ * closes that separately), the row's own text names the root cause.
+ */
+describe('toolsCheckRow (misleading-message fix: root-cause note surfaces in the row text)', () => {
+  it('passes trivially (0/0) when both counts.json and dist/bin/ agree there are no tools, and still surfaces the note', () => {
+    const row = toolsCheckRow({ count: 0, slugs: [], note: 'source checkout not found at .sources/bin' }, []);
+    expect(row.status).toBe('pass');
+    expect(row.detail).toBe('0/0 slugs present in dist/bin/ (source checkout not found at .sources/bin)');
+  });
+
+  it('fails and names a genuinely missing page when there is no note (the ordinary case)', () => {
+    const row = toolsCheckRow({ count: 1, slugs: ['pocketcasts-reset'] }, []);
+    expect(row.status).toBe('fail');
+    expect(row.detail).toBe(
+      'dist/bin/ is missing HTML for: pocketcasts-reset (counts.json lists 1 tool(s))',
+    );
+  });
+
+  it("reproduces the reviewer's exact scenario: BEFORE the fix (stale entry, no note) the message is misleading; AFTER (explicit zero + note) it names the root cause", () => {
+    // Before: a stale, unrelated entry from a previous build survives (what
+    // clearCounts()/report.count()'s explicit-zero calls now prevent) --
+    // the row blames "missing HTML", indistinguishable from a renderer bug.
+    const staleRow = toolsCheckRow({ count: 1, slugs: ['pocketcasts-reset'] }, []);
+    expect(staleRow.status).toBe('fail');
+    expect(staleRow.detail).not.toMatch(/checkout|source not found/);
+
+    // After: bin-tools.ts's missing-root path calls
+    // report.count('tools', 0, [], 'source checkout not found at .sources/bin')
+    // -- the row now says exactly why there's nothing to check.
+    const fixedRow = toolsCheckRow(
+      { count: 0, slugs: [], note: 'source checkout not found at .sources/bin' },
+      [],
+    );
+    expect(fixedRow.detail).toContain('source checkout not found at .sources/bin');
+  });
+
+  it('treats a missing counts.json entry entirely the same as an explicit zero (no note, 0 expected)', () => {
+    const row = toolsCheckRow(undefined, []);
+    expect(row).toEqual({ status: 'pass', detail: '0/0 slugs present in dist/bin/', extra: [] });
+  });
+
+  it('surfaces unexpected extra dist/bin/ pages via the returned `extra` list', () => {
+    const row = toolsCheckRow({ count: 1, slugs: ['pocketcasts-reset'] }, ['pocketcasts-reset', 'ghost-page']);
+    expect(row.status).toBe('pass');
+    expect(row.extra).toEqual(['ghost-page']);
   });
 });
 
@@ -136,6 +208,31 @@ describe('checkMinCounts -- the hard gate, and its exact gate-proof shape', () =
 
   it('treats a missing actual as 0', () => {
     expect(checkMinCounts({}, { tools: 1 })).toEqual([{ key: 'tools', actual: 0, min: 1 }]);
+  });
+
+  it('omits the note field entirely when none is given -- exact match to the brief\'s gate-proof shape', () => {
+    // Guards against a regression that would add `note: undefined` (which
+    // toEqual would still pass on, but a real JSON.stringify would render
+    // as a literal "note":null/undefined) to every failure by default.
+    const result = checkMinCounts({ essays: 94 }, { essays: 99999 });
+    expect(result).toEqual([{ key: 'essays', actual: 94, min: 99999 }]);
+    expect(Object.hasOwn(result[0], 'note')).toBe(false);
+  });
+
+  it('folds a provenance note onto its matching failing key only', () => {
+    const actual = { essays: 94, tools: 0 };
+    const min = { essays: 50, tools: 1 };
+    const notes = { tools: 'source checkout not found at .sources/bin' };
+    expect(checkMinCounts(actual, min, notes)).toEqual([
+      { key: 'tools', actual: 0, min: 1, note: 'source checkout not found at .sources/bin' },
+    ]);
+  });
+
+  it('ignores a note for a key that is not actually failing', () => {
+    const actual = { essays: 94, tools: 1 };
+    const min = { essays: 50, tools: 1 };
+    const notes = { tools: 'irrelevant -- tools did not fail' };
+    expect(checkMinCounts(actual, min, notes)).toEqual([]);
   });
 });
 

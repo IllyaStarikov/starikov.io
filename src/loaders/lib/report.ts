@@ -55,6 +55,17 @@ export interface CollectionCount {
    *  diffs this against the slugs it finds by globbing dist/bin/*). Omitted
    *  when a collection has no meaningful notion of a "slug" to check. */
   slugs?: string[];
+  /** Provenance hint for a ZERO count, e.g. "source checkout not found at
+   *  .sources/bin". Task 15 code-review finding: a bare `count: 0` reads to
+   *  validate-dist (and a human reading its summary table) exactly like "the
+   *  source has zero entries" -- indistinguishable from "the source checkout
+   *  is entirely absent", which is a much more actionable thing to know.
+   *  Loaders set this on every early-return/catch path that produces a zero
+   *  (never on a genuine "the source loaded fine, but is empty" 0 -- there
+   *  isn't one of those in this codebase today, but the field stays optional
+   *  either way). validate-dist prints it inline wherever that collection's
+   *  count feeds a check. */
+  note?: string;
 }
 
 export const report = {
@@ -85,20 +96,36 @@ export const report = {
   },
 
   /**
-   * Records a collection's final entry count (+ optional slug list) into the
-   * build's counts manifest. Loaders call this exactly once, after they've
-   * finished writing entries to the content store, e.g.
-   * `report.count('tools', loaded.size, [...loaded])`. Overwrites this
-   * collection's own file each call -- last write for a given `collection`
-   * name wins, which is exactly right for a single `astro build` (every
-   * defined collection's loader runs once) and for a test re-invoking a
-   * loader against a fresh COUNTS_DIR. See the module doc above for why this
-   * is a per-collection file on disk rather than in-memory module state.
+   * Records a collection's final entry count (+ optional slug list, +
+   * optional provenance note for a zero -- see CollectionCount) into the
+   * build's counts manifest. Loaders call this exactly once per `load()`
+   * invocation -- on the happy path AFTER finishing writing entries to the
+   * content store (`report.count('tools', loaded.size, [...loaded])`), and
+   * on EVERY early-return/catch path too, with `n: 0` and a `note` naming why
+   * (`report.count('tools', 0, [], 'source checkout not found at .sources/bin')`).
+   * That second half matters: without it, a loader that bails out early
+   * simply never calls count(), leaving whatever this collection's file
+   * happened to say from a PREVIOUS build (see clearCounts() in
+   * scripts/lib/counts-integration.mjs for the other half of this fix -- the
+   * file wouldn't even be stale today, since the whole COUNTS_DIR is wiped at
+   * the top of every build, but writing an explicit zero is the second,
+   * independent layer of defense: it holds even if that cleanup step were
+   * ever skipped, moved, or broken).
+   *
+   * Overwrites this collection's own file each call -- last write for a given
+   * `collection` name wins, which is exactly right for a single `astro build`
+   * (every defined collection's loader runs once) and for a test re-invoking
+   * a loader against a fresh COUNTS_DIR. See the module doc above for why
+   * this is a per-collection file on disk rather than in-memory module state.
    */
-  count(collection: string, n: number, slugs?: string[]): void {
+  count(collection: string, n: number, slugs?: string[], note?: string): void {
     const dir = countsDir();
     mkdirSync(dir, { recursive: true });
-    const entry: CollectionCount = slugs ? { count: n, slugs: [...slugs] } : { count: n };
+    const entry: CollectionCount = {
+      count: n,
+      ...(slugs ? { slugs: [...slugs] } : {}),
+      ...(note ? { note } : {}),
+    };
     writeFileSync(join(dir, `${collection}.json`), JSON.stringify(entry));
   },
 };

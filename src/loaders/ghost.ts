@@ -334,6 +334,7 @@ export function ghostEssaysLoader(options: GhostLoaderOptions = {}): Loader {
           'ghost-essays',
           `Ghost snapshot unavailable (${(err as Error).message}); essays collection is empty`,
         );
+        report.count('essays', 0, undefined, `Ghost snapshot unavailable: ${(err as Error).message}`);
         logger.warn('Ghost snapshot unavailable; essays collection is empty');
         return;
       }
@@ -378,6 +379,7 @@ export function ghostTagsLoader(options: GhostLoaderOptions = {}): Loader {
           'ghost-tags',
           `Ghost snapshot unavailable (${(err as Error).message}); essayTags collection is empty`,
         );
+        report.count('essayTags', 0, undefined, `Ghost snapshot unavailable: ${(err as Error).message}`);
         logger.warn('Ghost snapshot unavailable; essayTags collection is empty');
         return;
       }

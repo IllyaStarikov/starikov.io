@@ -30,14 +30,25 @@
  *   by globbing src/content/projects/*.mdx minus `draft: true` -- build-
  *   independent, so it doesn't need dist/ or a loader to have counted it).
  *
- * Every pure decision below (occurrences/compareSlugs/anyContains/
- * pagefindEnabled/isDraftFrontmatter/cnameMatchesOrigin/checkMinCounts/
- * formatSummaryTable/annotationLine/checkUrls) is exported and unit-tested in
- * test/validate-dist.test.mjs with plain data -- no real dist/, no network
- * (checkUrls takes an INJECTED head-check function; main()'s real run is the
- * only place a real `fetch` appears). main() itself is the thin, untested-by-
- * design IO shell around them, mirroring build-themes.mjs / transcode-
- * media.mjs's split.
+ * Every pure decision below (occurrences/compareSlugs/withNote/toolsCheckRow/
+ * anyContains/pagefindEnabled/isDraftFrontmatter/cnameMatchesOrigin/
+ * checkMinCounts/formatSummaryTable/annotationLine/checkUrls) is exported and
+ * unit-tested in test/validate-dist.test.mjs with plain data -- no real
+ * dist/, no network (checkUrls takes an INJECTED head-check function; main()'s
+ * real run is the only place a real `fetch` appears). main() itself is the
+ * thin, untested-by-design IO shell around them, mirroring build-themes.mjs /
+ * transcode-media.mjs's split.
+ *
+ * Every counts.json entry (tools/academiaShowcase/courses/repos/essays/
+ * essayTags) may carry a `note` -- a loader's provenance hint for a ZERO
+ * count (see report.ts's CollectionCount) written on every early-return/catch
+ * path, e.g. "source checkout not found at .sources/bin". withNote()/
+ * toolsCheckRow() fold it into whichever check row that collection's count
+ * feeds, so a genuinely-missing source reads as exactly that, not as a
+ * generic "count too low" or a misleadingly renderer-shaped "missing HTML"
+ * message (Task 15 code-review finding, reproduced by renaming .sources/bin
+ * away and rebuilding without cleaning first -- see the gate-proof
+ * reproduction transcript in task-15-report.md).
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -79,6 +90,51 @@ export function compareSlugs(expected, actual) {
   return { missing, extra };
 }
 
+/**
+ * Appends a parenthesized provenance note to a detail string when one is
+ * given, else returns the string unchanged. Task 15 code-review finding: a
+ * bare "0 < 1" or "missing HTML for: X" reads like a rendering defect; the
+ * note (report.ts's CollectionCount.note, set by a loader's early-return/
+ * catch path) names the actual root cause -- e.g. "source checkout not found
+ * at .sources/bin" -- so the row that fails IS the explanation, not just a
+ * symptom. PURE.
+ */
+export function withNote(text, note) {
+  return note ? `${text} (${note})` : text;
+}
+
+/**
+ * Builds the "tools HTML" check row from counts.json's `tools` entry (may be
+ * undefined -- a collection missing from the manifest entirely, which
+ * shouldn't happen now that every loader path calls report.count(), but
+ * checkMinCounts-style treats it as an empty collection rather than
+ * crashing) and the slugs actually found under dist/bin/. Any provenance
+ * note on the counts entry (see withNote) is folded into the detail text
+ * regardless of pass/fail, so even a vacuous "0/0 slugs present" pass still
+ * surfaces WHY there were zero to check. PURE.
+ */
+export function toolsCheckRow(toolsEntry, distSlugs) {
+  const expected = toolsEntry?.slugs ?? [];
+  const count = toolsEntry?.count ?? 0;
+  const note = toolsEntry?.note;
+  const { missing, extra } = compareSlugs(expected, distSlugs);
+  if (missing.length === 0) {
+    return {
+      status: 'pass',
+      detail: withNote(`${expected.length}/${expected.length} slugs present in dist/bin/`, note),
+      extra,
+    };
+  }
+  return {
+    status: 'fail',
+    detail: withNote(
+      `dist/bin/ is missing HTML for: ${missing.join(', ')} (counts.json lists ${count} tool(s))`,
+      note,
+    ),
+    extra,
+  };
+}
+
 /** True when any string in `texts` contains `needle`. PURE. */
 export function anyContains(texts, needle) {
   return texts.some((t) => t.includes(needle));
@@ -112,13 +168,21 @@ export function cnameMatchesOrigin(content, originUrl) {
  * The min-counts hard gate. Returns one entry per key whose `actual` is below
  * `min`'s, sorted by key for a deterministic report -- `[]` means every gate
  * passed. A key absent from `actual` counts as 0 (an uncounted collection is
- * as bad as an empty one). PURE.
+ * as bad as an empty one). `notes` (optional, keyed the same as `min`) folds
+ * a provenance hint onto a failing entry when the caller has one (counts.
+ * json's per-collection `note` -- see withNote); a key with no note gets no
+ * `note` property at all, so the brief's exact gate-proof shape
+ * (`{key:'essays', actual:94, min:99999}`, no `note` key) is unchanged when
+ * nothing is known beyond the bare numbers. PURE.
  */
-export function checkMinCounts(actual, min) {
+export function checkMinCounts(actual, min, notes = {}) {
   return Object.keys(min)
     .filter((key) => (actual[key] ?? 0) < min[key])
     .sort()
-    .map((key) => ({ key, actual: actual[key] ?? 0, min: min[key] }));
+    .map((key) => {
+      const entry = { key, actual: actual[key] ?? 0, min: min[key] };
+      return notes[key] ? { ...entry, note: notes[key] } : entry;
+    });
 }
 
 /**
@@ -219,36 +283,46 @@ async function main() {
   const projectCount = projectCountFromSource();
 
   // ---- 1. per-tool HTML exists for every tools entry (unconditional) ------
-  const toolSlugs = counts.tools?.slugs ?? [];
-  const { missing: missingTools, extra: extraTools } = compareSlugs(toolSlugs, toolSlugsInDist());
-  if (missingTools.length === 0) {
-    pass('tools HTML', `${toolSlugs.length}/${toolSlugs.length} slugs present in dist/bin/`);
+  const toolsRow = toolsCheckRow(counts.tools, toolSlugsInDist());
+  if (toolsRow.status === 'pass') {
+    pass('tools HTML', toolsRow.detail);
   } else {
-    fail(
+    fail('tools HTML', 'validate-dist', toolsRow.detail);
+  }
+  if (toolsRow.extra.length > 0) {
+    warnSkip(
       'tools HTML',
       'validate-dist',
-      `dist/bin/ is missing HTML for: ${missingTools.join(', ')} (counts.json lists ${toolSlugs.length} tool(s))`,
+      `dist/bin/ has unexpected extra page(s): ${toolsRow.extra.join(', ')}`,
     );
-  }
-  if (extraTools.length > 0) {
-    warnSkip('tools HTML', 'validate-dist', `dist/bin/ has unexpected extra page(s): ${extraTools.join(', ')}`);
   }
 
   // ---- 2. /writing/ has >= minCounts.essays links out (unconditional) -----
   const writingPath = join(DIST, 'writing/index.html');
+  const essaysNote = counts.essays?.note;
   if (existsSync(writingPath)) {
     const n = occurrences(readFileSync(writingPath, 'utf8'), 'starikov.co/');
     if (n >= SITE.minCounts.essays) {
-      pass('writing essay links', `${n} occurrences of "starikov.co/" (>= ${SITE.minCounts.essays})`);
+      pass(
+        'writing essay links',
+        withNote(`${n} occurrences of "starikov.co/" (>= ${SITE.minCounts.essays})`, essaysNote),
+      );
     } else {
       fail(
         'writing essay links',
         'validate-dist',
-        `dist/writing/index.html has ${n} "starikov.co/" links, expected >= ${SITE.minCounts.essays}`,
+        withNote(
+          `dist/writing/index.html has ${n} "starikov.co/" links, expected >= ${SITE.minCounts.essays}`,
+          essaysNote,
+        ),
       );
     }
   } else {
-    fail('writing essay links', 'validate-dist', 'dist/writing/index.html does not exist');
+    fail(
+      'writing essay links',
+      'validate-dist',
+      withNote('dist/writing/index.html does not exist', essaysNote),
+    );
   }
 
   // ---- 3. curated theme CSS shipped (unconditional) ------------------------
@@ -317,12 +391,21 @@ async function main() {
       themeVariants: themeVariantCount,
       projects: projectCount,
     };
-    const failures = checkMinCounts(actual, SITE.minCounts);
+    // Root-cause notes (Task 15 code-review fix): a loader's early-return/
+    // catch path writes counts.<collection>.note alongside its explicit
+    // zero (see report.ts's count()); fold whichever ones exist onto the
+    // gate's failure entries so "0 < 1" reads as "0 < 1 (source checkout
+    // not found at .sources/bin)" instead of leaving the reader to guess.
+    const notes = {};
+    for (const key of Object.keys(SITE.minCounts)) {
+      if (counts[key]?.note) notes[key] = counts[key].note;
+    }
+    const failures = checkMinCounts(actual, SITE.minCounts, notes);
     if (failures.length === 0) {
       pass('min-counts', Object.entries(actual).map(([k, v]) => `${k}=${v}`).join(', '));
     } else {
       for (const f of failures) {
-        fail('min-counts', f.key, `${f.actual} < ${f.min}`);
+        fail('min-counts', f.key, withNote(`${f.actual} < ${f.min}`, f.note));
       }
     }
   } else {

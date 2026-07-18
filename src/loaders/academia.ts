@@ -360,6 +360,15 @@ export function academiaShowcaseLoader({ root }: { root: string }): Loader {
       const absRoot = resolve(root);
       const portfolioPath = join(absRoot, 'PORTFOLIO.md');
       if (!existsSync(portfolioPath)) {
+        // Explicit zero + provenance note BEFORE failLoud (which throws under
+        // BUILD_STRICT) -- Task 15 code-review fix, see
+        // scripts/lib/counts-integration.mjs's clearCounts() module doc.
+        report.count(
+          'academiaShowcase',
+          0,
+          undefined,
+          `source checkout not found at ${root} (PORTFOLIO.md missing)`,
+        );
         failLoud(
           SHOWCASE_SOURCE,
           `PORTFOLIO.md not found at ${root}; /academia showcase is empty`,
@@ -387,11 +396,23 @@ export function academiaShowcaseLoader({ root }: { root: string }): Loader {
       try {
         projects = parseShowcase(md);
       } catch (err) {
+        report.count(
+          'academiaShowcase',
+          0,
+          undefined,
+          `PORTFOLIO.md parse failed: ${(err as Error).message}`,
+        );
         failLoud(SHOWCASE_SOURCE, `PORTFOLIO.md parse failed: ${(err as Error).message}`);
         return;
       }
 
       if (projects.length === 0) {
+        report.count(
+          'academiaShowcase',
+          0,
+          undefined,
+          'PORTFOLIO.md yielded no numbered project sections',
+        );
         failLoud(SHOWCASE_SOURCE, 'PORTFOLIO.md yielded no numbered project sections');
         return;
       }
@@ -472,6 +493,12 @@ export function coursesLoader({ root }: { root: string }): Loader {
       const srcDir = join(absRoot, 'src');
       const latexDir = join(absRoot, 'latex');
       if (!existsSync(srcDir) && !existsSync(latexDir)) {
+        report.count(
+          'courses',
+          0,
+          undefined,
+          `source checkout not found at ${root} (no src/ or latex/)`,
+        );
         failLoud(COURSES_SOURCE, `neither src/ nor latex/ found at ${root}; course index is empty`);
         logger.warn(`${root} has no src/ or latex/; courses is empty`);
         return;
@@ -524,6 +551,7 @@ export function coursesLoader({ root }: { root: string }): Loader {
       }
 
       if (entries.size === 0) {
+        report.count('courses', 0, undefined, 'no course directories matched under src/ or latex/');
         failLoud(COURSES_SOURCE, 'no course directories matched under src/ or latex/');
         return;
       }

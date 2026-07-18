@@ -311,6 +311,12 @@ export function binToolsLoader({ root }: { root: string }): Loader {
           SOURCE,
           `source not found at ${root}; /bin will be empty (the tools >= 1 min-count gate enforces content in CI)`,
         );
+        // Explicit zero + provenance note (Task 15 code-review fix): without
+        // this, an early return here never calls report.count() at all,
+        // leaving whatever a PREVIOUS build's tools.json said -- see
+        // scripts/lib/counts-integration.mjs's clearCounts() module doc for
+        // the reproduced failure this closes.
+        report.count('tools', 0, [], `source checkout not found at ${root}`);
         logger.warn(`${root} missing; /bin collection is empty`);
         return;
       }
