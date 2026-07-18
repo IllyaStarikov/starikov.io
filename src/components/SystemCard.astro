@@ -1,0 +1,282 @@
+---
+/*
+ * SystemCard -- the signature discovery device (design spec §5.2).
+ *
+ * A neofetch-style panel of REAL build-time data. Its `theme:` row is not a
+ * label but the theme picker's second trigger: clicking it opens the same
+ * single `#theme-popover` the sidebar footer owns (openThemePopover in
+ * theme-control.ts). A visitor who never opens a menu still learns, from this
+ * one line, that the site is themed by a terminal.
+ *
+ * Every row is computed here, at build:
+ *   - os        static (the two OSes the dotfiles target)
+ *   - editor    neovim + locked plugin count + cold-start (verified, Task 12)
+ *   - dotfiles  line/file totals (site-canonical, verified Task 12)
+ *   - themes    the WHOLE theme engine's variant/family count, counted from the
+ *               committed dotfiles manifest snapshot (17 families / 57 variants)
+ *   - theme:    the live theme -- SSR prints the default, the client corrects it
+ *   - essays    guarded: rendered only once the essays collection lands (Task 14)
+ *   - latest    the most recent push across every tracked repo, relative
+ *   - built     this build's UTC timestamp
+ *
+ * A11y: a <section aria-label="System">; rows are a <dl>; the ANSI strip is
+ * decorative (aria-hidden). The theme row button carries aria-haspopup +
+ * aria-controls="theme-popover" and its aria-expanded is mirrored by the
+ * shared control via the `themepopover` event.
+ */
+import { getCollection } from 'astro:content';
+import themesData from '../data/generated/themes.json';
+// The full dotfiles theme manifest (committed vendor snapshot -- the same file
+// build-themes.mjs reads live in CI). Counted here so "57 variants / 17
+// families" is real build data, not a hardcoded string, and tracks the engine.
+import themeManifest from '../data/vendor/themes-snapshot/config/themes.json';
+import { THEME_DISPLAY_MAP, themeDisplayName } from '../lib/theme-display';
+import { formatRelativeTime } from '../lib/relative-time';
+
+// -- themes: count the whole engine from the manifest ------------------------
+const familyCount = Object.keys(themeManifest.families).length;
+const variantCount = Object.values(themeManifest.families).reduce(
+  (sum, family) => sum + Object.keys(family.variants).length,
+  0,
+);
+
+// -- latest: newest push across every tracked repo ---------------------------
+const repos = await getCollection('repos');
+const newestPush = repos.reduce<Date | null>((newest, repo) => {
+  const at = repo.data.pushedAt; // schema coerces to Date
+  return !newest || at > newest ? at : newest;
+}, null);
+const latest = newestPush ? (formatRelativeTime(newestPush) ?? '—') : '—';
+
+// -- built: this build's UTC stamp -> "2026-07-18 04:12 UTC" ------------------
+const nowIso = new Date().toISOString();
+const built = `${nowIso.slice(0, 10)} ${nowIso.slice(11, 16)} UTC`;
+
+// -- essays: guarded until Task 14's collection exists -----------------------
+// TODO(task-14): const essayCount = (await getCollection('essays')).length;
+const essayCount = 0;
+
+// -- theme: SSR prints the default; the client re-reads data-theme on boot ---
+const defaultThemeId = themesData.defaults.dark;
+const defaultThemeLabel = themeDisplayName(defaultThemeId);
+const displayMapJson = JSON.stringify(THEME_DISPLAY_MAP);
+
+// Neofetch field rows (order matters -- os first, build stamp last). `theme` and
+// `essays` are special-cased in the template (button; guarded), so they are not
+// in this list.
+const rows: { key: string; value: string }[] = [
+  { key: 'os', value: 'macOS + Linux' },
+  { key: 'editor', value: 'neovim · 52 plugins · ~150ms' },
+  { key: 'dotfiles', value: '90.8K lines / 770 files' },
+  { key: 'themes', value: `${variantCount} variants / ${familyCount} families` },
+];
+
+// The ANSI palette the strip paints -- the 7 named colors the theme engine
+// emits (--ansi-black … --ansi-cyan). Recolors live on every theme switch.
+const ansi = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan'];
+---
+
+<section class="sys" aria-label="System">
+  <p class="sys__host"><span class="sys__at">illya@</span>starikov.io</p>
+  <div class="sys__rule" aria-hidden="true"></div>
+
+  <dl class="sys__rows">
+    {
+      rows.map((row) => (
+        <>
+          <dt>{row.key}</dt>
+          <dd>{row.value}</dd>
+        </>
+      ))
+    }
+
+    {
+      essayCount > 0 && (
+        <>
+          <dt>essays</dt>
+          <dd>{essayCount}</dd>
+        </>
+      )
+    }
+
+    <dt>latest</dt>
+    <dd>{latest}</dd>
+
+    <dt class="sys__theme-key">theme</dt>
+    <dd>
+      <button
+        type="button"
+        class="sys__theme"
+        data-theme-open
+        data-system-theme
+        data-theme-map={displayMapJson}
+        aria-haspopup="dialog"
+        aria-controls="theme-popover"
+        aria-expanded="false"
+      >
+        <span class="sys__theme-name">{defaultThemeLabel}</span>
+        <span class="sys__caret" aria-hidden="true">▾</span>
+      </button>
+    </dd>
+
+    <dt>built</dt>
+    <dd>{built}</dd>
+  </dl>
+
+  <div class="sys__ansi" aria-hidden="true">
+    {ansi.map((c) => <span style={`background:var(--ansi-${c})`} />)}
+  </div>
+</section>
+
+<script>
+  import { openThemePopover } from '../scripts/theme-control.ts';
+
+  // Resolve the printed theme label from the live data-theme, using the map
+  // embedded on the element (built from the manifest at build time).
+  function displayFor(id: string, map: Record<string, string>): string {
+    if (map[id]) return map[id];
+    const dash = id.indexOf('-');
+    return dash === -1 ? id : `${id.slice(0, dash)}/${id.slice(dash + 1)}`;
+  }
+
+  function syncThemeLabels(): void {
+    const id = document.documentElement.dataset.theme || '';
+    document.querySelectorAll<HTMLElement>('[data-system-theme]').forEach((el) => {
+      let map: Record<string, string> = {};
+      try {
+        map = JSON.parse(el.dataset.themeMap || '{}');
+      } catch {
+        /* malformed map: keep the SSR label */
+      }
+      const nameEl = el.querySelector<HTMLElement>('.sys__theme-name') ?? el;
+      const label = displayFor(id, map);
+      if (label) nameEl.textContent = label;
+    });
+  }
+
+  function wireOpeners(): void {
+    document.querySelectorAll<HTMLButtonElement>('[data-theme-open]').forEach((btn) => {
+      if (btn.dataset.themeOpenWired === '1') return;
+      btn.dataset.themeOpenWired = '1';
+      btn.addEventListener('click', () => openThemePopover(btn));
+    });
+  }
+
+  // Global listeners, wired exactly once for the session: keep the printed label
+  // and the row's aria-expanded in sync with the one shared popover.
+  interface CardWindow extends Window {
+    __systemCardWired?: boolean;
+  }
+  function wireGlobalsOnce(): void {
+    const w = window as CardWindow;
+    if (w.__systemCardWired) return;
+    w.__systemCardWired = true;
+    document.addEventListener('themechange', syncThemeLabels);
+    document.addEventListener('themepopover', (e) => {
+      const open = (e as CustomEvent<{ open: boolean }>).detail?.open ? 'true' : 'false';
+      document
+        .querySelectorAll('[data-theme-open]')
+        .forEach((b) => b.setAttribute('aria-expanded', open));
+    });
+  }
+
+  function init(): void {
+    if (!document.querySelector('[data-system-theme]')) return;
+    wireGlobalsOnce();
+    wireOpeners();
+    syncThemeLabels();
+  }
+
+  init();
+  // ClientRouter swaps in a fresh card; re-wire and re-sync on every navigation.
+  document.addEventListener('astro:page-load', init);
+</script>
+
+<style>
+  .sys {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    line-height: 1.4;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    overflow: hidden;
+  }
+
+  .sys__host {
+    padding: var(--s-4) var(--s-4) var(--s-2);
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.01em;
+  }
+
+  .sys__at {
+    color: var(--accent);
+  }
+
+  .sys__rule {
+    margin: 0 var(--s-4) var(--s-3);
+    border-top: 1px dashed var(--border);
+  }
+
+  .sys__rows {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: var(--s-4);
+    row-gap: var(--s-2);
+    margin: 0;
+    padding: 0 var(--s-4) var(--s-4);
+  }
+
+  .sys__rows dt {
+    color: var(--text-secondary);
+  }
+
+  .sys__rows dd {
+    margin: 0;
+    color: var(--fg);
+    /* Values wrap inside their column instead of pushing the card wider. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* The theme row is the picker's second trigger: a button that reads as one of
+     the neofetch lines, with the caret marking it interactive. */
+  .sys__theme {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--s-1);
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 0.15em;
+    transition: text-decoration-color var(--dur-2) var(--ease-out);
+  }
+
+  .sys__theme:hover,
+  .sys__theme:focus-visible {
+    text-decoration-color: var(--accent);
+  }
+
+  .sys__caret {
+    color: var(--accent);
+    font-size: 0.85em;
+  }
+
+  /* Neofetch signature: the terminal's ANSI palette painted along the bottom.
+     Uses --ansi-* so it recolors the instant the theme swaps. */
+  .sys__ansi {
+    display: flex;
+    height: 16px;
+  }
+
+  .sys__ansi span {
+    flex: 1;
+  }
+</style>

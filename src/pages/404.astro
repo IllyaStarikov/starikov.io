@@ -1,0 +1,185 @@
+---
+/*
+ * 404 (design spec §3) -- the shell stays fully intact; the content is a shell
+ * session that couldn't resolve the path. Astro emits this to dist/404.html at
+ * the dist root, which GitHub Pages serves for any unmatched URL.
+ *
+ * The mistyped path is echoed by a tiny inline script that reads
+ * location.pathname into `textContent` -- never innerHTML, so a crafted URL is
+ * inert -- and runs on a hard navigation (a 404 has no ClientRouter to lean on).
+ */
+import Shell from '../layouts/Shell.astro';
+import Kbd from '../components/Kbd.astro';
+
+const SUGGESTIONS = [
+  { href: '/projects', path: '~/projects', note: 'the project ledger' },
+  { href: '/bin', path: '~/bin', note: 'command-line tools' },
+  { href: '/academia', path: '~/academia', note: 'the S&T archive' },
+];
+---
+
+<Shell title="404 — not found · starikov.io" description="Page not found." pageType="404">
+  <section class="nf" aria-labelledby="nf-title">
+    <h1 id="nf-title" class="nf__title">404 — not found</h1>
+
+    <div class="nf__term" role="group" aria-label="Terminal">
+      <p class="nf__line">
+        <span class="nf__prompt" aria-hidden="true">❯</span>
+        <span class="nf__cmd" data-echo-cmd>404</span>
+      </p>
+      <p class="nf__err">
+        zsh: command not found: <span class="nf__path" data-echo-path>/</span>
+      </p>
+
+      <p class="nf__hint">did you mean:</p>
+      <ul class="nf__suggestions">
+        {
+          SUGGESTIONS.map((s) => (
+            <li>
+              <a class="nf__link" href={s.href}>
+                <span class="nf__arrow" aria-hidden="true">
+                  →
+                </span>
+                {s.path}
+              </a>
+              <span class="nf__note">{s.note}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      <button class="nf__search" type="button" data-open-palette>
+        <span class="nf__prompt" aria-hidden="true">❯</span>
+        <span>press <Kbd label="Command K">⌘K</Kbd> to search everything</span>
+        <span class="nf__cursor" aria-hidden="true">▊</span>
+      </button>
+    </div>
+  </section>
+
+  <script
+    is:inline
+    set:html={`(function(){var p=location.pathname||'/';var c=(p.charAt(0)==='/'?p.slice(1):p)||'404';var path=document.querySelector('[data-echo-path]');if(path)path.textContent=p;var cmd=document.querySelector('[data-echo-cmd]');if(cmd)cmd.textContent=c;})();`}
+  />
+</Shell>
+
+<style>
+  .nf {
+    max-width: 640px;
+  }
+
+  .nf__title {
+    font-size: var(--fs-24);
+    margin-bottom: var(--s-5);
+  }
+
+  .nf__term {
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    line-height: 1.7;
+    padding: var(--s-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+  }
+
+  .nf__prompt {
+    color: var(--accent);
+  }
+
+  .nf__cmd {
+    color: var(--fg);
+    overflow-wrap: anywhere;
+  }
+
+  .nf__err {
+    color: var(--err, var(--ansi-red));
+  }
+
+  .nf__path {
+    color: var(--fg);
+    overflow-wrap: anywhere;
+  }
+
+  .nf__hint {
+    margin-top: var(--s-4);
+    color: var(--text-secondary);
+  }
+
+  .nf__suggestions {
+    list-style: none;
+    margin: var(--s-2) 0 0;
+    padding: 0;
+  }
+
+  .nf__suggestions li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-2) var(--s-3);
+    padding: var(--s-1) 0;
+  }
+
+  .nf__link {
+    color: var(--fg);
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 0.15em;
+    transition: text-decoration-color var(--dur-2) var(--ease-out);
+  }
+
+  .nf__link:hover,
+  .nf__link:focus-visible {
+    text-decoration-color: var(--accent);
+  }
+
+  .nf__arrow {
+    color: var(--text-secondary);
+    margin-right: var(--s-1);
+  }
+
+  .nf__note {
+    color: var(--text-secondary);
+    font-size: var(--fs-13);
+  }
+
+  .nf__search {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-top: var(--s-5);
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--text-secondary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .nf__search:hover,
+  .nf__search:focus-visible {
+    color: var(--fg);
+  }
+
+  .nf__cursor {
+    color: var(--accent);
+    animation: nf-cursor-blink 1s steps(1, end) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nf__cursor {
+      animation: none;
+    }
+  }
+
+  @keyframes nf-cursor-blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+</style>

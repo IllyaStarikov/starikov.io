@@ -13,9 +13,12 @@
  * The boot script (theme-boot.ts) owns the pre-paint attribute + theme-color;
  * this module never touches those directly -- it always goes through
  * window.__applyTheme so there is exactly one resolver.
+ *
+ * The home system card's `theme:` row is a SECOND trigger for this same single
+ * `#theme-popover` -- it calls the exported `openThemePopover()` below instead of
+ * cloning any picker state. open()/close() emit a `themepopover` CustomEvent so
+ * that remote trigger can mirror aria-expanded without reaching into the popover.
  */
-
-export {}; // ensure this file is treated as a module (required for `declare global`)
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -30,6 +33,21 @@ declare global {
 const FAMILY_KEY = 'theme:family';
 const MODE_KEY = 'theme:mode';
 const DEFAULT_FAMILY_FALLBACK = 'tokyonight';
+
+/* The primary control's open handle, registered when it is wired. The home
+ * system card's theme row calls openThemePopover() to open this one shared
+ * popover; there is exactly one ThemeControl (sidebar footer) in the document. */
+let openPrimaryPopover: (() => void) | null = null;
+
+/** Open the single shared theme popover from a remote trigger (the home system
+ *  card's `theme:` row). No-op until the control is wired. */
+export function openThemePopover(_anchor?: HTMLElement): void {
+  openPrimaryPopover?.();
+}
+
+function dispatchPopoverState(open: boolean): void {
+  document.dispatchEvent(new CustomEvent('themepopover', { detail: { open } }));
+}
 
 function readFamily(defaultFamily: string): string {
   try {
@@ -152,6 +170,7 @@ function wireControl(root: HTMLElement): void {
   };
 
   function open(): void {
+    if (isOpen()) return;
     popover.removeAttribute('hidden');
     trigger.setAttribute('aria-expanded', 'true');
     const active =
@@ -159,6 +178,7 @@ function wireControl(root: HTMLElement): void {
     active?.focus();
     // capture phase so the picker closes before other click handlers run
     document.addEventListener('click', onOutsideClick, true);
+    dispatchPopoverState(true);
   }
 
   function close(returnFocus = true): void {
@@ -167,9 +187,12 @@ function wireControl(root: HTMLElement): void {
     trigger.setAttribute('aria-expanded', 'false');
     document.removeEventListener('click', onOutsideClick, true);
     if (returnFocus) trigger.focus();
+    dispatchPopoverState(false);
   }
 
   trigger.addEventListener('click', () => (isOpen() ? close() : open()));
+  // Register this control as the target of remote openers (the system card row).
+  openPrimaryPopover = open;
 
   popover.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Escape') {

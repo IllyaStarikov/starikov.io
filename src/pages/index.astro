@@ -1,24 +1,330 @@
 ---
+/*
+ * Home (`~`) -- the first five seconds of the site (design spec §3, §5).
+ *
+ * Hero: a mono `whoami` prompt, the 44px statement it answers, a two-line dek,
+ * and two mono links (`browse the index →`, `press ⌘K`). Beside it, the live
+ * SystemCard -- a neofetch panel whose `theme:` row is the theme picker itself.
+ *
+ * Below the fold, three ledgers over the shared SiteItem model:
+ *   - Start here      the four front doors (dotfiles, eclecta, mcp, academia)
+ *   - Recently updated the six newest items across every collection
+ *   - Latest essays    guarded empty until Task 14 -- renders nothing for now
+ *
+ * First-visit only, the ledger rows rise in a short stagger (CSS animation,
+ * sessionStorage-guarded, reduced-motion disabled globally). No headshot, no
+ * "Hi, I'm", no bento -- a statement and a system.
+ */
 import Shell from '../layouts/Shell.astro';
+import SystemCard from '../components/SystemCard.astro';
+import LedgerRow from '../components/LedgerRow.astro';
+import Kbd from '../components/Kbd.astro';
+import { getCollection } from 'astro:content';
+import { getAllItems, joinRepos, summarizeRepos } from '../lib/model';
+import { formatRelativeTime } from '../lib/relative-time';
+
+const STATEMENT =
+  'Illya Starikov — software engineer. This is the workshop: ten years of dotfiles, tools, coursework, and essays — documented like it matters.';
+
+// ★stars · language · updated (relative) -- any unavailable fact is dropped.
+const repos = await getCollection('repos');
+function repoMeta(names: string[]): string[] {
+  const summary = summarizeRepos(joinRepos(names, repos));
+  const rel = summary.updated ? formatRelativeTime(summary.updated) : null;
+  return [
+    summary.stars !== null ? `★ ${summary.stars}` : null,
+    summary.language,
+    rel ? `updated ${rel}` : null,
+  ].filter((x): x is string => Boolean(x));
+}
+
+// -- Start here: the four front doors, deks pulled from their own entries -----
+const projects = await getCollection('projects');
+const projectBySlug = new Map(projects.map((p) => [p.id, p]));
+function projectRepoNames(slug: string): string[] {
+  const p = projectBySlug.get(slug);
+  if (!p) return [];
+  return [...(p.data.repo ? [p.data.repo] : []), ...p.data.repos];
+}
+
+const startHere = [
+  { slug: 'dotfiles', href: '/projects/dotfiles', names: projectRepoNames('dotfiles') },
+  { slug: 'eclecta', href: '/projects/eclecta', names: projectRepoNames('eclecta') },
+  { slug: 'mcp-servers', href: '/projects/mcp-servers', names: projectRepoNames('mcp-servers') },
+].map((d) => ({
+  href: d.href,
+  title: projectBySlug.get(d.slug)?.data.title ?? d.slug,
+  dek: projectBySlug.get(d.slug)?.data.tagline,
+  meta: repoMeta(d.names),
+}));
+startHere.push({
+  href: '/academia',
+  title: 'Academia',
+  dek: 'Four bound LaTeX volumes and a media showcase from the Missouri S&T years.',
+  meta: repoMeta(['IllyaStarikov/academia']),
+});
+
+// -- Recently updated: the six newest dated items across everything -----------
+const allItems = await getAllItems();
+const TYPE_LABEL: Record<string, string> = {
+  tool: 'tool',
+  project: 'project',
+  page: 'page',
+  essay: 'essay',
+};
+const recent = allItems
+  .filter((item) => item.date)
+  .slice(0, 6)
+  .map((item) => {
+    const rel = item.date ? formatRelativeTime(item.date) : null;
+    return {
+      href: item.href,
+      title: item.title,
+      dek: item.tagline,
+      external: item.type === 'essay',
+      meta: [TYPE_LABEL[item.type] ?? item.type, rel ? `updated ${rel}` : null].filter(
+        (x): x is string => Boolean(x),
+      ),
+    };
+  });
+
+// -- Latest essays: guarded until Task 14 -- empty now, so the section is absent.
+const essays = allItems.filter((item) => item.type === 'essay').slice(0, 3);
+
+// Global row index so the entrance stagger runs across both ledgers (first 10
+// rows only, per the motion table). Beyond 10, rows get no delay.
+let rowIndex = 0;
+const staggerFor = () => Math.min(rowIndex++, 10);
 ---
 
-<!-- Home has no breadcrumb (it is `~` itself). ThemeControl now lives in the
-     sidebar footer. Task 13 replaces this placeholder with the real hero +
-     system card; the copy and type specimen below are intentionally kept. -->
-<Shell title="starikov.io" pageType="home">
-  <div class="prose">
-    <p class="mono-label">status</p>
-    <h1>starikov.io — rebuilding</h1>
-    <p>
-      The new site is under construction. Check back soon — in the meantime, here's
-      <a href="https://github.com/IllyaStarikov">the GitHub</a> this is being rebuilt from.
-    </p>
-    <p>
-      Tokens land first: type scale, spacing, motion, and self-hosted <code>Inter Variable</code>
-      + <code>Commit Mono</code>.
-    </p>
-    <pre><code>{`function greet(name: string) {
-  return \`hello, \${name}\`;
-}`}</code></pre>
+<Shell
+  title="starikov.io — Illya Starikov"
+  description="Illya Starikov — software engineer. The workshop: ten years of dotfiles, command-line tools, coursework, and essays, pulled from live sources and themed by the same colors.json as my terminal."
+  pageType="home"
+>
+  <div class="home">
+    <section class="hero" aria-label="Introduction">
+      <div class="hero__lede">
+        <p class="hero__prompt"><span class="hero__caret" aria-hidden="true">~ ❯</span> whoami</p>
+        <h1 class="text-statement hero__statement">{STATEMENT}</h1>
+        <p class="hero__dek">
+          Everything I've built, kept like a wiki and wired to grow on its own — pulled from live
+          repositories and the dotfiles theme engine at every build.
+        </p>
+        <div class="hero__links">
+          <a class="hero__link" href="/projects">browse the index →</a>
+          <button class="hero__link hero__link--btn" type="button" data-open-palette>
+            press <Kbd label="Command K">⌘K</Kbd>
+          </button>
+        </div>
+      </div>
+
+      <SystemCard />
+    </section>
+
+    <section class="home-section" aria-labelledby="start-here-label">
+      <div class="section-head">
+        <h2 class="section-head__label" id="start-here-label">start here</h2>
+        <span class="section-head__rule" aria-hidden="true"></span>
+      </div>
+      <div class="ledger" data-entrance>
+        {
+          startHere.map((row) => (
+            <div class="ledger__item" style={`--row-i:${staggerFor()}`}>
+              <LedgerRow href={row.href} title={row.title} dek={row.dek} meta={row.meta} />
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="home-section" aria-labelledby="recent-label">
+      <div class="section-head">
+        <h2 class="section-head__label" id="recent-label">recently updated</h2>
+        <span class="section-head__rule" aria-hidden="true"></span>
+      </div>
+      <div class="ledger" data-entrance>
+        {
+          recent.map((row) => (
+            <div class="ledger__item" style={`--row-i:${staggerFor()}`}>
+              <LedgerRow
+                href={row.href}
+                title={row.title}
+                dek={row.dek}
+                meta={row.meta}
+                external={row.external}
+              />
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    {
+      essays.length > 0 && (
+        <section class="home-section" aria-labelledby="essays-label">
+          <div class="section-head">
+            <h2 class="section-head__label" id="essays-label">
+              latest essays
+            </h2>
+            <span class="section-head__rule" aria-hidden="true" />
+          </div>
+          <div class="ledger">
+            {essays.map((item) => (
+              <div class="ledger__item">
+                <LedgerRow href={item.href} title={item.title} dek={item.tagline} external />
+              </div>
+            ))}
+          </div>
+        </section>
+      )
+    }
   </div>
+
+  {/* First-visit stagger: enable the CSS animation only once per session and
+      never under reduced motion. Inline + synchronous so it runs before the
+      rows first paint (no flash of static-then-animated). */}
+  <script
+    is:inline
+    set:html={`(function(){try{if(sessionStorage.getItem('home-entrance-done'))return;sessionStorage.setItem('home-entrance-done','1');}catch(e){}if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;document.querySelectorAll('[data-entrance]').forEach(function(el){el.classList.add('is-entering');});})();`}
+  />
 </Shell>
+
+<style>
+  .home {
+    max-width: 68rem;
+  }
+
+  /* ---------------------------------------------------------------------
+   * Hero: statement beside the system card
+   * ------------------------------------------------------------------- */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-6);
+    padding: var(--s-6) 0 var(--s-8);
+  }
+
+  @media (min-width: 900px) {
+    .hero {
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+      gap: var(--s-8);
+      align-items: start;
+      padding: var(--s-8) 0 var(--s-9);
+    }
+  }
+
+  .hero__prompt {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+  }
+
+  .hero__caret {
+    color: var(--accent);
+  }
+
+  .hero__statement {
+    margin-top: var(--s-4);
+    max-width: 20ch;
+    text-wrap: balance;
+  }
+
+  @media (min-width: 900px) {
+    .hero__statement {
+      max-width: 16ch;
+    }
+  }
+
+  .hero__dek {
+    margin-top: var(--s-5);
+    max-width: 52ch;
+    color: var(--text-secondary);
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+  }
+
+  .hero__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3) var(--s-5);
+    margin-top: var(--s-5);
+  }
+
+  .hero__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    color: var(--fg);
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 0.2em;
+    transition: text-decoration-color var(--dur-2) var(--ease-out);
+  }
+
+  .hero__link:hover,
+  .hero__link:focus-visible {
+    text-decoration-color: var(--accent);
+  }
+
+  .hero__link--btn {
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  /* ---------------------------------------------------------------------
+   * Below-fold ledgers
+   * ------------------------------------------------------------------- */
+  .home-section {
+    margin-top: var(--s-7);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    margin-bottom: var(--s-2);
+  }
+
+  .section-head__label {
+    font: 500 var(--fs-13) / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .section-head__rule {
+    flex: 1;
+    border-top: 1px solid var(--border);
+  }
+
+  .ledger {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* First-visit entrance: 240ms rise, 20ms per-row stagger, first 10 rows.
+     Only plays when the guard script adds .is-entering (never under reduced
+     motion, never on repeat visits). global.css disables it for reduced motion. */
+  [data-entrance].is-entering .ledger__item {
+    animation: home-row-in 240ms var(--ease-out) both;
+    animation-delay: calc(var(--row-i, 0) * 20ms);
+  }
+
+  @keyframes home-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
