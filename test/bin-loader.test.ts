@@ -19,6 +19,31 @@ const POCKETCASTS_README = readFileSync(
   'utf8',
 );
 
+// An options table that is NOT nested under "## Usage" (it lives under a
+// "### Options" inside "## How it works"): options[] is initially parseable,
+// but the table cannot be isolated from Usage, so the loader must DROP the
+// styled table, render How-it-works (with the table) as-is, and warn.
+const DROP_README = [
+  '# drop-tool',
+  '',
+  'Does a thing.',
+  '',
+  '## Usage',
+  '',
+  'Run it like this.',
+  '',
+  '## How it works',
+  '',
+  'Here are the flags it accepts:',
+  '',
+  '### Options',
+  '',
+  '| Flag | Description |',
+  '| ---- | ----------- |',
+  '| `--verbose` | Print more output. |',
+  '',
+].join('\n');
+
 afterEach(() => {
   // The loader emits warnings through the shared report module; drain them so
   // one test's warnings never leak into another's assertions.
@@ -195,6 +220,21 @@ describe('parseToolDir -- synthetic edge cases', () => {
     expect(tool!.license).toBe('MIT');
     expect(tool!.stdlibOnly).toBe(false);
   });
+
+  it('drops an options table that cannot be isolated from Usage (fallback path)', () => {
+    const tool = parseToolDir({ readme: DROP_README, entries: ['drop.py'] });
+    expect(tool).not.toBeNull();
+    // The table is real (parseable) but not under Usage and not a standalone
+    // "## Options" section -> it is dropped rather than risk a double render.
+    expect(tool!.optionsDropped).toBe(true);
+    expect(tool!.options).toEqual([]);
+    // Usage renders untouched...
+    expect(tool!.sections.usage).toBe('Run it like this.');
+    // ...and the table stays exactly once inside the section it lived in.
+    expect(tool!.sections.howItWorks).toContain('### Options');
+    expect(tool!.sections.howItWorks).toContain('--verbose');
+    expect(tool!.sections.howItWorks).toContain('Print more output');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -336,6 +376,55 @@ describe('binToolsLoader', () => {
     report.flush();
     await binToolsLoader({ root: join(root, 'does-not-exist') }).load(context);
     expect(map.size).toBe(0);
+    expect(report.flush().warnings).toBe(1);
+  });
+});
+
+describe('binToolsLoader -- optionsDropped fallback consequence', () => {
+  let parent: string;
+  let root: string;
+
+  beforeAll(() => {
+    parent = mkdtempSync(join(tmpdir(), 'bin-loader-drop-'));
+    root = join(parent, 'bin');
+    mkdirSync(root);
+    // drop-tool IS listed in the Scripts table, so its ONLY warning is the
+    // options-drop warning -- the count then proves that warning specifically.
+    writeFileSync(
+      join(root, 'README.md'),
+      [
+        '# bin',
+        '',
+        '## Scripts',
+        '',
+        '| Script | What it does |',
+        '| ------ | ------------ |',
+        '| [`drop-tool`](drop-tool/) | Table lives outside Usage. |',
+        '',
+      ].join('\n'),
+    );
+    mkdirSync(join(root, 'drop-tool'));
+    writeFileSync(join(root, 'drop-tool', 'README.md'), DROP_README);
+    writeFileSync(join(root, 'drop-tool', 'drop.py'), '# no execution\n');
+  });
+
+  afterAll(() => {
+    rmSync(parent, { recursive: true, force: true });
+  });
+
+  it('stores empty options, renders the section as-is, and emits exactly one warning', async () => {
+    const { context, map } = fakeContext();
+    report.flush();
+    await binToolsLoader({ root }).load(context);
+
+    const data = map.get('drop-tool')!.data as Record<string, any>;
+    // Styled OPTIONS table is skipped (options empty)...
+    expect(data.options).toEqual([]);
+    // ...while the flag table is still rendered once inside its own section.
+    expect(data.sections.howItWorks).toContain('<render>');
+    expect(data.sections.howItWorks).toContain('--verbose');
+    expect(data.sections.usage).toContain('Run it like this.');
+    // The one warning is the drop warning (drop-tool is listed, so no others).
     expect(report.flush().warnings).toBe(1);
   });
 });
