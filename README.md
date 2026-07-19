@@ -1,85 +1,139 @@
-# [starikov.io](https://starikov.io)
+# starikov.io
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MF94N59911"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+The source for [starikov.io](https://starikov.io) — a personal site built as a
+workshop, not a résumé. It is a wiki over ten years of work: dotfiles,
+command-line tools, university coursework, and essays, each pulled from its own
+live source at build time and cross-linked into one browsable index. Nothing on
+the site is hand-transcribed from those sources; the pages *are* the sources,
+parsed.
 
-  gtag('config', 'G-MF94N59911');
-</script>
+The whole thing is static — Astro 5 output, zero framework islands, a few
+kilobytes of vanilla TypeScript for the command palette and the app shell — and
+it deploys itself to GitHub Pages on every push and once a night.
 
-Hello👋 My name is [Illya Starikov](https://starikov.co), and these are my personal projects. Feel free to use freely!
+## The signature: themed by the same terminal it describes
 
-- [Resume](#resume)
-- [.dotfiles](#dotfiles)
-- [Colosseum](#colosseum)
-- [Academia](#academia)
+The palette is not chosen; it is *generated*. A prebuild step reads the theme
+engine out of a sparse checkout of [`IllyaStarikov/.dotfiles`](https://github.com/IllyaStarikov/.dotfiles)
+— the `config/themes.json` manifest plus every `src/theme/**/colors.json` — the
+exact files that color Alacritty, tmux, Neovim, and Starship. It Zod-validates
+the 26-key schema, derives the text tokens by iterating `color-mix(fg, bg)`
+until each one clears its WCAG contrast floor, and emits per-variant CSS blocks.
+Switching theme on the site recolors syntax highlighting live, because the
+`--astro-code-token-*` variables map to the same ANSI colors. When the dotfiles
+repo adds a variant, the site grows one — no edit here. The derivations are
+disclosed on [`/colophon`](https://starikov.io/colophon): authenticity through
+honesty, the web sibling of the repo's own `validate-themes.sh`.
 
+## Architecture
 
-<a name="resume"/>
+Astro 5's Content Layer, split two ways:
 
-## 📄 [`resume`](https://resume.starikov.io)
-*All the reasons why you should ~~or shouldn't~~ hire me.*
+- **Auto collections** (loader-generated, zero human files) — `tools` (bin
+  READMEs, *parsed, never executed*), `academiaShowcase` + `courses` (a
+  `PORTFOLIO.md` and directory enumeration), `repos` (GitHub API metadata),
+  `essays` + `essayTags` (the Ghost Content API).
+- **Curated collections** — `projects`, where a ~10-line MDX overlay is the page
+  and the auto repo metadata joins onto it.
 
-<p align="center"><img width=512 src="https://resume.starikov.io/template/starriculum-vitae.png"></p>
+One merge layer (`src/lib/model.ts`) flattens everything into a uniform
+`SiteItem { type, slug, title, tagline, href, date }` that powers the home feed,
+the ⌘K index, cross-page Connections, the RSS feed, and the Pagefind search
+index — the wiki's shared schema, defined once.
 
-- **[Résumé](https://resume.starikov.io/illya-starikov-resume.pdf)** [[Dark](https://resume.starikov.io/illya-starikov-resume-dark.pdf)]
-- **[Curriculum Vitae](https://resume.starikov.io/illya-starikov-cv.pdf)** [[Dark](https://resume.starikov.io/illya-starikov-cv-dark.pdf)]
-- **[Source](http://github.com/illyaStarikov/resume/)** [[README](https://resume.starikov.io/)]
+### Resilience cascade
 
----
+Every remote source degrades along the same path, so a flaky upstream never
+breaks a deploy:
 
+```
+live fetch  →  .cache (last good)  →  committed vendor snapshot  →  policy
+```
 
-<a name="dotfiles"/>
+The declared policy differs by source: essays **fail the build** via a
+min-count gate (an essay-less site is a half-empty site); GitHub metadata
+proceeds stale; the theme engine falls back to a vendored snapshot so the
+dotfiles repo can refactor freely. Every fallback surfaces as a GitHub
+annotation and a step-summary line.
 
-## 🟢 [`dotfiles`](https://github.com/IllyaStarikov/.dotfiles)
-*I use Vim btw.*
+### Build gates
 
-<p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/.dotfiles/main/template/dotfiles.png"></p>
+`npm run build` runs `build-themes → transcode-media → astro build` (Pagefind
+indexes in the same pass) `→ validate-dist`. Under `BUILD_STRICT=1` the build
+also asserts hard min-counts (`essays ≥ 50, tools ≥ 1, themeVariants ≥ 10,
+projects ≥ 4`), and `validate-dist.mjs` checks that every tool rendered an HTML
+page, the theme CSS shipped, the Pagefind index and sitemap exist, and all four
+academia PDF volumes answer `200`. A failed build never deploys — the last good
+deploy stays live.
 
-Personal development environment configuration with enterprise-level testing. Features Neovim (80+ plugins with lazy.nvim), Zsh with Zinit, and a dynamic theme system supporting 4 TokyoNight variants across Alacritty, tmux, Neovim, WezTerm, and Starship.
+## Extensibility contract
 
-**Highlights:**
-- **Testing** 4-level test infrastructure (unit, functional, integration, performance) with 40+ test files
-- **fixy** Universal code formatter with priority-based formatter selection
-- **Theme Switching** Atomic theme changes across all terminal applications
+The point of the architecture is that routine growth costs nothing:
 
----
+| Event | Effort | Mechanism |
+|---|---|---|
+| New tool in the `bin` repo | **zero** | push → repository dispatch → rebuild → page + index + palette + search + RSS |
+| New essay on Ghost | **zero** | nightly cron, ≤24h staleness |
+| New variant of a curated theme family | **zero** | dispatch → `build-themes` regenerates the CSS + picker |
+| New theme *family* to curate | **one array entry** | add it to `curatedFamilies` in `site.config.mjs` |
+| A repo becomes a project | **one ~10-line MDX overlay** | the overlay model |
+| Dotfiles refactor breaks the schema | **zero risk** | snapshot fallback + warning annotation |
 
+## Development
 
-<a name="colosseum"/>
+The site parses sibling repos at build time. `sync-sources.sh` populates
+`.sources/` from local checkouts (fast iteration) or shallow clones — it copies
+files only and strips `.git`; no code from those repos ever runs.
 
-## 🏟 [`colosseum`](https://github.com/IllyaStarikov/colosseum)
-*ARE YOU NOT ENTERTAINED, code judge?*
+```sh
+scripts/sync-sources.sh   # .sources/{dotfiles,bin,academia}
+npm install
+npm run dev               # http://localhost:4321
+```
 
-<p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/colosseum/main/template/colosseum.png"></p>
+Other tasks:
 
-Competitive programming code throughout time. Programming languages may vary. Methodology to solve might be questionable (we all experiment in college).
+```sh
+npm run build                 # full static build + gates
+BUILD_STRICT=1 npm run build  # + hard min-count gates (what CI runs)
+npm test                      # vitest — loaders, parsers, contrast, gates
+npx astro check               # types
+```
 
-- [Cracking The Coding Interview](https://github.com/IllyaStarikov/colosseum/tree/main/src/cracking-the-code-interview)
-- [Hacker Rank](https://github.com/IllyaStarikov/colosseum/tree/main/src/hacker-rank)
-- [Kattis](https://github.com/IllyaStarikov/colosseum/tree/main/src/kattis)
-- [Leetcode](https://github.com/IllyaStarikov/colosseum/tree/main/src/leetcode)
+Ghost essays need `GHOST_CONTENT_API_KEY`; without it the build serves the
+committed 94-essay snapshot. GitHub metadata uses `GITHUB_TOKEN` when present and
+falls back to a vendored snapshot otherwise.
 
----
+## Performance & accessibility budget
 
+Lighthouse (desktop preset) and per-page transfer sizes, measured against the
+production build. Sizes are gzipped over the wire, except fonts (already
+compressed).
 
-<a name="academia"/>
+| Metric | Budget | Measured |
+|---|---|---|
+| Lighthouse (perf / a11y / best-practices / SEO) | 100 × 4 | **100 / 100 / 100 / 100** on `/`, `/bin/*`, `/academia`, `/writing`; a11y **96** on `/projects/dotfiles`¹ |
+| CLS | 0 | **0** everywhere |
+| LCP (4× CPU throttle) | < 1.5s | **0.4–0.5s** |
+| CSS on `/` (total / theme engine) | ≤ 30KB / ≤ 6KB | **9.3KB / 3.6KB** |
+| JS on `/` (incl. deferred palette) | ≤ 25KB | **13.3KB** |
+| HTML on `/` | ≤ 40KB | **8.2KB** (44.6KB uncompressed) |
+| Fonts | ≤ 110KB | **~142KB**² |
 
-## 🎓 [`academia`](https://github.com/IllyaStarikov/academia)
-*Pain is temporary, GPA is forever.*
+¹ The syntax-highlight comment token is derived to a 3:1 floor (AA for 14px+
+mono, by design); Lighthouse scores it against its stricter 4.5:1 body-text
+threshold.
 
-<p align="center"><img width=512 src="https://raw.githubusercontent.com/IllyaStarikov/academia/main/assets/banner.png"></p>
+² Commit Mono ships both 400 and 700 weights, and the bold wordmark loads the
+700 file. Dropping it for synthetic bold reclaims the headroom — tracked for a
+follow-up.
 
-A complete archive of four years of computer science education at Missouri S&T (2014-2018), culminating in a combined BS/MS in Computer Science. Consolidated from 24+ separate course repositories with preserved commit history.
+## Credits
 
-**Highlighted Projects:**
-- **Chess AI** Bitboard-based engine with alpha-beta pruning and iterative deepening
-- **Puzzle Solvers** A* search implementations with custom heuristics
-- **Linear Algebra Library** Templated C++ with LU/QR/Cholesky decomposition
-- **Space Invaders on 8051** Classic arcade game in assembly with extreme memory constraints
-- **Splatoonio** Multiplayer mobile game (Flutter/Dart) capstone project
-- **Documentation** 815 pages of LaTeX, curated work, assignments, and lecture notes.
+Type: [Inter](https://rsms.me/inter/) and [Commit Mono](https://commitmono.com/).
+Framework: [Astro](https://astro.build). Search: [Pagefind](https://pagefind.app).
+Themes: my own [dotfiles](https://github.com/IllyaStarikov/.dotfiles) engine.
 
+The build tooling here is a personal project — read it, borrow from it. The
+prose, essays, and coursework are © Illya Starikov. Questions:
+[illya@starikov.co](mailto:illya@starikov.co).
