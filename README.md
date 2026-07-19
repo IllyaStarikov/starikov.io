@@ -118,15 +118,11 @@ compressed).
 | CSS on `/` (total / theme engine) | ≤ 30KB / ≤ 6KB | **9.3KB / 3.6KB** |
 | JS on `/` (incl. deferred palette) | ≤ 25KB | **13.3KB** |
 | HTML on `/` | ≤ 40KB | **8.2KB** (44.6KB uncompressed) |
-| Fonts | ≤ 110KB | **~142KB**² |
+| Fonts | ≤ 110KB | **94.1KB** (Inter + Commit Mono 400; bold mono is synthesized) |
 
 ¹ The syntax-highlight comment token is derived to a 3:1 floor (AA for 14px+
 mono, by design); Lighthouse scores it against its stricter 4.5:1 body-text
 threshold.
-
-² Commit Mono ships both 400 and 700 weights, and the bold wordmark loads the
-700 file. Dropping it for synthetic bold reclaims the headroom — tracked for a
-follow-up.
 
 ## Credits
 

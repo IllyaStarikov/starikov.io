@@ -9,13 +9,18 @@ import { THEME_BOOT_SRC } from '../lib/theme-boot';
 // `var(--token, fallback)` use-site fallbacks only fire if a bad id sneaks in.
 import themesGeneratedHref from '../styles/themes.generated.css?url';
 import '@fontsource/commit-mono/latin-400.css';
-import '@fontsource/commit-mono/latin-700.css';
+// Commit Mono ships only the 400 weight. Bold mono (the wordmark, neofetch
+// title, section labels at font-weight 600/700) renders via SYNTHETIC bold from
+// the 400 face -- acceptable at these sizes (design §4) and it keeps the total
+// font payload under the 110KB budget; shipping the real 700 woff2 (~47KB) put
+// it at ~142KB. If a true bold mono is ever wanted, re-add latin-700.css AND
+// budget for it.
 import '../styles/tokens.css';
 import '../styles/global.css';
 // Resolved, fingerprinted URLs for the two fonts that render text on every
 // page -- preloaded below so the browser fetches them before it discovers
-// them via CSS. Not the whole font set: Commit Mono 700 loads lazily, only
-// on pages that actually render bold mono text.
+// them via CSS. These two are the whole font set now (Inter variable + Commit
+// Mono 400); bold mono is synthesized, so there is no third file to load.
 import interLatinWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import commitMono400Woff2 from '@fontsource/commit-mono/files/commit-mono-latin-400-normal.woff2?url';
 
