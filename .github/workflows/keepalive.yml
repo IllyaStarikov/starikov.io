@@ -5,16 +5,24 @@
 # events-that-trigger-workflows#schedule) -- this repo's nightly essay-
 # freshness cron (deploy.yml, '17 9 * * *') would silently stop firing on
 # any content-quiet stretch longer than that, and nothing would tell us.
-# gautamkrishnar/keepalive-workflow issues a trivial API commit on a
-# schedule so the 60-day counter never elapses.
+#
+# First-party implementation: `gh api -X PUT .../actions/workflows/deploy.yml/enable`
+# hits the same "enable workflow" endpoint a human toggling the workflow
+# back on in the UI would hit, which resets GitHub's 60-day disablement
+# clock -- functionally identical to what gautamkrishnar/keepalive-workflow's
+# use_api mode did. `gh` is preinstalled on GitHub-hosted runners, so this
+# needs no third-party action at all. (gautamkrishnar/keepalive-workflow was
+# the original plan here; it is now ToS-blocked -- github.com/gautamkrishnar/
+# keepalive-workflow returns "Repository access blocked" -- so it and any
+# unverified fork are ruled out. Calling the API directly avoids depending
+# on any third party for this.)
 #
 # This is a SEPARATE workflow, not a step bolted onto deploy.yml, because
-# it needs `actions: write` to call the API that resets the counter.
-# deploy.yml's permission block is deliberately minimal for its own job
-# (contents: read, pages: write, id-token: write) -- adding actions: write
-# there would over-grant every deploy step just to serve this one concern,
-# and (verified) the deploy job's permissions as they stand would 403 the
-# keepalive-workflow API call.
+# it needs `actions: write` to call the enable endpoint. deploy.yml's
+# permission block is deliberately minimal for its own job (contents: read,
+# pages: write, id-token: write) -- adding actions: write there would
+# over-grant every deploy step just to serve this one concern, and
+# (verified) the deploy job's permissions as they stand would 403 this call.
 name: Keepalive
 on:
   schedule: [{ cron: '0 8 * * 1' }]
@@ -24,6 +32,6 @@ jobs:
   keepalive:
     runs-on: ubuntu-latest
     steps:
-      - uses: gautamkrishnar/keepalive-workflow@v2
-        with:
-          use_api: true
+      - run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/deploy.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
