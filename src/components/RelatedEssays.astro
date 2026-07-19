@@ -1,10 +1,10 @@
 ---
 /*
  * RelatedEssays -- the "Related essays" tail of a project page. Renders NOTHING
- * while the list is empty (design spec §3: never an empty affordance), which is
- * every project today -- resolveRelatedEssays is a Task 14 stub returning [].
- * The markup is written against the final `Essay` shape so Task 14 only has to
- * fill the resolver, not this component.
+ * while the list is empty (design spec §3: never an empty affordance). The list
+ * comes from `resolveRelatedEssays` (src/lib/related.ts): manual `essays:` slugs
+ * first, then `essayTags` matching, else absent -- so a project with neither
+ * simply omits the section.
  *
  * Rows link OUT to starikov.co (essays are read there, design spec §13), so each
  * is external with a `↗`.

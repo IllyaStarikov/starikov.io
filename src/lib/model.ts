@@ -165,7 +165,7 @@ function mergeToolOverlay(entry: ToolEntry, overlay: ToolOverlay): ToolPage {
 
 /** Everything a /projects/<slug> page needs: the rendered MDX body, the parsed
  *  headings (for the TOC), the joined repo metadata + its summary, and the
- *  resolved related essays (empty until Task 14). */
+ *  resolved related essays (`[]` when the overlay names none). */
 export interface ProjectPage {
   slug: string;
   data: ProjectEntry['data'];
@@ -175,7 +175,7 @@ export interface ProjectPage {
   repos: ProjectRepoData[];
   /** Derived facts for the strip/rail. */
   summary: RepoSummary;
-  /** Related essays; `[]` (section hidden) until Task 14 implements resolution. */
+  /** Related essays (resolved by src/lib/related.ts); `[]` hides the section. */
   essays: Essay[];
 }
 

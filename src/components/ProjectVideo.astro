@@ -5,9 +5,11 @@
  * into an MDX overlay (mcp-servers, artificial) as its hero media.
  *
  * Playback mirrors /academia: preload nothing, play only while on screen, and
- * under prefers-reduced-motion never autoplay -- the poster stands in with
- * native controls (project-media.ts, shipped by the [...slug] page). The markup
- * is correct with no JS: a poster-backed <video> that a reader can still play.
+ * under prefers-reduced-motion never autoplay -- the poster stands in and
+ * project-media.ts (shipped by the [...slug] page) adds native controls so the
+ * reader can opt in. With NO JS the <video> has no controls and no autoplay, so
+ * it degrades to a static poster frame -- representative, but not playable; the
+ * clip is decoration, never the only way to understand the project.
  */
 interface Props {
   mp4: string;
