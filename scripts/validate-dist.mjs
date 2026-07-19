@@ -329,8 +329,10 @@ async function main() {
     fail('tools HTML', 'validate-dist', toolsRow.detail);
   }
   if (toolsRow.extra.length > 0) {
+    // Distinct row name: the presence check above already claimed 'tools HTML',
+    // and a second row of the same name reads as a duplicate in the summary table.
     warnSkip(
-      'tools HTML',
+      'tools HTML (extras)',
       'validate-dist',
       `dist/bin/ has unexpected extra page(s): ${toolsRow.extra.join(', ')}`,
     );

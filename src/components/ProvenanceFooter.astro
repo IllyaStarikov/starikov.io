@@ -5,20 +5,31 @@
  * (The same authenticity-through-disclosure move as /colophon's palette
  * provenance and the dotfiles' validate-themes.sh.)
  *
- * Two build-time git reads, both on OUR OWN repo (not on any checked-out remote
- * content -- so this is safe to execSync), each guarded so a missing .git or
- * uncommitted file never fails the build:
+ * Two build-time git reads, each guarded so a missing .git or uncommitted file
+ * never fails the build (and, crucially, never fabricates a fact):
  *
  *   1. source sha -- for the ONE repo checked out locally (.sources/dotfiles),
- *      `git rev-parse --short HEAD` gives the palette/source commit, printed as
- *      "Auto-generated from <repo>@<sha>". Every other project has no local
- *      checkout, so it falls back to "Metadata via GitHub API · <build date>".
+ *      `git -C <dir> rev-parse --short HEAD` gives the palette/source commit,
+ *      printed as "Auto-generated from <repo>@<sha>". This is read ONLY when
+ *      <dir> is its OWN git checkout: CI's actions/checkout populates
+ *      .sources/dotfiles WITH a .git, so the true source commit is available; a
+ *      local sync-sources.sh copy is an rsync WITHOUT .git, and an unguarded
+ *      `git -C <dir> rev-parse` would then WALK UP into THIS site's repo and
+ *      return the SITE's HEAD -- mislabeling it as the dotfiles source sha (a
+ *      false provenance line on the flagship page). Guarding on a real .git makes
+ *      a local build honestly render "<repo>@snapshot" instead (mirroring
+ *      /colophon and build-themes.mjs's identical guard). Every other project has
+ *      no local checkout, so it falls back to "Metadata via GitHub API · <date>".
  *   2. overlay edit date -- `git log -1 --format=%as -- <overlay>` dates the
  *      curated MDX; falls back to the file's mtime for an as-yet-uncommitted
  *      overlay.
+ *
+ * Both reads use execFileSync's array form (no shell, no string interpolation of
+ * paths) so a directory or overlay path is never re-parsed by a shell.
  */
-import { execSync } from 'node:child_process';
-import { statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 interface Props {
   /** Primary repo "owner/name" the page is generated from. */
@@ -30,21 +41,26 @@ interface Props {
 }
 const { repo, sourceDir, overlayPath } = Astro.props;
 
-function git(args: string): string | null {
+function git(args: string[]): string | null {
   try {
-    return execSync(`git ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return execFileSync('git', args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
   } catch {
     return null;
   }
 }
 
 function shortSha(dir: string): string | null {
-  const out = git(`-C "${dir}" rev-parse --short HEAD`);
-  return out || null;
+  // Only read a sha when `dir` is its OWN git checkout (see the guard rationale
+  // in the module header) -- otherwise the walk-up would report THIS repo's HEAD.
+  if (!existsSync(join(dir, '.git'))) return null;
+  return git(['-C', dir, 'rev-parse', '--short', 'HEAD']) || null;
 }
 
 function overlayEdited(path: string): string | null {
-  const logged = git(`log -1 --format=%as -- "${path}"`);
+  const logged = git(['log', '-1', '--format=%as', '--', path]);
   if (logged) return logged;
   try {
     return statSync(path).mtime.toISOString().slice(0, 10);
@@ -57,12 +73,17 @@ const buildDate = new Date().toISOString().slice(0, 10);
 const sha = sourceDir ? shortSha(sourceDir) : null;
 const edited = overlayEdited(overlayPath);
 
+// A locally-synced source dir has no .git, so `sha` is null even though the page
+// IS generated from that source -- render "<repo>@snapshot" (matching /colophon)
+// rather than falsely attributing GitHub-API provenance to a palette-sourced page.
 const sourceLine =
   repo && sha
     ? `Auto-generated from ${repo}@${sha}`
-    : repo
-      ? `Metadata via GitHub API · ${buildDate}`
-      : null;
+    : repo && sourceDir
+      ? `Auto-generated from ${repo}@snapshot`
+      : repo
+        ? `Metadata via GitHub API · ${buildDate}`
+        : null;
 ---
 
 <!-- data-pagefind-ignore: build provenance, not page content ("Auto-generated
