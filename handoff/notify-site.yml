@@ -1,0 +1,19 @@
+# HANDOFF FILE -- lives in starikov.io/handoff/ as a drop-in template.
+# It does NOT run here. Copy it to <sibling-repo>/.github/workflows/notify-site.yml
+# in `bin` and `.dotfiles` so a push to either repo triggers a starikov.io
+# rebuild (deploy.yml's `repository_dispatch: {types: [content-update]}`
+# trigger). See handoff/README.md for the full setup + test procedure.
+name: Notify site
+on:
+  push: { branches: [main] }
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          repository: IllyaStarikov/starikov.io
+          event-type: content-update
+          client-payload: '{"source": "${{ github.repository }}"}'

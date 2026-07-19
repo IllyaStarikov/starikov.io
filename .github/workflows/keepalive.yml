@@ -1,0 +1,29 @@
+# Keeps deploy.yml's `schedule` trigger alive.
+#
+# GitHub auto-disables a scheduled workflow after 60 days with no commits
+# to the repository (https://docs.github.com/en/actions/using-workflows/
+# events-that-trigger-workflows#schedule) -- this repo's nightly essay-
+# freshness cron (deploy.yml, '17 9 * * *') would silently stop firing on
+# any content-quiet stretch longer than that, and nothing would tell us.
+# gautamkrishnar/keepalive-workflow issues a trivial API commit on a
+# schedule so the 60-day counter never elapses.
+#
+# This is a SEPARATE workflow, not a step bolted onto deploy.yml, because
+# it needs `actions: write` to call the API that resets the counter.
+# deploy.yml's permission block is deliberately minimal for its own job
+# (contents: read, pages: write, id-token: write) -- adding actions: write
+# there would over-grant every deploy step just to serve this one concern,
+# and (verified) the deploy job's permissions as they stand would 403 the
+# keepalive-workflow API call.
+name: Keepalive
+on:
+  schedule: [{ cron: '0 8 * * 1' }]
+  workflow_dispatch:
+permissions: { actions: write }
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gautamkrishnar/keepalive-workflow@v2
+        with:
+          use_api: true
