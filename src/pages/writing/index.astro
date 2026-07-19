@@ -191,8 +191,10 @@ const chips = filterableTagChips(
     color: var(--fg);
   }
 
+  /* No opacity on text (design §4): it would drop --text-secondary below its
+     validated 4.5:1 floor. The smaller size alone de-emphasizes the count; it
+     inherits the chip's contrast-safe --text-secondary (and --fg when active). */
   .chip__count {
-    opacity: 0.7;
     font-size: var(--fs-12);
   }
 
