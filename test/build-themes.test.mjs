@@ -23,11 +23,13 @@ const CORRUPT_FIXTURE = join(REPO_ROOT, 'test/fixtures/themes-corrupt');
 let OUT_DIR;
 let OUT_CSS;
 let OUT_JSON;
+let OUT_ALL_JSON;
 
 beforeAll(() => {
   OUT_DIR = mkdtempSync(join(tmpdir(), 'build-themes-out-'));
   OUT_CSS = join(OUT_DIR, 'src/styles/themes.generated.css');
   OUT_JSON = join(OUT_DIR, 'src/data/generated/themes.json');
+  OUT_ALL_JSON = join(OUT_DIR, 'src/data/generated/themes-all.json');
 });
 
 afterAll(() => {
@@ -87,6 +89,67 @@ describe('build-themes.mjs -- happy path against a real two-family fixture', () 
     const themes = JSON.parse(readFileSync(OUT_JSON, 'utf8'));
     const ids = themes.families.map((f) => f.id).sort();
     expect(ids).toEqual(['github', 'tokyonight']);
+  });
+});
+
+describe('build-themes.mjs -- themes-all.json (the full /colophon gallery data)', () => {
+  it('emits themes-all.json with every family/variant on disk (swatches only, no CSS)', () => {
+    runBuild({ THEMES_SOURCE_DIR: OK_FIXTURE });
+    expect(existsSync(OUT_ALL_JSON)).toBe(true);
+    const all = JSON.parse(readFileSync(OUT_ALL_JSON, 'utf8'));
+    expect(Array.isArray(all.families)).toBe(true);
+
+    // Every family object uses the brief's field names and carries only swatches.
+    for (const family of all.families) {
+      expect(typeof family.familyId).toBe('string');
+      expect(typeof family.familyName).toBe('string');
+      expect(Array.isArray(family.variants)).toBe(true);
+      for (const v of family.variants) {
+        expect(typeof v.id).toBe('string');
+        expect(typeof v.variantId).toBe('string');
+        expect(typeof v.name).toBe('string');
+        expect(['light', 'dark']).toContain(v.mode);
+        expect(v.swatch).toEqual({
+          bg: expect.any(String),
+          fg: expect.any(String),
+          accent: expect.any(String),
+        });
+        // Swatches only -- no CSS block leaks into the gallery data.
+        expect(v).not.toHaveProperty('colors');
+        expect(v).not.toHaveProperty('css');
+      }
+    }
+  });
+
+  it('includes NON-curated families (nord) that themes.json omits -- the whole gallery', () => {
+    runBuild({ THEMES_SOURCE_DIR: OK_FIXTURE });
+    const all = JSON.parse(readFileSync(OUT_ALL_JSON, 'utf8'));
+    const curated = JSON.parse(readFileSync(OUT_JSON, 'utf8'));
+
+    const allIds = all.families.map((f) => f.familyId).sort();
+    // nord is present in the manifest with a colors.json but is NOT a curated
+    // family -> it appears in the gallery data, never in the curated themes.json.
+    expect(allIds).toContain('nord');
+    expect(curated.families.map((f) => f.id)).not.toContain('nord');
+
+    // The curated families are still present in full (all their variants).
+    const tokyonight = all.families.find((f) => f.familyId === 'tokyonight');
+    const github = all.families.find((f) => f.familyId === 'github');
+    expect(tokyonight.variants).toHaveLength(4);
+    expect(github.variants).toHaveLength(11);
+  });
+
+  it('omits a manifest family lacking colors.json and warns (curated-only fallback)', () => {
+    const stdout = runBuild({ THEMES_SOURCE_DIR: OK_FIXTURE });
+    const all = JSON.parse(readFileSync(OUT_ALL_JSON, 'utf8'));
+    const allIds = all.families.map((f) => f.familyId);
+
+    // dracula is declared in the manifest but has no colors.json on disk (the
+    // exact shape of the vendored snapshot, which lists all 17 families but
+    // only ships colors.json for the curated 8).
+    expect(allIds).not.toContain('dracula');
+    expect(stdout).toMatch(/themes-all/);
+    expect(stdout).toMatch(/dracula/);
   });
 });
 

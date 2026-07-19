@@ -397,6 +397,70 @@ describe('binToolsLoader', () => {
   });
 });
 
+describe('binToolsLoader -- `updated` is a git commit date, not the checkout mtime', () => {
+  let parent: string;
+  let root: string;
+
+  beforeAll(() => {
+    parent = mkdtempSync(join(tmpdir(), 'bin-loader-date-'));
+    root = join(parent, 'bin');
+    mkdirSync(root);
+    writeFileSync(
+      join(root, 'README.md'),
+      [
+        '# bin',
+        '',
+        '## Scripts',
+        '',
+        '| Script | What it does |',
+        '| ------ | ------------ |',
+        '| [`dated-tool`](dated-tool/) | Its updated date comes from git. |',
+        '',
+      ].join('\n'),
+    );
+    mkdirSync(join(root, 'dated-tool'));
+    writeFileSync(
+      join(root, 'dated-tool', 'README.md'),
+      ['# dated-tool', '', 'A tool.', '', '## Usage', '', 'Use it.', ''].join('\n'),
+    );
+  });
+
+  afterAll(() => {
+    rmSync(parent, { recursive: true, force: true });
+  });
+
+  it('uses the injected git-date reader (last commit that touched the tool dir)', async () => {
+    const { context, map } = fakeContext();
+    const seen: Array<[string, string]> = [];
+    // The CI `bin` checkout carries real git history; the loader reads the last
+    // commit date for each tool DIR. Inject a deterministic reader so the test
+    // never depends on a real repo.
+    const readGitDate = (repoRoot: string, relPath: string): string | undefined => {
+      seen.push([repoRoot, relPath]);
+      return '2025-03-14T10:00:00-05:00';
+    };
+    await binToolsLoader({ root, readGitDate }).load(context);
+
+    expect(map.get('dated-tool')!.data.updated).toBe('2025-03-14T10:00:00-05:00');
+    // It asked git about THIS tool's directory (slug), rooted at the checkout.
+    expect(seen).toContainEqual([root, 'dated-tool']);
+  });
+
+  it('falls back to the file mtime when git has no date (a fresh, untracked copy)', async () => {
+    const { context, map } = fakeContext();
+    // A local rsync copy of `bin` has no .git; `git log -- <path>` returns
+    // nothing there, so the reader yields undefined and the loader must fall
+    // back to the README mtime (still an ISO string, just not the git date).
+    const readGitDate = (): string | undefined => undefined;
+    await binToolsLoader({ root, readGitDate }).load(context);
+
+    const updated = map.get('dated-tool')!.data.updated as string | undefined;
+    expect(updated).toBeTruthy();
+    expect(() => new Date(updated as string).toISOString()).not.toThrow();
+    expect(Number.isNaN(new Date(updated as string).getTime())).toBe(false);
+  });
+});
+
 describe('binToolsLoader -- optionsDropped fallback consequence', () => {
   let parent: string;
   let root: string;

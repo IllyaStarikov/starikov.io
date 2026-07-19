@@ -80,6 +80,7 @@ export function buildNav(
         { href: '/', label: 'Home' },
         { href: '/about', label: 'About' },
         { href: '/colophon', label: 'Colophon' },
+        { href: '/changelog', label: 'Changelog' },
       ],
     },
     {

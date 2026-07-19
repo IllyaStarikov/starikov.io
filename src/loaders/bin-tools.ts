@@ -24,6 +24,7 @@
  *     against the directories, and writes entries into the content store.
  */
 
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, extname, join, relative, resolve } from 'node:path';
 import { unified } from 'unified';
@@ -289,6 +290,34 @@ function safeMtime(path: string): string | undefined {
   }
 }
 
+/** Reads the date of the last commit that touched `relPath` inside the git
+ *  checkout at `repoRoot`, as a strict-ISO string (`%aI`). */
+export type GitDateReader = (repoRoot: string, relPath: string) => string | undefined;
+
+/**
+ * Default `updated` source: the last commit date for a tool's directory, read
+ * from the `bin` checkout's own git history. This is `git log` on a repo WE
+ * cloned (metadata, never tool code) -- allowed, and the reason a tool's
+ * "updated N days ago" is the real authoring date, not the meaningless checkout
+ * mtime a fresh CI clone stamps on every file (Task 9 carried finding). In CI
+ * the `bin` repo is a full `actions/checkout`, so `.git` is present; a local
+ * rsync copy has no `.git` and `git log -- <path>` returns nothing there, so the
+ * loader falls back to the file mtime. Guarded end-to-end: any failure yields
+ * `undefined` and the mtime takes over.
+ */
+export const gitLastCommitDate: GitDateReader = (repoRoot, relPath) => {
+  try {
+    return (
+      execFileSync('git', ['-C', repoRoot, 'log', '-1', '--format=%aI', '--', relPath], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim() || undefined
+    );
+  } catch {
+    return undefined;
+  }
+};
+
 /**
  * Object loader for the `tools` collection. `root` is the bin checkout
  * (`.sources/bin`); its basename names the GitHub repo the source links point
@@ -297,7 +326,14 @@ function safeMtime(path: string): string | undefined {
  * build still succeeds -- Task 15's `tools >= 1` min-count gate is what fails
  * CI on an empty /bin, not the loader.
  */
-export function binToolsLoader({ root }: { root: string }): Loader {
+export function binToolsLoader({
+  root,
+  readGitDate = gitLastCommitDate,
+}: {
+  root: string;
+  /** Injectable for tests; defaults to reading the `bin` checkout's git log. */
+  readGitDate?: GitDateReader;
+}): Loader {
   const repoBase = `${GITHUB_URL}/${basename(root)}`;
 
   return {
@@ -377,7 +413,9 @@ export function binToolsLoader({ root }: { root: string }): Loader {
           sourceUrl: `${repoBase}/tree/main/${slug}`,
           license: parsed.license,
           stdlibOnly: parsed.stdlibOnly,
-          updated: safeMtime(readmePath),
+          // Real last-commit date for the tool dir (git), mtime only as a
+          // last resort -- see gitLastCommitDate.
+          updated: readGitDate(absRoot, slug) ?? safeMtime(readmePath),
         };
 
         const filePath = relative(process.cwd(), readmePath);

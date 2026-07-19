@@ -1,0 +1,226 @@
+---
+/*
+ * /changelog -- a human-readable view of the site feed (design spec §3: "proof
+ * of everliving"). The 30 most recent SiteItems, grouped by month, one line
+ * each. Same data as /rss.xml (both read getAllItems via the SiteItem model),
+ * so the page and the feed can never disagree.
+ */
+import Shell from '../layouts/Shell.astro';
+import { getAllItems } from '../lib/model';
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const TYPE_LABEL: Record<string, string> = {
+  tool: 'tool',
+  project: 'project',
+  essay: 'essay',
+  page: 'page',
+};
+
+// The 30 most recent DATED items (newest first -- getAllItems already sorts).
+const items = (await getAllItems()).filter((i) => i.date).slice(0, 30);
+
+interface Row {
+  day: string;
+  type: string;
+  title: string;
+  href: string;
+  external: boolean;
+}
+interface Group {
+  key: string;
+  label: string;
+  rows: Row[];
+}
+
+const groups: Group[] = [];
+for (const item of items) {
+  const d = new Date(item.date as string);
+  const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+  let group = groups.find((g) => g.key === key);
+  if (!group) {
+    group = { key, label: `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`, rows: [] };
+    groups.push(group);
+  }
+  group.rows.push({
+    day: String(d.getUTCDate()).padStart(2, '0'),
+    type: TYPE_LABEL[item.type] ?? item.type,
+    title: item.title,
+    href: item.href,
+    external: item.type === 'essay',
+  });
+}
+
+const facts = [
+  { label: 'shown', value: String(items.length) },
+  { label: 'feed', value: 'rss.xml', href: '/rss.xml' },
+];
+---
+
+<Shell
+  title="Changelog — starikov.io"
+  description="A human-readable feed of the most recent updates across the site — tools, projects, and essays — grouped by month. Generated from the same data as the RSS feed."
+  crumbs={[{ href: '/changelog', label: 'changelog' }]}
+  facts={facts}
+  pageType="page"
+>
+  <div class="log">
+    <header>
+      <p class="mono-label">changelog</p>
+      <h1>Changelog</h1>
+      <p class="log__lead">
+        Everything new across the site, newest first — the same data as the
+        <a href="/rss.xml">RSS feed</a>. New tools, projects, and essays land here on their own,
+        pulled from live sources at every build.
+      </p>
+    </header>
+
+    {
+      groups.map((group) => (
+        <section class="log__month" aria-labelledby={`m-${group.key}`}>
+          <h2 class="log__month-label" id={`m-${group.key}`}>
+            {group.label}
+          </h2>
+          <ul class="log__entries">
+            {group.rows.map((row) => (
+              <li class="entry">
+                <span class="entry__day" aria-hidden="true">
+                  {row.day}
+                </span>
+                <span class={`entry__type entry__type--${row.type}`}>{row.type}</span>
+                <a
+                  class="entry__title"
+                  href={row.href}
+                  {...(row.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
+                  {row.title}
+                  {row.external && <span class="entry__ext" aria-hidden="true"> ↗</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</Shell>
+
+<style>
+  .log {
+    max-width: 720px;
+  }
+
+  .log h1 {
+    margin-top: var(--s-2);
+  }
+
+  .log__lead {
+    margin-top: var(--s-4);
+    max-width: 62ch;
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+  }
+
+  .log__lead a {
+    color: var(--accent);
+    text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .log__month {
+    margin-top: var(--s-7);
+  }
+
+  .log__month-label {
+    font: 500 var(--fs-13) / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+    padding-bottom: var(--s-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .log__entries {
+    margin: var(--s-2) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 2ch 5.5rem 1fr;
+    align-items: baseline;
+    gap: var(--s-3);
+    padding: var(--s-2) 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  }
+
+  .entry__day {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .entry__type {
+    justify-self: start;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    line-height: 1.4;
+    color: var(--text-secondary);
+    text-transform: lowercase;
+  }
+
+  /* A dot of accent per type -- color is never the sole signal (the word is
+     right there), just a scannable tint. */
+  .entry__type--tool {
+    color: var(--ansi-green, var(--accent));
+    border-color: color-mix(in srgb, var(--ansi-green, var(--accent)) 40%, transparent);
+  }
+  .entry__type--project {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .entry__type--essay {
+    color: var(--ansi-magenta, var(--accent));
+    border-color: color-mix(in srgb, var(--ansi-magenta, var(--accent)) 40%, transparent);
+  }
+  .entry__type--page {
+    color: var(--ansi-yellow, var(--accent));
+    border-color: color-mix(in srgb, var(--ansi-yellow, var(--accent)) 40%, transparent);
+  }
+
+  .entry__title {
+    min-width: 0;
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .entry__title:hover,
+  .entry__title:focus-visible {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 0.15em;
+  }
+
+  .entry__ext {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+  }
+
+  @media (max-width: 520px) {
+    .entry {
+      grid-template-columns: 2ch 1fr;
+      row-gap: var(--s-1);
+    }
+    .entry__type {
+      grid-column: 2;
+    }
+  }
+</style>

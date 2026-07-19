@@ -113,6 +113,28 @@
           "bat_theme": "GitHub"
         }
       }
+    },
+    "nord": {
+      "name": "Nord",
+      "url": "https://github.com/nordtheme/nord",
+      "variants": {
+        "nord": {
+          "display_name": "Nord",
+          "mode": "dark",
+          "neovim_colorscheme": "nord"
+        }
+      }
+    },
+    "dracula": {
+      "name": "Dracula",
+      "url": "https://github.com/dracula/dracula-theme",
+      "variants": {
+        "dracula": {
+          "display_name": "Dracula",
+          "mode": "dark",
+          "neovim_colorscheme": "dracula"
+        }
+      }
     }
   },
   "aliases": {

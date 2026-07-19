@@ -1,0 +1,562 @@
+---
+/*
+ * /colophon -- the signature story page (design spec §3, §5.4). The narrative
+ * home of the theme system: how the site is built, the colors.json -> templates
+ * -> 8 apps -> this site pipeline, the full 57-variant gallery, the token
+ * a11y disclosure, a type specimen, the stack, and the build provenance line.
+ *
+ * `/uses` and `/craft` fold in here (design spec §3).
+ */
+import Shell from '../layouts/Shell.astro';
+import ThemeGallery from '../components/ThemeGallery.astro';
+import themesCurated from '../data/generated/themes.json';
+import themesAll from '../data/generated/themes-all.json';
+import { GITHUB_URL } from '../lib/nav';
+
+const SITE_REPO = `${GITHUB_URL}/starikov.io`;
+const DOTFILES_REPO = `${GITHUB_URL}/.dotfiles`;
+const DEPLOY_RUNS = `${SITE_REPO}/actions/workflows/deploy.yml`;
+
+// The 8 terminal apps the theme engine generates configs for, from the
+// dotfiles' own src/theme/README ("Supported Applications"). The site is #9.
+const APPS = ['Alacritty', 'WezTerm', 'Kitty', 'tmux', 'Starship', 'Neovim', 'bat', 'delta'];
+
+const familyCount = themesAll.families.length;
+const variantCount = themesAll.families.reduce((n, f) => n + f.variants.length, 0);
+const curatedFamilyCount = themesCurated.families.length;
+const liveCount = themesCurated.families.length * 2; // one light + one dark web pair each
+
+// Provenance: null sha (a local rsync copy with no .git) reads as "snapshot";
+// a CI build reads the real dotfiles commit. See scripts/build-themes.mjs.
+const meta = themesCurated.meta;
+const sourceLabel = meta.sourceSha ? `dotfiles@${meta.sourceSha}` : 'dotfiles@snapshot';
+const builtIso = meta.generatedAt;
+const built = `${builtIso.slice(0, 10)} ${builtIso.slice(11, 16)} UTC`;
+
+const toc = [
+  { id: 'pipeline', label: 'The pipeline' },
+  { id: 'gallery', label: 'Every variant' },
+  { id: 'tokens', label: 'Token derivation' },
+  { id: 'type', label: 'Type specimen' },
+  { id: 'stack', label: 'The stack' },
+  { id: 'provenance', label: 'Provenance' },
+];
+
+const facts = [
+  { label: 'variants', value: String(variantCount) },
+  { label: 'families', value: String(familyCount) },
+  { label: 'live pairs', value: String(liveCount) },
+  { label: 'source', value: sourceLabel, href: DOTFILES_REPO, external: true },
+];
+
+const connections = [
+  { href: '/projects/dotfiles', label: 'The dotfiles theme engine' },
+  { href: SITE_REPO, label: 'This site’s source', external: true },
+];
+
+const typeScale = [
+  { px: 44, label: 'Statement', role: 'home only' },
+  { px: 32, label: 'Heading 1', role: 'h1' },
+  { px: 24, label: 'Heading 2', role: 'h2' },
+  { px: 20, label: 'Heading 3', role: 'h3' },
+  { px: 16, label: 'Body', role: 'reading, 1.5 line-height' },
+  { px: 14, label: 'Small', role: 'UI, captions' },
+  { px: 13, label: 'Mono', role: 'labels, code' },
+];
+
+const stack = [
+  { name: 'Astro 5', note: 'Static HTML out, Content Layer in. Zero client framework — no React, no hydration tax.' },
+  { name: 'Vanilla TypeScript', note: 'The ⌘K palette, the theme runtime, the pre-paint boot script — a few KB of hand-written TS, no islands.' },
+  { name: 'Pagefind', note: 'Full-text search indexed at build, loaded on demand. The search runs in your browser, not a server.' },
+  { name: 'GitHub Actions + Pages', note: 'One workflow: pull the live sources, generate the themes, build, gate, deploy. A failed build never ships.' },
+  { name: 'Inter + Commit Mono', note: 'Self-hosted, subset to latin, preloaded. Metric-matched fallbacks so nothing shifts as they load.' },
+];
+---
+
+<Shell
+  title="Colophon — starikov.io"
+  description="How this site is built: the dotfiles theme engine that generates all 57 terminal palettes, the token-contrast derivation, the type specimen, and the build provenance."
+  crumbs={[{ href: '/colophon', label: 'colophon' }]}
+  toc={toc}
+  facts={facts}
+  connections={connections}
+  pageType="page"
+>
+  <div class="col">
+    <header class="col__head">
+      <p class="mono-label">colophon</p>
+      <h1>Colophon</h1>
+      <p class="col__lead">
+        This site is hand-built with <a href="https://astro.build">Astro 5</a> — static HTML,
+        no client framework — and deployed to GitHub Pages from a single workflow. But the part
+        worth writing down is the color: every palette you can pick here is generated at build
+        time from my <a href="/projects/dotfiles">dotfiles theme engine</a>, the same
+        <code>colors.json</code> files that theme my terminal. The whole thing is
+        <a href={SITE_REPO} target="_blank" rel="noopener noreferrer">open source ↗</a>.
+      </p>
+    </header>
+
+    <!-- ===================== Pipeline ===================== -->
+    <section class="col__section" id="pipeline" aria-labelledby="pipeline-h">
+      <h2 id="pipeline-h">The pipeline</h2>
+      <p class="col__prose">
+        One schema fans out to nine consumers. A single <code>colors.json</code> per variant
+        drives a set of templates, which generate configs for eight terminal apps. This site is
+        the ninth — app&nbsp;#9 of the theme engine.
+      </p>
+
+      <div class="pipe" role="img" aria-label="colors.json feeds templates, which generate configs for eight terminal apps and this website">
+        <div class="pipe__stage">
+          <code class="pipe__code">colors.json</code>
+          <span class="pipe__note">26-key schema · {variantCount} variants</span>
+        </div>
+        <span class="pipe__arrow" aria-hidden="true">→</span>
+        <div class="pipe__stage">
+          <code class="pipe__code">templates/</code>
+          <span class="pipe__note">.toml · .conf · .lua · .sh</span>
+        </div>
+        <span class="pipe__arrow" aria-hidden="true">→</span>
+        <div class="pipe__stage pipe__stage--apps">
+          <span class="pipe__note pipe__note--top">8 terminal apps</span>
+          <ul class="pipe__apps">
+            {APPS.map((a) => <li>{a}</li>)}
+          </ul>
+        </div>
+        <span class="pipe__arrow" aria-hidden="true">→</span>
+        <div class="pipe__stage pipe__stage--site">
+          <code class="pipe__code pipe__code--site">~/starikov</code>
+          <span class="pipe__note">app #9 — this site</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Gallery ===================== -->
+    <section class="col__section" id="gallery" aria-labelledby="gallery-heading">
+      <h2 id="gallery-heading">Every variant</h2>
+      <ThemeGallery />
+    </section>
+
+    <!-- ===================== Token derivation ===================== -->
+    <section class="col__section" id="tokens" aria-labelledby="tokens-h">
+      <h2 id="tokens-h">Honest tokens</h2>
+      <div class="col__prose col__prose--wide">
+        <p>
+          Terminal palettes are tuned for a terminal, not a document. Used naively as web text
+          they fail contrast — so this site splits them in two. The <strong>raw terminal
+          tokens</strong> (<code>--bg</code>, <code>--fg</code>, <code>--accent</code>,
+          <code>--border</code>, the sixteen ANSI colors) drive <em>chrome only</em>: borders,
+          fills, accents, the swatches above. <code>--muted</code> is never text — measured, it
+          lands at 1.8–2.5:1 across most variants, well under the readable floor.
+        </p>
+        <p>
+          The text colors are <strong>derived</strong>. At build,
+          <code>--text-secondary</code> and <code>--code-comment</code> are computed by mixing
+          <code>color-mix(fg, bg)</code> step by step until they clear the WCAG floors — 4.5:1 for
+          body-adjacent text, 3:1 for large and 14px+ mono. Body <code>fg</code>-on-<code>bg</code>
+          is validated at 4.5:1 for every variant, and any that fails is dropped from the build
+          rather than shipped with a color you can't read. There is no opacity on body text, ever.
+        </p>
+        <p>
+          This is disclosed here on purpose. It is the web sibling of my
+          <code>validate-themes.sh</code> — the contrast check that runs in the terminal, run
+          again at build for the browser. Authenticity through honesty: the colors are real, and
+          so is the math that makes them legible.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===================== Type specimen ===================== -->
+    <section class="col__section" id="type" aria-labelledby="type-h">
+      <h2 id="type-h">Type specimen</h2>
+      <p class="col__prose">
+        Two families do all the work: <strong>Inter</strong> for reading and UI,
+        <strong>Commit Mono</strong> for identity — the wordmark, labels, code, and every
+        terminal echo. No serif.
+      </p>
+
+      <div class="spec">
+        <div class="spec__family">
+          <p class="spec__tag mono-label">Inter Variable · body &amp; UI</p>
+          <p class="spec__sample spec__sample--sans">
+            The quick brown fox jumps over the lazy dog — 0123456789
+          </p>
+        </div>
+        <div class="spec__family">
+          <p class="spec__tag mono-label">Commit Mono · identity</p>
+          <p class="spec__sample spec__sample--mono">
+            ~/starikov ❯ theme storm &amp;&amp; git commit -m "0O 1lI"
+          </p>
+        </div>
+      </div>
+
+      <ul class="scale" aria-label="Type scale">
+        {
+          typeScale.map((s) => (
+            <li class="scale__row">
+              <span class="scale__size" style={`font-size:${s.px}px`}>
+                {s.label}
+              </span>
+              <span class="scale__meta">
+                {s.px}px · {s.role}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <!-- ===================== Stack ===================== -->
+    <section class="col__section" id="stack" aria-labelledby="stack-h">
+      <h2 id="stack-h">The stack</h2>
+      <dl class="stack">
+        {
+          stack.map((s) => (
+            <div class="stack__row">
+              <dt class="stack__name">{s.name}</dt>
+              <dd class="stack__note">{s.note}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <!-- ===================== Provenance ===================== -->
+    <section class="col__section" id="provenance" aria-labelledby="provenance-h">
+      <h2 id="provenance-h">Provenance</h2>
+      <p class="col__prose">
+        The {curatedFamilyCount} curated families ({liveCount} live variants) are regenerated on
+        every deploy. This build:
+      </p>
+      <p class="prov">
+        Palette synced from <span class="prov__src">{sourceLabel}</span>
+        <span class="prov__dot" aria-hidden="true">·</span>
+        built {built}
+      </p>
+      <p class="col__prose col__prose--fine">
+        <a href={DEPLOY_RUNS} target="_blank" rel="noopener noreferrer">Deploy runs ↗</a>
+        <span class="prov__dot" aria-hidden="true">·</span>
+        <a href={SITE_REPO} target="_blank" rel="noopener noreferrer">Site source ↗</a>
+        <span class="prov__dot" aria-hidden="true">·</span>
+        <a href={DOTFILES_REPO} target="_blank" rel="noopener noreferrer">Theme engine ↗</a>
+      </p>
+    </section>
+  </div>
+</Shell>
+
+<style>
+  .col {
+    max-width: 720px;
+  }
+
+  .col__head h1 {
+    margin-top: var(--s-2);
+  }
+
+  .col__lead {
+    margin-top: var(--s-4);
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+  }
+
+  .col__lead a {
+    color: var(--fg);
+    text-decoration-color: var(--border);
+  }
+
+  .col__lead a:hover,
+  .col__lead a:focus-visible {
+    text-decoration-color: var(--accent);
+  }
+
+  .col__lead code,
+  .col__prose code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-1);
+    padding: 0.1em 0.35em;
+    font-size: 0.88em;
+  }
+
+  .col__section {
+    margin-top: var(--s-9);
+    scroll-margin-top: var(--s-5);
+  }
+
+  .col__section > h2 {
+    padding-bottom: var(--s-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .col__prose {
+    margin-top: var(--s-4);
+    max-width: 65ch;
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+  }
+
+  .col__prose--wide {
+    max-width: 68ch;
+  }
+
+  .col__prose--wide > p + p {
+    margin-top: var(--s-4);
+  }
+
+  .col__prose strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .col__prose--fine {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+  }
+
+  .col__prose a {
+    color: var(--accent);
+    text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Pipeline diagram (semantic HTML/CSS, no image)
+   * ------------------------------------------------------------------- */
+  .pipe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin-top: var(--s-5);
+  }
+
+  .pipe__stage {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-3) var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+  }
+
+  .pipe__code {
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  .pipe__code--site {
+    color: var(--accent);
+  }
+
+  .pipe__note {
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+
+  .pipe__note--top {
+    order: -1;
+  }
+
+  .pipe__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: var(--fs-20);
+    transform: rotate(90deg);
+  }
+
+  .pipe__stage--apps {
+    flex: 1.4;
+  }
+
+  .pipe__apps {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--s-1) var(--s-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pipe__apps li {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    color: var(--fg);
+  }
+
+  .pipe__apps li::before {
+    content: '›';
+    margin-right: var(--s-2);
+    color: var(--text-secondary);
+  }
+
+  /* The site is the accented terminus -- app #9. */
+  .pipe__stage--site {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  }
+
+  @media (min-width: 760px) {
+    .pipe {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    .pipe__stage {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .pipe__arrow {
+      transform: none;
+      flex: none;
+    }
+
+    .pipe__apps {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+   * Type specimen
+   * ------------------------------------------------------------------- */
+  .spec {
+    display: grid;
+    gap: var(--s-4);
+    margin-top: var(--s-5);
+  }
+
+  .spec__family {
+    padding: var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+  }
+
+  .spec__tag {
+    margin-bottom: var(--s-3);
+  }
+
+  .spec__sample {
+    font-size: var(--fs-24);
+    line-height: 1.3;
+    color: var(--fg);
+  }
+
+  .spec__sample--sans {
+    font-family: var(--font-sans);
+    font-weight: 500;
+  }
+
+  .spec__sample--mono {
+    font-family: var(--font-mono);
+    font-size: var(--fs-20);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .scale {
+    margin: var(--s-6) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .scale__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .scale__size {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: var(--ls-heading);
+    color: var(--fg);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .scale__meta {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Stack
+   * ------------------------------------------------------------------- */
+  .stack {
+    margin: var(--s-5) 0 0;
+    display: grid;
+    gap: var(--s-4);
+  }
+
+  .stack__row {
+    display: grid;
+    gap: var(--s-1);
+    padding-bottom: var(--s-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stack__name {
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  .stack__note {
+    margin: 0;
+    max-width: 62ch;
+    font-size: var(--fs-14);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Provenance
+   * ------------------------------------------------------------------- */
+  .prov {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    margin-top: var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    color: var(--text-secondary);
+  }
+
+  .prov__src {
+    color: var(--accent);
+  }
+
+  .prov__dot {
+    user-select: none;
+    color: var(--border);
+  }
+
+  .col__prose--fine {
+    margin-top: var(--s-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    align-items: center;
+  }
+</style>

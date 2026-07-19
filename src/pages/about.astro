@@ -1,19 +1,271 @@
 ---
+/*
+ * /about -- short bio, the live self-refreshing profile card, résumé PDFs, and
+ * where to reach me (design spec §3). Deliberately brief: the work is on the
+ * rest of the site; this page is the index card.
+ *
+ * No email is published anywhere in my public sources, so "contact" is the
+ * GitHub profile rather than an invented address.
+ */
 import Shell from '../layouts/Shell.astro';
+import ProfileCard from '../components/ProfileCard.astro';
+import { GITHUB_URL } from '../lib/nav';
+
+const BLOG = 'https://starikov.co';
+const RESUME_SITE = 'https://resume.starikov.io';
+
+const resumes = [
+  { label: 'Résumé', variant: 'light', href: `${RESUME_SITE}/illya-starikov-resume.pdf` },
+  { label: 'Résumé', variant: 'dark', href: `${RESUME_SITE}/illya-starikov-resume-dark.pdf` },
+  { label: 'CV', variant: 'light', href: `${RESUME_SITE}/illya-starikov-cv.pdf` },
+  { label: 'CV', variant: 'dark', href: `${RESUME_SITE}/illya-starikov-cv-dark.pdf` },
+];
+
+const facts = [
+  { label: 'role', value: 'Software engineer' },
+  { label: 'based', value: 'San Francisco' },
+  { label: 'from', value: 'Ukraine' },
+  { label: 'studied', value: 'Missouri S&T' },
+];
+
+const connections = [
+  { href: BLOG, label: 'Writing — starikov.co', external: true },
+  { href: GITHUB_URL, label: 'GitHub — @IllyaStarikov', external: true },
+  { href: RESUME_SITE, label: 'Résumé site', external: true },
+];
 ---
 
-<!-- Minimal placeholder so page transitions and active-nav can be exercised
-     against a second route. Task 18 fleshes this out (bio + neofetch card +
-     resume links). -->
 <Shell
   title="About — starikov.io"
-  description="About Illya Starikov."
+  description="Illya Starikov — a software engineer born in Ukraine and based in San Francisco. Bio, live profile card, résumé and CV PDFs, and where to reach me."
   crumbs={[{ href: '/about', label: 'about' }]}
+  facts={facts}
+  connections={connections}
   pageType="page"
 >
-  <div class="prose">
-    <p class="mono-label">about</p>
-    <h1>About</h1>
-    <p>Software engineer. This page fills in soon — for now it proves the shell moves.</p>
+  <div class="about">
+    <header>
+      <p class="mono-label">about</p>
+      <h1>About</h1>
+    </header>
+
+    <div class="about__bio">
+      <p>
+        I'm Illya Starikov — a software engineer, born in Ukraine and based in San Francisco.
+        I'm at Google, most recently working on Google Beam (formerly Project Starline).
+      </p>
+      <p>
+        I earned my BS and MS in computer science at Missouri S&amp;T between 2014 and 2018, and
+        I've been writing about computers, science, and the tangents in between at
+        <a href={BLOG} target="_blank" rel="noopener noreferrer">starikov.co ↗</a> ever since.
+        This site is the workshop behind that writing — everything I've built, kept like a wiki.
+      </p>
+    </div>
+
+    <ProfileCard />
+
+    <section class="about__section" aria-labelledby="resume-h">
+      <div class="section-head">
+        <h2 class="section-head__label" id="resume-h">résumé &amp; cv</h2>
+        <span class="section-head__rule" aria-hidden="true"></span>
+      </div>
+      <p class="about__note">
+        Built in LaTeX — a one-page résumé and a longer CV, each in light and dark. The recruiter
+        with thirty seconds wants the first; anyone who wants the whole story wants the second.
+      </p>
+      <ul class="docs">
+        {
+          resumes.map((r) => (
+            <li>
+              <a class="doc" href={r.href} target="_blank" rel="noopener noreferrer">
+                <span class="doc__name">{r.label}</span>
+                <span class="doc__variant">{r.variant}</span>
+                <span class="doc__ext" aria-hidden="true">
+                  PDF ↗
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="about__note about__note--fine">
+        Or read it on the web at
+        <a href={RESUME_SITE} target="_blank" rel="noopener noreferrer">resume.starikov.io ↗</a>.
+      </p>
+    </section>
+
+    <section class="about__section" aria-labelledby="contact-h">
+      <div class="section-head">
+        <h2 class="section-head__label" id="contact-h">elsewhere</h2>
+        <span class="section-head__rule" aria-hidden="true"></span>
+      </div>
+      <ul class="links">
+        <li>
+          <a href="mailto:illya@starikov.co">
+            Email <span class="links__handle">illya@starikov.co</span>
+          </a>
+          <span class="links__note">the same address on my profile card above</span>
+        </li>
+        <li>
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+            GitHub <span class="links__handle">@IllyaStarikov</span> <span aria-hidden="true">↗</span>
+          </a>
+          <span class="links__note">issues, PRs, and everything I ship</span>
+        </li>
+        <li>
+          <a href={BLOG} target="_blank" rel="noopener noreferrer">
+            Writing <span class="links__handle">starikov.co</span> <span aria-hidden="true">↗</span>
+          </a>
+          <span class="links__note">essays, since ~2016</span>
+        </li>
+      </ul>
+    </section>
   </div>
 </Shell>
+
+<style>
+  .about {
+    max-width: 720px;
+  }
+
+  .about h1 {
+    margin-top: var(--s-2);
+  }
+
+  .about__bio {
+    margin-top: var(--s-5);
+    max-width: 62ch;
+    font-size: var(--fs-16);
+    line-height: var(--lh-body);
+  }
+
+  .about__bio p + p {
+    margin-top: var(--s-4);
+  }
+
+  .about__bio a {
+    color: var(--accent);
+    text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .about__section {
+    margin-top: var(--s-8);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    margin-bottom: var(--s-3);
+  }
+
+  .section-head__label {
+    font: 500 var(--fs-13) / 1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .section-head__rule {
+    flex: 1;
+    border-top: 1px solid var(--border);
+  }
+
+  .about__note {
+    max-width: 62ch;
+    color: var(--text-secondary);
+    font-size: var(--fs-14);
+    line-height: var(--lh-body);
+  }
+
+  .about__note a {
+    color: var(--accent);
+  }
+
+  .about__note--fine {
+    margin-top: var(--s-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+  }
+
+  /* Résumé PDFs */
+  .docs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--s-2);
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .doc {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    padding: var(--s-3) var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    text-decoration: none;
+    color: var(--fg);
+    transition: border-color var(--dur-2) var(--ease-out);
+  }
+
+  .doc:hover,
+  .doc:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .doc__name {
+    font-weight: 700;
+  }
+
+  .doc__variant {
+    flex: 1;
+    color: var(--text-secondary);
+  }
+
+  .doc__ext {
+    color: var(--accent);
+    font-size: var(--fs-12);
+  }
+
+  /* Elsewhere */
+  .links {
+    display: grid;
+    gap: var(--s-3);
+    margin: var(--s-2) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .links li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-2) var(--s-3);
+  }
+
+  .links a {
+    color: var(--fg);
+    text-decoration-color: var(--border);
+  }
+
+  .links a:hover,
+  .links a:focus-visible {
+    text-decoration-color: var(--accent);
+  }
+
+  .links__handle {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    color: var(--accent);
+  }
+
+  .links__note {
+    font-size: var(--fs-13);
+    color: var(--text-secondary);
+  }
+</style>

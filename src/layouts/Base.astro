@@ -26,6 +26,13 @@ interface Props {
 
 const { title = SITE.title, description = SITE.description } = Astro.props;
 
+// Absolute URLs for social/canonical meta. Astro.site is the config `site`
+// (https://starikov.io); fall back to SITE.origin for safety.
+const siteBase = Astro.site ?? new URL(SITE.origin);
+const canonical = new URL(Astro.url.pathname, siteBase).toString();
+const ogImage = new URL('/og-default.png', siteBase).toString();
+const rssHref = new URL('/rss.xml', siteBase).toString();
+
 const gaInlineScript = `
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -43,7 +50,23 @@ const gaInlineScript = `
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.title} href={rssHref} />
+    <!-- Social cards: a static default OG image (design spec §7; per-page satori
+         endpoint is v1.1). Title/description mirror the per-page tags above. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
     <!-- Per-variant theme tokens. First stylesheet in the head and render-
          blocking, so the palette the boot script selects is painted with no
          flash. Must precede the boot script (below). -->

@@ -1,0 +1,313 @@
+---
+/*
+ * ThemeGallery -- every one of the theme engine's variants, grouped by family,
+ * each swatch painted in its OWN palette (design spec §5.4). This is the whole
+ * story made literal: 17 families, 57 variants, from the same colors.json files
+ * that theme the terminal.
+ *
+ * Two kinds of swatch:
+ *   - CLICKABLE (a <button>): the curated web pairs -- the light + dark variant
+ *     of each of the 8 paired families. window.__setTheme(family, mode) resolves,
+ *     via the boot script's pair table, to exactly these ids, so a click lands
+ *     the site on precisely the variant shown. 16 in all.
+ *   - TERMINAL-ONLY (a static, aria-disabled chip with a mono label): every
+ *     other variant -- the dark-only families the site never auto-switches to,
+ *     and the non-web-pair variants of curated families. They theme my terminal;
+ *     the site can't land on them without a family swap the contract forbids, so
+ *     they are shown, honestly, as look-don't-touch.
+ *
+ * Reads src/data/generated/themes-all.json (the full gallery data, swatches
+ * only) for the variants, and themes.json (curated) for which ids are clickable.
+ */
+import themesAll from '../data/generated/themes-all.json';
+import themesCurated from '../data/generated/themes.json';
+
+type Mode = 'light' | 'dark';
+
+// Clickable ids = each curated family's two web-pair variants, mapped to the
+// (family, mode) __setTheme needs. Nothing else can be landed on precisely.
+const clickable = new Map<string, { family: string; mode: Mode }>();
+for (const fam of themesCurated.families) {
+  const light = fam.variants.find((v) => v.id === fam.pair.light);
+  const dark = fam.variants.find((v) => v.id === fam.pair.dark);
+  if (light) clickable.set(light.id, { family: fam.id, mode: 'light' });
+  if (dark) clickable.set(dark.id, { family: fam.id, mode: 'dark' });
+}
+
+const families = themesAll.families;
+const variantCount = families.reduce((n, f) => n + f.variants.length, 0);
+const liveCount = clickable.size;
+---
+
+<section class="tg" aria-labelledby="gallery-heading">
+  <div class="tg__intro">
+    <p class="tg__lead">
+      All <strong>{variantCount} variants</strong> across <strong>{families.length} families</strong>,
+      each swatch drawn in its own colors. <strong>{liveCount}</strong> have a true light/dark web
+      pair and recolor the whole site on click; the rest theme my terminal only.
+    </p>
+    <ul class="tg__legend" aria-hidden="true">
+      <li><span class="tg__key tg__key--live"></span> click to apply</li>
+      <li><span class="tg__key tg__key--static"></span> terminal-only</li>
+    </ul>
+  </div>
+
+  <div class="tg__families">
+    {
+      families.map((family) => (
+        <div class="tg-family">
+          <div class="tg-family__head">
+            <h3 class="tg-family__name">{family.familyName}</h3>
+            <span class="tg-family__count">{family.variants.length}</span>
+          </div>
+          <ul class="tg-family__variants">
+            {family.variants.map((v) => {
+              const click = clickable.get(v.id);
+              const style = `--sw-bg:${v.swatch.bg};--sw-fg:${v.swatch.fg};--sw-accent:${v.swatch.accent}`;
+              return (
+                <li>
+                  {click ? (
+                    <button
+                      type="button"
+                      class="tg-swatch tg-swatch--live"
+                      style={style}
+                      data-theme-id={v.id}
+                      data-family={click.family}
+                      data-mode={click.mode}
+                      aria-pressed="false"
+                      title={`Apply ${family.familyName} ${v.name}`}
+                    >
+                      <span class="tg-swatch__dot" aria-hidden="true" />
+                      <span class="tg-swatch__name">{v.name}</span>
+                    </button>
+                  ) : (
+                    <div
+                      class="tg-swatch tg-swatch--static"
+                      style={style}
+                      aria-disabled="true"
+                      title={`${family.familyName} ${v.name} — terminal-only`}
+                    >
+                      <span class="tg-swatch__dot" aria-hidden="true" />
+                      <span class="tg-swatch__name">{v.name}</span>
+                      <span class="tg-swatch__tag">terminal-only</span>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<script>
+  // Keep the clickable swatches' pressed state honest against the live theme,
+  // and route clicks through the one shared mutation API (theme-control.ts's
+  // window.__setTheme, defined by the sidebar's ThemeControl on every page).
+  type Mode = 'light' | 'dark';
+
+  function syncGallery(): void {
+    const active = document.documentElement.dataset.theme || '';
+    document.querySelectorAll<HTMLElement>('.tg-swatch--live').forEach((el) => {
+      el.setAttribute('aria-pressed', el.dataset.themeId === active ? 'true' : 'false');
+    });
+  }
+
+  function wireGallery(): void {
+    document.querySelectorAll<HTMLButtonElement>('.tg-swatch--live').forEach((btn) => {
+      if (btn.dataset.tgWired === '1') return;
+      btn.dataset.tgWired = '1';
+      btn.addEventListener('click', () => {
+        const family = btn.dataset.family;
+        const mode = btn.dataset.mode as Mode | undefined;
+        if (family && mode) window.__setTheme?.(family, mode);
+      });
+    });
+    syncGallery();
+  }
+
+  wireGallery();
+  document.addEventListener('themechange', syncGallery);
+  // ClientRouter swaps in fresh DOM without re-running the module.
+  document.addEventListener('astro:page-load', wireGallery);
+</script>
+
+<style>
+  .tg {
+    margin-top: var(--s-4);
+  }
+
+  .tg__intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+    margin-bottom: var(--s-5);
+  }
+
+  .tg__lead {
+    max-width: 60ch;
+    color: var(--text-secondary);
+    font-size: var(--fs-14);
+    line-height: var(--lh-body);
+  }
+
+  .tg__lead strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .tg__legend {
+    display: flex;
+    gap: var(--s-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+
+  .tg__legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
+  .tg__key {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--r-1);
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .tg__key--live {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tg__key--static {
+    border-style: dashed;
+  }
+
+  .tg__families {
+    display: grid;
+    gap: var(--s-6);
+  }
+
+  .tg-family__head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-3);
+    margin-bottom: var(--s-3);
+    padding-bottom: var(--s-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tg-family__name {
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    font-weight: 600;
+    letter-spacing: var(--ls-eyebrow);
+  }
+
+  .tg-family__count {
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+  }
+
+  .tg-family__variants {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--s-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Every swatch is painted in its OWN variant's palette via the --sw-* vars. */
+  .tg-swatch {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    width: 100%;
+    min-height: 44px;
+    padding: var(--s-2) var(--s-3);
+    background: var(--sw-bg);
+    color: var(--sw-fg);
+    border: 1px solid color-mix(in srgb, var(--sw-fg) 22%, transparent);
+    border-radius: var(--r-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-13);
+    text-align: left;
+  }
+
+  .tg-swatch__dot {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border-radius: var(--r-pill);
+    background: var(--sw-accent);
+  }
+
+  .tg-swatch__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tg-swatch__tag {
+    flex: none;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    opacity: 0.6;
+  }
+
+  /* Clickable: a real control. Cursor + hover lift + focus ring; the active
+     variant is ring-marked via aria-pressed. */
+  .tg-swatch--live {
+    cursor: pointer;
+    transition:
+      transform var(--dur-2) var(--ease-out),
+      box-shadow var(--dur-2) var(--ease-out);
+  }
+
+  .tg-swatch--live:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+  }
+
+  .tg-swatch--live:focus-visible {
+    outline: 2px solid var(--sw-accent);
+    outline-offset: 2px;
+  }
+
+  .tg-swatch--live[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 2px var(--bg),
+      0 0 0 4px var(--accent);
+  }
+
+  /* Terminal-only: flat, dashed, non-interactive. */
+  .tg-swatch--static {
+    border-style: dashed;
+    cursor: default;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tg-swatch--live {
+      transition: none;
+    }
+    .tg-swatch--live:hover {
+      transform: none;
+    }
+  }
+</style>

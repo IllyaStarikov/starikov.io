@@ -148,3 +148,65 @@ export function loadThemeSource(dir, { curatedFamilies, webPairs, onWarn = () =>
 
   return { ok: true, manifest, survivors };
 }
+
+/**
+ * Collect the WHOLE theme engine -- every family + variant the manifest
+ * declares, restricted to what actually has a readable colors.json on disk --
+ * as swatch-only data for the /colophon gallery. Unlike `loadThemeSource` (which
+ * loads only the curated families and emits CSS), this reads EVERY family,
+ * including the dark-only ones the site never lands on, so the gallery can show
+ * all 57 variants. No contrast dropping and no CSS: these are decorative
+ * swatches, not page text.
+ *
+ * A family the manifest declares but whose colors.json files are all missing
+ * (exactly the shape of the committed vendor snapshot, which lists all 17
+ * families but ships colors.json for only the curated 8) is OMITTED and reported
+ * through `onWarn`, so a snapshot-fallback build degrades the gallery to
+ * curated-only loudly rather than silently.
+ *
+ * @param {string} dir
+ * @param {import('zod').infer<typeof ManifestSchema>} manifest  already-parsed manifest
+ * @param {{ onWarn?: (msg: string) => void }} [opts]
+ * @returns {{ families: Array<{familyId:string, familyName:string, variants: Array<{id:string, variantId:string, name:string, mode:'light'|'dark', swatch:{bg:string,fg:string,accent:string}}>}>, omitted: string[] }}
+ */
+export function loadAllFamilies(dir, manifest, { onWarn = () => {} } = {}) {
+  const families = [];
+  const omitted = [];
+
+  for (const [familyId, family] of Object.entries(manifest.families)) {
+    const variants = [];
+    for (const [variantId, variantMeta] of Object.entries(family.variants)) {
+      const colorsPath = join(dir, 'src/theme', familyId, variantId, 'colors.json');
+      if (!existsSync(colorsPath)) continue;
+
+      let raw;
+      try {
+        raw = JSON.parse(readFileSync(colorsPath, 'utf8'));
+      } catch {
+        continue;
+      }
+      const parsed = ColorsSchema.safeParse(raw);
+      if (!parsed.success) continue;
+
+      const c = parsed.data;
+      variants.push({
+        id: `${familyId}-${variantId}`,
+        variantId,
+        name: variantMeta.display_name,
+        mode: variantMeta.mode,
+        swatch: { bg: c.bg, fg: c.fg, accent: c.accent },
+      });
+    }
+
+    if (variants.length === 0) {
+      omitted.push(familyId);
+      onWarn(
+        `themes-all: family "${familyId}" is declared in the manifest but has no readable colors.json in ${dir} -- omitting from the gallery`,
+      );
+      continue;
+    }
+    families.push({ familyId, familyName: family.name, variants });
+  }
+
+  return { families, omitted };
+}
