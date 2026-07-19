@@ -142,6 +142,7 @@ const isErrorPage = pageType === '404';
       {crumbs && crumbs.length > 0 && <Breadcrumbs crumbs={crumbs} />}
       <main
         id="main"
+        tabindex="-1"
         class:list={{ 'main--home': pageType === 'home' }}
         data-pagefind-body={isErrorPage ? undefined : true}
         data-pagefind-filter={`type:${pagefindType}`}
@@ -215,6 +216,12 @@ const isErrorPage = pageType === '404';
   main {
     max-width: 720px;
     margin-top: var(--s-4);
+  }
+
+  /* The skip link moves focus here (tabindex="-1"); it's a scroll/AT target, not
+     an interactive control, so it must not paint a focus ring around all content. */
+  main:focus {
+    outline: none;
   }
 
   /* Home is the one page that breaks the 720px document column (design §4:

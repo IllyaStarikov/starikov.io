@@ -10,8 +10,9 @@
  *     of each of the 8 paired families. window.__setTheme(family, mode) resolves,
  *     via the boot script's pair table, to exactly these ids, so a click lands
  *     the site on precisely the variant shown. 16 in all.
- *   - TERMINAL-ONLY (a static, aria-disabled chip with a mono label): every
- *     other variant -- the dark-only families the site never auto-switches to,
+ *   - TERMINAL-ONLY (a static, non-interactive chip carrying a "terminal-only"
+ *     mono tag -- no aria-disabled, which is a no-op on a non-focusable <div>):
+ *     every other variant -- the dark-only families the site never auto-switches to,
  *     and the non-web-pair variants of curated families. They theme my terminal;
  *     the site can't land on them without a family swap the contract forbids, so
  *     they are shown, honestly, as look-don't-touch.
@@ -84,7 +85,6 @@ const liveCount = clickable.size;
                     <div
                       class="tg-swatch tg-swatch--static"
                       style={style}
-                      aria-disabled="true"
                       title={`${family.familyName} ${v.name} — terminal-only`}
                     >
                       <span class="tg-swatch__dot" aria-hidden="true" />

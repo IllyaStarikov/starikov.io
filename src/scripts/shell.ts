@@ -18,6 +18,8 @@
  * `barPrevY` carries the FLIP origin between pages.
  */
 
+import { lockScroll, unlockScroll } from '../lib/scroll-lock';
+
 export {};
 
 declare global {
@@ -172,6 +174,9 @@ function wireDialog(): void {
     openBtn.dataset.wired = '1';
     openBtn.addEventListener('click', () => {
       sheet.showModal();
+      // showModal() makes the background inert but does NOT stop it scrolling;
+      // lock it (shared, ref-counted with the palette) until the sheet closes.
+      lockScroll();
       openBtn.setAttribute('aria-expanded', 'true');
     });
   }
@@ -187,8 +192,12 @@ function wireDialog(): void {
     sheet.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
       a.addEventListener('click', close);
     });
-    // Native Esc/close -> keep the trigger's aria-expanded honest.
-    sheet.addEventListener('close', () => openBtn?.setAttribute('aria-expanded', 'false'));
+    // Native Esc/close (and every close() path above) fires exactly one `close`
+    // event -> release the scroll lock and keep the trigger's aria-expanded honest.
+    sheet.addEventListener('close', () => {
+      unlockScroll();
+      openBtn?.setAttribute('aria-expanded', 'false');
+    });
   }
 }
 

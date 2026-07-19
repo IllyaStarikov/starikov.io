@@ -23,6 +23,7 @@
  * omitted there).
  */
 import { rankItem } from '../lib/fuzzy';
+import { lockScroll, unlockScroll } from '../lib/scroll-lock';
 
 interface SiteItem {
   type: 'tool' | 'project' | 'essay' | 'page';
@@ -161,6 +162,7 @@ class CommandPalette extends HTMLElement {
   private query = '';
   private invoker: HTMLElement | null = null;
   private closeTimer = 0;
+  private announceTimer = 0;
 
   // Pagefind: undefined = not tried, null = failed (astro dev), else the module.
   private pf: unknown;
@@ -186,7 +188,7 @@ class CommandPalette extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    if (this.opened) this.unlockScroll();
+    if (this.opened) unlockScroll();
   }
 
   // --- open / close ---------------------------------------------------------
@@ -195,7 +197,7 @@ class CommandPalette extends HTMLElement {
     this.opened = true;
     window.clearTimeout(this.closeTimer);
     this.invoker = document.activeElement as HTMLElement | null;
-    this.lockScroll();
+    lockScroll();
     this.hidden = false;
     this.buildBase();
     this.input.value = '';
@@ -213,20 +215,16 @@ class CommandPalette extends HTMLElement {
     this.opened = false;
     this.removeAttribute('data-open');
     this.input.setAttribute('aria-expanded', 'false');
-    this.unlockScroll();
+    window.clearTimeout(this.announceTimer);
+    unlockScroll();
     const done = () => {
       if (!this.opened) this.hidden = true;
     };
+    // Match the 160ms panel open/close transition (Palette.astro) exactly, so the
+    // element isn't display:none'd mid-fade (which truncated the animation at 100ms).
     if (reducedMotion()) done();
-    else this.closeTimer = window.setTimeout(done, 100);
+    else this.closeTimer = window.setTimeout(done, 160);
     this.invoker?.focus?.();
-  }
-
-  private lockScroll(): void {
-    document.documentElement.style.overflow = 'hidden';
-  }
-  private unlockScroll(): void {
-    document.documentElement.style.overflow = '';
   }
 
   // --- command construction -------------------------------------------------
@@ -292,9 +290,11 @@ class CommandPalette extends HTMLElement {
     cmds.push({
       id: 'a-copy',
       group: 3,
+      // Hint is the row's own affordance (Enter runs it); ⌘C is not intercepted
+      // here, so labelling the row ⌘C would promise a shortcut that does nothing.
       title: 'Copy URL',
       sub: 'Copy this page link to the clipboard',
-      hint: '⌘C',
+      hint: 'Copy',
       search: 'copy url link clipboard',
       searchSub: 'clipboard',
       run: () => this.copyUrl(),
@@ -341,11 +341,16 @@ class CommandPalette extends HTMLElement {
     window.open(href, '_blank', 'noopener');
   }
   private copyUrl(): void {
-    try {
-      navigator.clipboard?.writeText(location.href);
-      this.announce('Copied page URL');
-    } catch {
-      /* clipboard blocked: no-op */
+    // writeText returns a promise that rejects on a denied permission or an
+    // insecure context; a bare try/catch never sees that async rejection, so the
+    // old code announced success even when nothing was copied. Report honestly.
+    const p = navigator.clipboard?.writeText(location.href);
+    if (p) {
+      p.then(() => this.announce('Copied page URL')).catch(() =>
+        this.announce('Could not copy URL'),
+      );
+    } else {
+      this.announce('Could not copy URL');
     }
   }
 
@@ -443,7 +448,7 @@ class CommandPalette extends HTMLElement {
     this.list.innerHTML = html;
     this.optCmds = opts;
     this.setActive(opts.length ? 0 : -1);
-    this.announce(`${opts.length} result${opts.length === 1 ? '' : 's'}`);
+    this.announceResults(`${opts.length} result${opts.length === 1 ? '' : 's'}`);
   }
 
   private setActive(i: number): void {
@@ -483,8 +488,22 @@ class CommandPalette extends HTMLElement {
     cmd.run(newTab);
   }
 
+  /** Immediate announcement for discrete actions (e.g. copy result). Cancels any
+   *  pending debounced results count so it can't overwrite this message. */
   private announce(msg: string): void {
+    window.clearTimeout(this.announceTimer);
     this.live.textContent = msg;
+  }
+
+  /** Debounced (~150ms) results-count announcement. Keystroke-by-keystroke
+   *  filtering re-renders on every input event; without debouncing the polite
+   *  live region would be flooded with intermediate counts. Only the settled
+   *  count is spoken. */
+  private announceResults(msg: string): void {
+    window.clearTimeout(this.announceTimer);
+    this.announceTimer = window.setTimeout(() => {
+      this.live.textContent = msg;
+    }, 150);
   }
 
   // --- keyboard / pointer ---------------------------------------------------
