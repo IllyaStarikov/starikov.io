@@ -118,10 +118,13 @@ const latestEssays = [...essayEntries]
     };
   });
 
-// Global row index so the entrance stagger runs across both ledgers (first 10
-// rows only, per the motion table). Beyond 10, rows get no delay.
+// Global row index so the entrance stagger runs across both ledgers. The motion
+// table caps the cascade at the first 10 rows (indices 0-9); the 11th row onward
+// gets no --row-i and a data-no-stagger flag, so the CSS animation is not applied
+// and the row paints instantly (never a delayed-but-still-animating tail row).
 let rowIndex = 0;
-const staggerFor = () => Math.min(rowIndex++, 10);
+const STAGGER_ROWS = 10;
+const nextRow = () => rowIndex++;
 ---
 
 <Shell
@@ -156,11 +159,19 @@ const staggerFor = () => Math.min(rowIndex++, 10);
       </div>
       <div class="ledger" data-entrance>
         {
-          startHere.map((row) => (
-            <div class="ledger__item" style={`--row-i:${staggerFor()}`}>
-              <LedgerRow href={row.href} title={row.title} dek={row.dek} meta={row.meta} />
-            </div>
-          ))
+          startHere.map((row) => {
+            const i = nextRow();
+            const staggered = i < STAGGER_ROWS;
+            return (
+              <div
+                class="ledger__item"
+                style={staggered ? `--row-i:${i}` : undefined}
+                data-no-stagger={staggered ? undefined : ''}
+              >
+                <LedgerRow href={row.href} title={row.title} dek={row.dek} meta={row.meta} />
+              </div>
+            );
+          })
         }
       </div>
     </section>
@@ -172,8 +183,15 @@ const staggerFor = () => Math.min(rowIndex++, 10);
       </div>
       <div class="ledger" data-entrance>
         {
-          recent.map((row) => (
-            <div class="ledger__item" style={`--row-i:${staggerFor()}`}>
+          recent.map((row) => {
+            const i = nextRow();
+            const staggered = i < STAGGER_ROWS;
+            return (
+            <div
+              class="ledger__item"
+              style={staggered ? `--row-i:${i}` : undefined}
+              data-no-stagger={staggered ? undefined : ''}
+            >
               <LedgerRow
                 href={row.href}
                 title={row.title}
@@ -182,7 +200,8 @@ const staggerFor = () => Math.min(rowIndex++, 10);
                 external={row.external}
               />
             </div>
-          ))
+            );
+          })
         }
       </div>
     </section>
@@ -343,10 +362,12 @@ const staggerFor = () => Math.min(rowIndex++, 10);
     flex-direction: column;
   }
 
-  /* First-visit entrance: 240ms rise, 20ms per-row stagger, first 10 rows.
-     Only plays when the guard script adds .is-entering (never under reduced
-     motion, never on repeat visits). global.css disables it for reduced motion. */
-  [data-entrance].is-entering .ledger__item {
+  /* First-visit entrance: 240ms rise, 20ms per-row stagger, first 10 rows only.
+     Rows past the 10th carry data-no-stagger and are excluded, so they paint
+     instantly rather than fading in on a growing delay. Only plays when the guard
+     script adds .is-entering (never under reduced motion, never on repeat
+     visits). global.css disables it for reduced motion. */
+  [data-entrance].is-entering .ledger__item:not([data-no-stagger]) {
     animation: home-row-in 240ms var(--ease-out) both;
     animation-delay: calc(var(--row-i, 0) * 20ms);
   }

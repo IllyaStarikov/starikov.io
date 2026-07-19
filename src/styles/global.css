@@ -161,7 +161,9 @@ samp {
 }
 
 ::view-transition-new(root) {
-  animation: page-fade-rise var(--dur-3) var(--ease-out) both;
+  /* Explicit 180ms (not --dur-3's 200ms) to match the FLIP active bar and the
+     TOC marker, which both slide 180ms -- one entrance cadence across the shell. */
+  animation: page-fade-rise 180ms var(--ease-out) both;
 }
 
 @keyframes page-fade-out {

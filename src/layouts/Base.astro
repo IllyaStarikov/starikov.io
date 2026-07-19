@@ -74,12 +74,14 @@ const gaInlineScript = `
     <!-- Sensible no-JS default (tokyonight-storm bg); the boot script below
          overwrites this pre-paint from the resolved theme. -->
     <meta name="theme-color" content="#24283b" />
-    <link rel="preload" href={interLatinWoff2} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={commitMono400Woff2} as="font" type="font/woff2" crossorigin />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src https://academia.starikov.io; base-uri 'none'; object-src 'none'"
     />
+    <!-- Font preloads come AFTER the CSP meta so the policy governs them (a
+         meta-delivered CSP only applies to content that follows it in the head). -->
+    <link rel="preload" href={interLatinWoff2} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={commitMono400Woff2} as="font" type="font/woff2" crossorigin />
     <ClientRouter />
     <slot name="head" />
     <!-- Pre-paint theme boot: resolves data-theme + theme-color before first
