@@ -136,7 +136,7 @@ Lighthouse 100×4 on `/`, a project page, a tool page. CLS 0; LCP <1.5s at 4× t
 |---|---|---|
 | New tool in bin | **zero** | push → dispatch → rebuild → page + index + palette + search + RSS |
 | New essay on Ghost | **zero** | nightly cron (≤24h staleness) |
-| New theme family/variant in dotfiles | **zero** for variants of curated families; one array entry to curate a new family | dispatch → build-themes regenerates |
+| New theme family/variant in dotfiles | **zero** for variants of curated families; one `curatedFamilies` entry + its `webPairs` pair to curate a new family | dispatch → build-themes regenerates |
 | New repo becomes a project | one ~10-line MDX overlay (v1.1: zero for a card via `starikov-io` topic) | overlay model |
 | Dotfiles refactor breaks schema | **zero risk** | snapshot fallback + warning annotation |
 

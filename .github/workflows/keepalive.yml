@@ -17,6 +17,11 @@
 # unverified fork are ruled out. Calling the API directly avoids depending
 # on any third party for this.)
 #
+# This workflow is ITSELF a scheduled workflow, so the same 60-day
+# disablement applies to it -- a second step re-enables keepalive.yml too,
+# so the keepalive mechanism keeps itself alive without a third workflow
+# needed to watch it.
+#
 # This is a SEPARATE workflow, not a step bolted onto deploy.yml, because
 # it needs `actions: write` to call the enable endpoint. deploy.yml's
 # permission block is deliberately minimal for its own job (contents: read,
@@ -33,5 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/deploy.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keepalive.yml/enable"
         env:
           GH_TOKEN: ${{ github.token }}

@@ -58,8 +58,9 @@ annotation and a step-summary line.
 
 ### Build gates
 
-`npm run build` runs `build-themes → transcode-media → astro build` (Pagefind
-indexes in the same pass) `→ validate-dist`. Under `BUILD_STRICT=1` the build
+`npm run build` runs `clear-counts → build-themes → transcode-media → astro
+build` (Pagefind indexes in the same pass) `→ validate-dist`. Under
+`BUILD_STRICT=1` the build
 also asserts hard min-counts (`essays ≥ 50, tools ≥ 1, themeVariants ≥ 10,
 projects ≥ 4`), and `validate-dist.mjs` checks that every tool rendered an HTML
 page, the theme CSS shipped, the Pagefind index and sitemap exist, and all four
@@ -75,7 +76,7 @@ The point of the architecture is that routine growth costs nothing:
 | New tool in the `bin` repo | **zero** | push → repository dispatch → rebuild → page + index + palette + search + RSS |
 | New essay on Ghost | **zero** | nightly cron, ≤24h staleness |
 | New variant of a curated theme family | **zero** | dispatch → `build-themes` regenerates the CSS + picker |
-| New theme *family* to curate | **one array entry** | add it to `curatedFamilies` in `site.config.mjs` |
+| New theme *family* to curate | **two entries** | add it to `curatedFamilies` *and* its pair to `webPairs` in `src/site.config.mjs` (build-themes.mjs hard-fails a curated family with no `webPairs` entry) |
 | A repo becomes a project | **one ~10-line MDX overlay** | the overlay model |
 | Dotfiles refactor breaks the schema | **zero risk** | snapshot fallback + warning annotation |
 
@@ -114,7 +115,7 @@ compressed).
 |---|---|---|
 | Lighthouse (perf / a11y / best-practices / SEO) | 100 × 4 | **100 / 100 / 100 / 100** on `/`, `/bin/*`, `/academia`, `/writing`; a11y **96** on `/projects/dotfiles`¹ |
 | CLS | 0 | **0** everywhere |
-| LCP (4× CPU throttle) | < 1.5s | **0.4–0.5s** |
+| LCP (Lighthouse desktop preset, no throttle) | < 1.5s | **0.4–0.5s** |
 | CSS on `/` (total / theme engine) | ≤ 30KB / ≤ 6KB | **9.3KB / 3.6KB** |
 | JS on `/` (incl. deferred palette) | ≤ 25KB | **13.3KB** |
 | HTML on `/` | ≤ 40KB | **8.2KB** (44.6KB uncompressed) |

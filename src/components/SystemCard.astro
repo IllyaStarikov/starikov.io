@@ -18,7 +18,10 @@
  *   - essays    the `essays` collection's count; guarded absent if a build
  *               ever loaded zero (every fallback tier failed) rather than
  *               print "essays 0"
- *   - latest    the most recent push across every tracked repo, relative
+ *   - latest    the most recent push across every NON-STALE tracked repo,
+ *               relative -- a stale repo's cached pushedAt is excluded from
+ *               the max, so this row goes quiet ("—") rather than qualified-
+ *               but-wrong when every tracked repo is stale this build
  *   - built     this build's UTC timestamp
  *
  * A11y: a <section aria-label="System">; rows are a <dl>; the ANSI strip is
@@ -42,9 +45,16 @@ const variantCount = Object.values(themeManifest.families).reduce(
   0,
 );
 
-// -- latest: newest push across every tracked repo ---------------------------
+// -- latest: newest push across every NON-STALE tracked repo -----------------
+// Stale entries (cache/vendor fallback, not a live fetch this build) are
+// excluded from the max: a cached pushedAt is real data but not verified
+// fresh THIS build, so it must not lend this row a false-currency date. When
+// every tracked repo is stale, none survive the filter, newestPush stays
+// null, and `latest` falls to the same "—" the zero-repos case already prints
+// -- quiet, not a qualified-but-wrong date.
 const repos = await getCollection('repos');
 const newestPush = repos.reduce<Date | null>((newest, repo) => {
+  if (repo.data.stale) return newest;
   const at = repo.data.pushedAt; // schema coerces to Date
   return !newest || at > newest ? at : newest;
 }, null);

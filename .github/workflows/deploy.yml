@@ -29,6 +29,11 @@ jobs:
         with:
           repository: IllyaStarikov/bin
           path: .sources/bin
+          # Full history -- bin-tools.ts's `git log -1 -- <dir>` derives each
+          # tool's "updated" date from THIS checkout's history; a shallow clone
+          # collapses every tool's history to the shallow-boundary commit,
+          # misdating every tool the day a second one lands.
+          fetch-depth: 0
       - uses: actions/checkout@v4
         with:
           repository: IllyaStarikov/academia
@@ -76,6 +81,9 @@ jobs:
           # ghost.ts's fetchLive fails fast and the build falls back to the
           # committed vendor snapshot with a warning, never an error).
           GHOST_CONTENT_API_KEY: ${{ secrets.GHOST_CONTENT_API_KEY }}
+          # Authenticates github-meta.ts's per-repo fetch (5000 req/hr) --
+          # unauthenticated shared-runner IPs share a 60 req/hr GitHub API cap.
+          GITHUB_TOKEN: ${{ github.token }}
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:

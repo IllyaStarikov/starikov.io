@@ -42,7 +42,9 @@ export interface RepoSummary {
   language: string | null;
   /** Summed stars, or null to OMIT the badge (any repo stale, or zero total). */
   stars: number | null;
-  /** Most recent push across the joined repos. */
+  /** Most recent push across the joined repos, or null when any joined repo
+   *  is stale -- a relative "updated N days ago" computed from cached data is
+   *  a freshness claim the build can't back up (same reasoning as `stars`). */
   updated: Date | null;
   /** True when any joined repo's metadata is stale this build. */
   stale: boolean;
@@ -70,7 +72,10 @@ export function joinRepos(names: string[], repos: RepoEntry[]): ProjectRepoData[
  * Reduce joined repo metadata to the handful of facts a project page shows.
  * PURE. Stars are omitted (null) when any repo is stale -- a stale star count
  * is worse than none (design spec: "omit stars when stale") -- and when the
- * total is zero, so a new repo doesn't show a lonely "★ 0".
+ * total is zero, so a new repo doesn't show a lonely "★ 0". `updated` is
+ * likewise nulled when any repo is stale: a relative "updated N days ago"
+ * derived from cached data implies a freshness the build didn't verify this
+ * run, the same false-currency problem as the star count.
  */
 export function summarizeRepos(metas: ProjectRepoData[]): RepoSummary {
   const stale = metas.some((m) => m.stale);
@@ -82,7 +87,7 @@ export function summarizeRepos(metas: ProjectRepoData[]): RepoSummary {
   return {
     language: metas.find((m) => m.language)?.language ?? null,
     stars: stale || starTotal === 0 ? null : starTotal,
-    updated,
+    updated: stale ? null : updated,
     stale,
     repos: metas.map((m) => ({ fullName: m.fullName, url: `${GITHUB_ORIGIN}/${m.fullName}` })),
   };

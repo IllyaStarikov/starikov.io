@@ -26,6 +26,13 @@
  *
  * Both reads use execFileSync's array form (no shell, no string interpolation of
  * paths) so a directory or overlay path is never re-parsed by a shell.
+ *
+ * `stale` (from `summary.stale`, src/lib/projects.ts) is the third input: when
+ * the joined repo metadata came from the `.cache`/vendor fallback tier rather
+ * than a live fetch this build, "Metadata via GitHub API · <build date>" is a
+ * lie by implication -- it reads as "current as of today" when it's really
+ * whatever was last fetched successfully. Stale swaps that line for "Metadata
+ * from cached snapshot", which makes no freshness claim at all.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
@@ -38,8 +45,11 @@ interface Props {
   sourceDir?: string;
   /** Overlay path relative to the repo root, e.g. src/content/projects/x.mdx. */
   overlayPath: string;
+  /** `summary.stale` -- true when the joined repo metadata came from the
+   *  cache/vendor fallback tier this build, not a live GitHub API fetch. */
+  stale?: boolean;
 }
-const { repo, sourceDir, overlayPath } = Astro.props;
+const { repo, sourceDir, overlayPath, stale = false } = Astro.props;
 
 function git(args: string[]): string | null {
   try {
@@ -76,14 +86,20 @@ const edited = overlayEdited(overlayPath);
 // A locally-synced source dir has no .git, so `sha` is null even though the page
 // IS generated from that source -- render "<repo>@snapshot" (matching /colophon)
 // rather than falsely attributing GitHub-API provenance to a palette-sourced page.
+// `stale` only applies to the GitHub-API branch (a sourceDir page's provenance is
+// the local checkout sha/snapshot, an unrelated axis): a stale fetch this build
+// makes "· <build date>" a false currency claim, so it's dropped entirely rather
+// than paired with a date that isn't true.
 const sourceLine =
   repo && sha
     ? `Auto-generated from ${repo}@${sha}`
     : repo && sourceDir
       ? `Auto-generated from ${repo}@snapshot`
-      : repo
-        ? `Metadata via GitHub API · ${buildDate}`
-        : null;
+      : repo && stale
+        ? 'Metadata from cached snapshot'
+        : repo
+          ? `Metadata via GitHub API · ${buildDate}`
+          : null;
 ---
 
 <!-- data-pagefind-ignore: build provenance, not page content ("Auto-generated

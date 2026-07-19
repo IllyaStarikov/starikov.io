@@ -99,7 +99,12 @@ const heroAlt = `${data.title} — preview`;
 
     <RelatedEssays essays={essays} />
 
-    <ProvenanceFooter repo={primaryRepo} sourceDir={sourceDir} overlayPath={overlayPath} />
+    <ProvenanceFooter
+      repo={primaryRepo}
+      sourceDir={sourceDir}
+      overlayPath={overlayPath}
+      stale={summary.stale}
+    />
   </article>
 </Shell>
 
