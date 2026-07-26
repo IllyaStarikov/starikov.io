@@ -29,7 +29,18 @@
 //
 // Emits gitignored src/data/generated/system-stats.json:
 //   { pluginCount, dotfilesFiles, dotfilesLines, dotfilesLinesLabel,
-//     source: "git"|"fs"|"snapshot", generatedAt }
+//     source: "git"|"fs"|"snapshot", measured: string|null, generatedAt }
+//
+// `measured` (v1.1 polish Task 6 fix round 1, Finding 2) is the committed
+// snapshot's own dated provenance (system-stats-snapshot.json's `measured`
+// field) -- non-null ONLY when the 'snapshot' tier actually read that file.
+// It is null (never omitted -- the key is ALWAYS present so downstream JSON-
+// module type inference sees a stable shape regardless of which tier last
+// ran locally) for the git/fs tiers (fresh counts have no "measured" date to
+// name) and for the double-failure HARDCODED_FALLBACK tier (no file was
+// actually read, so there is no honest date to cite either).
+// src/pages/colophon.astro reads this + `source` so the Provenance section
+// never claims "computed fresh at build" for a number that fell back.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -138,6 +149,20 @@ export function validateSnapshotShape(raw) {
     }
   }
   return { pluginCount: raw.pluginCount, dotfilesFiles: raw.dotfilesFiles, dotfilesLines: raw.dotfilesLines };
+}
+
+/**
+ * Extracts the snapshot's own `measured` provenance date (validateSnapshotShape
+ * deliberately drops it -- that function is pinned to just the three counted
+ * fields). Returns it only when it's actually a "YYYY-MM-DD"-shaped string;
+ * `null` for anything else (absent, wrong type, malformed) -- colophon.astro's
+ * dated-snapshot wording must never print a fabricated or garbled date. PURE.
+ */
+export function readSnapshotMeasured(raw) {
+  if (raw && typeof raw === 'object' && typeof raw.measured === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.measured)) {
+    return raw.measured;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -258,10 +283,12 @@ function countFromCheckout(dir) {
 function countFromSnapshot() {
   try {
     const raw = JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8'));
-    return { ...validateSnapshotShape(raw), source: 'snapshot' };
+    return { ...validateSnapshotShape(raw), source: 'snapshot', measured: readSnapshotMeasured(raw) };
   } catch (err) {
     warn(`committed snapshot at "${SNAPSHOT_PATH}" unusable (${err.message}); using hardcoded last-resort defaults`);
-    return { ...HARDCODED_FALLBACK, source: 'snapshot' };
+    // No file was actually read here, so there's no honest date to cite --
+    // `measured` stays null, same as the git/fs tiers (see readSnapshotMeasured).
+    return { ...HARDCODED_FALLBACK, source: 'snapshot', measured: null };
   }
 }
 
@@ -275,6 +302,13 @@ function main() {
     dotfilesLines: result.dotfilesLines,
     dotfilesLinesLabel: formatLinesLabel(result.dotfilesLines),
     source: result.source,
+    // Always present (never omitted) so this JSON's shape -- and therefore
+    // what TypeScript infers for consumers like colophon.astro that import
+    // it as a module -- is stable regardless of which cascade tier last ran
+    // locally. countViaGit/countViaFs results carry no `measured` field at
+    // all, so `result.measured` is `undefined` there; `?? null` normalizes
+    // that to the same "no date" value countFromSnapshot's own tiers use.
+    measured: result.measured ?? null,
     generatedAt: new Date().toISOString(),
   };
 

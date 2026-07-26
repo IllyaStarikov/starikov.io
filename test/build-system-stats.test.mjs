@@ -11,6 +11,7 @@ import {
   isBinaryChunk,
   countLinesInText,
   validateSnapshotShape,
+  readSnapshotMeasured,
 } from '../scripts/build-system-stats.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -133,6 +134,35 @@ describe('validateSnapshotShape', () => {
   });
 });
 
+// readSnapshotMeasured -- v1.1 polish Task 6 fix round 1, Finding 2: threads
+// the snapshot's own dated provenance through to colophon.astro so the
+// Provenance section can say WHEN a fallback number was measured instead of
+// falsely calling it "computed fresh at build".
+describe('readSnapshotMeasured', () => {
+  it('returns the snapshot\'s own "measured" field when present and YYYY-MM-DD-shaped', () => {
+    expect(readSnapshotMeasured({ measured: '2026-07-26' })).toBe('2026-07-26');
+  });
+
+  it('is null when "measured" is absent (never fabricates a date)', () => {
+    expect(readSnapshotMeasured({ pluginCount: 52 })).toBeNull();
+  });
+
+  it('is null when "measured" is present but not YYYY-MM-DD-shaped', () => {
+    expect(readSnapshotMeasured({ measured: 'yesterday' })).toBeNull();
+    expect(readSnapshotMeasured({ measured: 20260726 })).toBeNull();
+  });
+
+  it('is null on a non-object input, same as validateSnapshotShape\'s failure mode', () => {
+    expect(readSnapshotMeasured(null)).toBeNull();
+    expect(readSnapshotMeasured('nope')).toBeNull();
+  });
+
+  it('the COMMITTED snapshot\'s own "measured" field round-trips through this function', () => {
+    const raw = JSON.parse(readFileSync(REAL_SNAPSHOT_PATH, 'utf8'));
+    expect(readSnapshotMeasured(raw)).toBe(raw.measured);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Full-cascade integration tests -- the real script, run as a subprocess
 // (mirrors test/build-themes.test.mjs), against disposable fixture dirs so
@@ -213,6 +243,9 @@ describe('build-system-stats.mjs -- git-database tier (a checkout WITH .git)', (
       dotfilesLines: 5,
       dotfilesLinesLabel: '5',
       source: 'git',
+      // A live count has no "measured" date to name -- always null, never
+      // omitted (see build-system-stats.mjs's own comment on `out.measured`).
+      measured: null,
       generatedAt: expect.any(String),
     });
   });
@@ -240,6 +273,7 @@ describe('build-system-stats.mjs -- filesystem-walk tier (a checkout with no .gi
     expect(out.pluginCount).toBe(2);
     expect(out.dotfilesFiles).toBe(4); // lazy-lock.json, a.txt, nested/b.txt, photo.bin
     expect(out.dotfilesLines).toBe(6); // 1 (lock) + 2 (a.txt) + 3 (nested/b.txt); photo.bin excluded
+    expect(out.measured).toBeNull(); // a live count, same as the git tier -- no date to name
   });
 });
 
@@ -255,6 +289,10 @@ describe('build-system-stats.mjs -- fallback cascade (never hard-fails)', () => 
     expect(out.source).toBe('snapshot');
     expect(out.pluginCount).toBeGreaterThan(0);
     expect(out.dotfilesFiles).toBeGreaterThan(0);
+    // The REAL committed snapshot was read here (no SYSTEM_STATS_SNAPSHOT_PATH
+    // override), so its own dated "measured" field should have come through --
+    // this is exactly what colophon.astro's dated-snapshot wording names.
+    expect(out.measured).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it('falls back to the committed snapshot with a warning when a checkout exists but lazy-lock.json is missing', () => {
@@ -283,7 +321,15 @@ describe('build-system-stats.mjs -- fallback cascade (never hard-fails)', () => 
       SYSTEM_STATS_OUT_DIR: outDir,
     });
     const out = JSON.parse(readFileSync(outJsonPath(outDir), 'utf8'));
-    expect(out).toMatchObject({ pluginCount: 7, dotfilesFiles: 8, dotfilesLines: 9000, dotfilesLinesLabel: '9.0K', source: 'snapshot' });
+    expect(out).toMatchObject({
+      pluginCount: 7,
+      dotfilesFiles: 8,
+      dotfilesLines: 9000,
+      dotfilesLinesLabel: '9.0K',
+      source: 'snapshot',
+      // The custom snapshot's own "measured" date passes through untouched.
+      measured: '2020-01-01',
+    });
   });
 
   it('falls back to hardcoded last-resort defaults (never throws) when even the snapshot is corrupt', () => {
@@ -300,6 +346,10 @@ describe('build-system-stats.mjs -- fallback cascade (never hard-fails)', () => 
     const out = JSON.parse(readFileSync(outJsonPath(outDir), 'utf8'));
     expect(out.source).toBe('snapshot');
     expect(out.pluginCount).toBeGreaterThan(0); // the hardcoded fallback, not a crash
+    // No file was actually read (the snapshot was corrupt) -- there is no
+    // honest date to cite, so `measured` must be null, NOT fabricated from
+    // e.g. HARDCODED_FALLBACK or today's date.
+    expect(out.measured).toBeNull();
     expect(existsSync(outJsonPath(outDir))).toBe(true);
   });
 });

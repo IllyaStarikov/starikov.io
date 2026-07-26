@@ -14,8 +14,13 @@ import Shell from '../layouts/Shell.astro';
 import ThemeGallery from '../components/ThemeGallery.astro';
 import themesCurated from '../data/generated/themes.json';
 import themesAll from '../data/generated/themes-all.json';
+// Plugin/dotfiles-lines/dotfiles-files provenance (v1.1 polish Task 6 fix
+// round 1, Finding 2): this build's own scripts/build-system-stats.mjs
+// output, same file SystemCard.astro reads its numbers from.
+import systemStats from '../data/generated/system-stats.json';
 import { GITHUB_URL } from '../lib/nav';
 import { EDITOR_STARTUP } from '../site.config';
+import { systemStatsProvenanceLine } from '../lib/system-stats';
 
 const SITE_REPO = `${GITHUB_URL}/starikov.io`;
 const DOTFILES_REPO = `${GITHUB_URL}/.dotfiles`;
@@ -36,6 +41,16 @@ const meta = themesCurated.meta;
 const sourceLabel = meta.sourceSha ? `dotfiles@${meta.sourceSha}` : 'dotfiles@snapshot';
 const builtIso = meta.generatedAt;
 const built = `${builtIso.slice(0, 10)} ${builtIso.slice(11, 16)} UTC`;
+
+// Plugin count / dotfiles lines / dotfiles files: honest only when it names
+// which cascade tier (scripts/build-system-stats.mjs) THIS build actually
+// landed on -- 'git'/'fs' really were computed fresh; a 'snapshot' fallback
+// was not, and asserting otherwise here (the honesty page) would be exactly
+// the lie this section exists to prevent. See src/lib/system-stats.ts.
+const systemStatsLine = systemStatsProvenanceLine({
+  source: systemStats.source,
+  measured: systemStats.measured,
+});
 
 const toc = [
   { id: 'pipeline', label: 'The pipeline' },
@@ -287,9 +302,7 @@ const drivers = [
       <p class="col__prose">
         One number on the <a href="/">System card</a> isn't build-time data: editor cold-start
         (<strong>{EDITOR_STARTUP.label}</strong>) was measured locally on {EDITOR_STARTUP.measured},
-        not this build — there's no neovim on the build runner. Every other System card
-        number (plugin count, dotfiles lines/files, theme variant/family counts) is computed
-        fresh at build, same as the palette above.
+        not this build — there's no neovim on the build runner. {systemStatsLine}
       </p>
       <p class="col__prose col__prose--fine">
         <a href={DEPLOY_RUNS} target="_blank" rel="noopener noreferrer">Deploy runs ↗</a>

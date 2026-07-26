@@ -16,6 +16,14 @@ essays: ['commit-lifecycle', 'commit-checklist', 'begin-a-brag-doc']
 
 import Highlights from '../../components/Highlights.astro';
 import Highlight from '../../components/Highlight.astro';
+// Live numbers -- the SAME source SystemCard.astro's neofetch card reads
+// (design spec: "MDX is the page"; v1.1 polish Task 6 fix round 1, Finding
+// 1). Importing these instead of hand-copying a snapshot of them is the
+// drift-proofing: this overlay and the home page can no longer disagree
+// about "how big is dotfiles" or "how fast does neovim start" because
+// there is only one number, imported twice.
+import systemStats from '../../data/generated/system-stats.json';
+import { EDITOR_STARTUP } from '../../site.config';
 
 ## The decade of shell
 
@@ -26,10 +34,11 @@ has been refined by daily use the entire time. Nothing here is aspirational. If 
 setting survived, it earned it by never getting in my way.
 
 That longevity is the whole point. A dotfiles repo you rewrite every year is a hobby.
-One you keep for ten is infrastructure. Roughly **90.8K lines across 770 files** sounds
-like a lot until you realise every one of them is a decision I have made more than once
-and would make again — a keybinding I reach for without thinking, a formatter I trust
-to not mangle a file, a color I want in front of me at 2am.
+One you keep for ten is infrastructure. Roughly **{systemStats.dotfilesLinesLabel} lines
+across {systemStats.dotfilesFiles} files** sounds like a lot until you realise every one
+of them is a decision I have made more than once and would make again — a keybinding I
+reach for without thinking, a formatter I trust to not mangle a file, a color I want in
+front of me at 2am.
 
 The signature is theme switching. Type `theme moon` and the terminal, the editor, tmux,
 the prompt, `bat`, and `delta` all change together, atomically, in under half a second.
@@ -44,9 +53,9 @@ them because in a dotfiles repo the numbers _are_ the argument.
 ## Highlights
 
 <Highlights>
-  <Highlight metric="90.8K" unit="lines" label="Ten years, still in daily use">
+  <Highlight metric={systemStats.dotfilesLinesLabel} unit="lines" label="Ten years, still in daily use">
 
-Some **770 tracked files**, versioned since 2017, installed with a single
+Some **{systemStats.dotfilesFiles} tracked files**, versioned since 2017, installed with a single
 `install.sh` and removed just as cleanly. macOS and four Linux package-manager
 families from the same tree. It is battle-tested in the most literal sense — every line has been
 in my way at least once and stayed anyway.
@@ -72,12 +81,13 @@ is the engine this website is built on: app number nine.
 
   </Highlight>
 
-  <Highlight metric="~150ms" unit="cold start" label="Neovim that stays fast">
+  <Highlight metric={EDITOR_STARTUP.label} unit="cold start" label="Neovim that stays fast">
 
 More than **fifty plugins** managed by lazy.nvim, and it still cold-starts in about
-**150ms** on an M1 — LSP for twenty-plus languages, completion, AI, and a full
-Telescope setup, none of it paid for at startup. Fast is a feature you notice a hundred
-times a day.
+**{EDITOR_STARTUP.label}** on an M1 — LSP for twenty-plus languages, completion, AI, and a
+full Telescope setup, none of it paid for at startup. Fast is a feature you notice a
+hundred times a day. (Measured locally on {EDITOR_STARTUP.measured}, not by this build —
+see [the colophon](/colophon#provenance).)
 
   </Highlight>
 
