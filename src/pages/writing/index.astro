@@ -9,9 +9,17 @@
  * in `src/lib/essays.ts`, unit-tested). The tag filter chips are a
  * progressive enhancement: every row renders visible with no JS (a plain,
  * complete index), and `src/scripts/writing.ts` toggles the `hidden`
- * attribute per row (no layout thrash) once it wires up. A year section with
- * zero visible rows after filtering hides too, so filtering never leaves an
- * orphan "2019" heading over nothing.
+ * attribute directly on each `.ledger-row` (no layout thrash, no wrapper
+ * element needed to carry it) once it wires up. A year section with zero
+ * visible rows after filtering hides too, so filtering never leaves an
+ * orphan "2019" heading over nothing. `data-tags` (the filter key) is passed
+ * straight to LedgerRow, which spreads unknown props onto the anchor -- no
+ * per-row wrapper div (byte diet, v1.1 polish Task 2: ~950B/row × 94 rows
+ * added up fast).
+ *
+ * Page styles are `is:global` for the same reason (Task 2): `.writing`/
+ * `.chip`/etc. are used nowhere else in the codebase, so scoping buys no
+ * collision safety, only a data-astro-cid-* attribute on every element.
  */
 import { getCollection } from 'astro:content';
 import Shell from '../../layouts/Shell.astro';
@@ -97,15 +105,14 @@ const chips = filterableTagChips(
                 {group.rows.map((row) => {
                   const dot = firstTagAccent(row.tags, tagBySlug);
                   return (
-                    <div class="writing__row" data-writing-row data-tags={row.tags.join(',')}>
-                      <LedgerRow
-                        href={row.url}
-                        title={row.title}
-                        meta={[`${row.readingTime} min read`, formatEssayDate(row.publishedAt)]}
-                        tag={dot ? { label: dot.name, accent: dot.accent } : undefined}
-                        external
-                      />
-                    </div>
+                    <LedgerRow
+                      href={row.url}
+                      title={row.title}
+                      meta={[`${row.readingTime} min read`, formatEssayDate(row.publishedAt)]}
+                      tag={dot ? { label: dot.name, accent: dot.accent } : undefined}
+                      external
+                      data-tags={row.tags.join(',')}
+                    />
                   );
                 })}
               </div>
@@ -121,7 +128,7 @@ const chips = filterableTagChips(
   import '../../scripts/writing.ts';
 </script>
 
-<style>
+<style is:global>
   .writing {
     max-width: 720px;
   }

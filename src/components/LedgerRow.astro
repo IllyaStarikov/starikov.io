@@ -12,6 +12,33 @@
  * The accent is used ONLY for the dot background; the name stays the ledger's
  * normal meta color (blend-safety: color is chrome, never the sole
  * meaning-carrier, and never applied as a text color).
+ *
+ * Byte diet (v1.1 polish, Task 2 -- /writing's 94-row index was the forcing
+ * function, but every LedgerRow consumer benefits):
+ *   - `<style is:global>`: the class names below are BEM-namespaced under
+ *     `.ledger-row` and used nowhere else in the codebase (verified), so
+ *     scoping buys no collision safety here -- only an `data-astro-cid-*`
+ *     attribute on every element of every row, per page. Global drops all of
+ *     that at zero risk.
+ *   - Unknown props SPREAD onto the anchor (`...rest`): callers that need a
+ *     data attribute on the row itself (e.g. /writing's `data-tags`, read by
+ *     src/scripts/writing.ts) pass it straight as a prop instead of the
+ *     caller wrapping the row in an extra element just to carry it.
+ *   - `.ledger-row__main` (the title+dek flex-column) renders ONLY when a dek
+ *     is present -- a title-only row (every /writing row: essays pass no
+ *     dek) skips a wrapper span that would have had exactly one child.
+ *   - The external `↗` and the tag dot are generated content (`::after`/
+ *     `::before`), not DOM spans -- one fewer element per external row and
+ *     per tagged row respectively. The arrow keys off `target="_blank"`,
+ *     which `external` already puts on the anchor (no extra class needed);
+ *     `content: '↗' / ''` is the alt-text syntax -- the empty alt keeps the
+ *     glyph out of the accessibility tree, same as the old span's
+ *     `aria-hidden="true"`.
+ *   - `.ledger-row[hidden]{display:none}`: the UA stylesheet's `[hidden]`
+ *     rule loses to this component's own `display:flex` (author styles beat
+ *     UA styles regardless of specificity), so /writing's filter script
+ *     setting `.hidden = true` on a `.ledger-row` directly would silently do
+ *     nothing without this explicit override.
  */
 interface Props {
   href: string;
@@ -24,24 +51,38 @@ interface Props {
   /** An 8px accent dot + tag name, rendered first among the meta chips. */
   tag?: { label: string; accent: string };
 }
-const { href, title, dek, meta = [], external = false, mono = false, tag } = Astro.props;
+// Cast so arbitrary extra props (data-tags, etc.) type-check for the rest
+// spread below without widening the named props themselves.
+const {
+  href,
+  title,
+  dek,
+  meta = [],
+  external = false,
+  mono = false,
+  tag,
+  ...rest
+} = Astro.props as Props & Record<string, unknown>;
 const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+const titleClasses = ['ledger-row__title', { 'ledger-row__title--mono': mono }];
 ---
 
-<a class="ledger-row" href={href} {...linkAttrs}>
-  <span class="ledger-row__main">
-    <span class:list={['ledger-row__title', { 'ledger-row__title--mono': mono }]}>
-      {title}
-      {external && <span class="ledger-row__ext" aria-hidden="true">↗</span>}
-    </span>
-    {dek && <span class="ledger-row__dek">{dek}</span>}
-  </span>
+<a class="ledger-row" href={href} {...linkAttrs} {...rest}>
+  {
+    dek ? (
+      <span class="ledger-row__main">
+        <span class:list={titleClasses}>{title}</span>
+        <span class="ledger-row__dek">{dek}</span>
+      </span>
+    ) : (
+      <span class:list={titleClasses}>{title}</span>
+    )
+  }
   {
     (tag || meta.length > 0) && (
       <span class="ledger-row__meta">
         {tag && (
           <span class="ledger-row__chip ledger-row__tag" style={`--dot:${tag.accent}`}>
-            <span class="ledger-row__dot" aria-hidden="true" />
             {tag.label}
           </span>
         )}
@@ -53,7 +94,7 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
   }
 </a>
 
-<style>
+<style is:global>
   .ledger-row {
     display: flex;
     flex-wrap: wrap;
@@ -64,6 +105,13 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
     border-bottom: 1px solid var(--border);
     color: inherit;
     text-decoration: none;
+  }
+
+  /* Author `display:flex` above beats the UA `[hidden]` rule regardless of
+     specificity (origin outranks it) -- filter scripts that hide a
+     .ledger-row directly (src/scripts/writing.ts) need this to actually work. */
+  .ledger-row[hidden] {
+    display: none;
   }
 
   .ledger-row:hover .ledger-row__title,
@@ -81,6 +129,11 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
   }
 
   .ledger-row__title {
+    /* Also set here (not just on __main): a dek-less row's title is a bare
+       flex child of .ledger-row itself, and flex items default to
+       min-width:auto -- without this a long unbroken title could overflow
+       instead of wrapping, where the __main-wrapped case never could. */
+    min-width: 0;
     font-weight: 600;
     font-size: var(--fs-16);
     line-height: 1.3;
@@ -92,7 +145,12 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
     letter-spacing: -0.01em;
   }
 
-  .ledger-row__ext {
+  /* The external arrow: generated content keyed off target="_blank" (which
+     `external` already sets on the anchor), not a DOM span. Empty alt-text
+     keeps it out of the accessibility tree (equivalent to the old span's
+     aria-hidden="true"). */
+  .ledger-row[target='_blank'] .ledger-row__title::after {
+    content: '↗' / '';
     margin-left: 0.25em;
     color: var(--text-secondary);
     font-weight: 400;
@@ -115,14 +173,16 @@ const linkAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : 
   }
 
   /* Tag dot: the ONLY place the tag's Ghost accent color appears -- the label
-     text stays --text-secondary like every other meta chip (blend-safety). */
+     text stays --text-secondary like every other meta chip (blend-safety).
+     Generated content (::before), not a DOM span. */
   .ledger-row__tag {
     display: inline-flex;
     align-items: center;
     gap: 5px;
   }
 
-  .ledger-row__dot {
+  .ledger-row__tag::before {
+    content: '';
     width: 8px;
     height: 8px;
     border-radius: var(--r-pill);
