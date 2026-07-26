@@ -21,9 +21,18 @@
  * Content (Pagefind full-text, only for 3+ char queries; the import fails
  * silently in `astro dev`, which ships no /pagefind bundle -- the group is just
  * omitted there).
+ *
+ * Group LABELS are honesty-checked (design §8's own wording: essays are
+ * "fuzzy title match from index -- labeled honestly as titles/excerpts, not
+ * full text"): "Essays" alone reads like it searches essay bodies, and it
+ * doesn't -- it's a title/excerpt match against the same index as "Jump to",
+ * just external. "Content" alone doesn't say it's the ONE group backed by
+ * real full-text (Pagefind, crawling built HTML), unlike every other group
+ * here (index-title matches). GROUPS' two labels below say so directly.
  */
 import { rankItem } from '../lib/fuzzy';
 import { lockScroll, unlockScroll } from '../lib/scroll-lock';
+import { setBackgroundInert } from '../lib/inert';
 
 interface SiteItem {
   type: 'tool' | 'project' | 'essay' | 'page';
@@ -61,7 +70,7 @@ interface Cmd {
   run: (newTab: boolean) => void;
 }
 
-const GROUPS = ['Jump to', 'Essays', 'Theme', 'Actions', 'Content'];
+const GROUPS = ['Jump to', 'Essays — titles ↗', 'Theme', 'Actions', 'Content — full text'];
 const PF_MIN = 3; // chars before Pagefind kicks in
 const PF_LIMIT = 5; // Content rows
 const ESSAYS_EMPTY = 6; // essays shown with no query
@@ -188,7 +197,14 @@ class CommandPalette extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    if (this.opened) unlockScroll();
+    if (this.opened) {
+      unlockScroll();
+      // Defensive: if a ClientRouter swap ever disconnects this element while
+      // still marked open (it isn't `transition:persist`, so a navigation
+      // NOT routed through this.navigate()/close() could in principle do
+      // that), don't leave the outgoing page's siblings permanently inert.
+      setBackgroundInert(document.body, this, false);
+    }
   }
 
   // --- open / close ---------------------------------------------------------
@@ -199,6 +215,12 @@ class CommandPalette extends HTMLElement {
     this.invoker = document.activeElement as HTMLElement | null;
     lockScroll();
     this.hidden = false;
+    // Everything behind the palette (topbar, sidebar, main, mobile nav
+    // dialog) becomes untouchable -- by AT virtual cursor and pointer, not
+    // just Tab -- for as long as the palette is open (src/lib/inert.ts has
+    // the full rationale). Applied to siblings, not an ancestor: `this` (the
+    // <command-palette> element) is excluded, never inerted.
+    setBackgroundInert(document.body, this, true);
     this.buildBase();
     this.input.value = '';
     this.query = '';
@@ -217,6 +239,12 @@ class CommandPalette extends HTMLElement {
     this.input.setAttribute('aria-expanded', 'false');
     window.clearTimeout(this.announceTimer);
     unlockScroll();
+    // Restore background interactivity immediately (not deferred to the
+    // close animation's setTimeout below) -- every close path funnels
+    // through here: Esc (onKeydown), the backdrop mousedown, and a "Jump to"
+    // activation (activate() calls close() BEFORE cmd.run() navigates), so
+    // this one call site covers Esc/backdrop/navigation all at once.
+    setBackgroundInert(document.body, this, false);
     const done = () => {
       if (!this.opened) this.hidden = true;
     };
