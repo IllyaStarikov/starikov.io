@@ -188,6 +188,8 @@ const facts = [
                               preload="none"
                               poster={m.poster}
                               aria-label={m.alt}
+                              width={m.width}
+                              height={m.height}
                             >
                               <source src={m.webm} type="video/webm" />
                               <source src={m.mp4} type="video/mp4" />
@@ -195,7 +197,17 @@ const facts = [
                           </figure>
                         ) : (
                           <figure class="acad-media__frame">
-                            <img src={m.src} alt={m.alt} loading="lazy" decoding="async" />
+                            <picture>
+                              <source srcset={m.avif} type="image/avif" />
+                              <img
+                                src={m.webp}
+                                alt={m.alt}
+                                loading="lazy"
+                                decoding="async"
+                                width={m.width}
+                                height={m.height}
+                              />
+                            </picture>
                           </figure>
                         ),
                       )}
@@ -516,6 +528,7 @@ const facts = [
   }
 
   .acad-media__frame :global(video),
+  .acad-media__frame :global(picture),
   .acad-media__frame :global(img) {
     width: 100%;
     height: auto;

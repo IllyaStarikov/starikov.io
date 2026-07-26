@@ -22,8 +22,9 @@ It regenerates itself. A GitHub Actions workflow runs every day and rebuilds two
 light and one dark, so the numbers on my profile are never stale. Three small Python programs do
 the work — `fetch_stats` pulls the live figures from the GitHub API, `ascii_portrait` renders the
 portrait, and `generate_svg` lays out the card and writes both variants. The page you are reading
-picks the right one for your system with a plain `<picture>` and `prefers-color-scheme`, no
-JavaScript.
+picks the right one to match this site's own theme mode — light or dark, whichever you last chose
+in the theme picker — a CSS swap keyed off the same attribute the theme system already stamps on
+the page, no JavaScript of its own.
 
 It is the smallest project on this list and one of my favorites — a tiny, self-maintaining piece
 of craft that greets anyone who lands on my profile, in their own color scheme, with numbers that

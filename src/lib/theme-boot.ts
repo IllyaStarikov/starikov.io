@@ -14,6 +14,17 @@
  *   BG  full theme id -> bg hex                              (theme-color, no
  *                                                             getComputedStyle race)
  * The raw objects are exported too so the resolver logic can be unit-tested.
+ *
+ * `data-mode` (Task 2, v1.1 polish, design D6): alongside `data-theme`, `apply()`
+ * also stamps `data-mode="light"|"dark"` on <html> -- the resolved MODE, not the
+ * full "<family>-<variant>" id. `data-theme`'s variant suffixes aren't
+ * consistently named (`storm`, `mocha`, `dark_dimmed`, …), so no plain CSS
+ * attribute selector can reliably tell light from dark off it alone; components
+ * that need to render differently by the SITE's theme mode instead of the OS
+ * scheme (e.g. ProfileCard.astro's light/dark card) key off `[data-mode]`.
+ * Recomputed on every apply() call, so it tracks family switches, explicit
+ * mode changes, OS-scheme flips while in system mode, and post-swap
+ * re-application -- the same single resolver, one extra attribute.
  */
 import themesData from '../data/generated/themes.json';
 
@@ -65,7 +76,7 @@ export function buildBootSrc(pairs: Pairs, defaults: Defaults, bg: Record<string
   // modes; "system", empty, null AND any corrupt string all fall through to the
   // OS scheme. Coercing here means P[fam][mode] can never key on a bogus mode and
   // emit a "<family>-undefined" attribute.
-  return `(function(){var P=${P},D=${D},BG=${B};function resolve(f,m){var sysDark=matchMedia("(prefers-color-scheme: dark)").matches;var mode=(m==="light"||m==="dark")?m:(sysDark?"dark":"light");var fam=P[f]?f:D.family;var v=(P[fam]&&P[fam][mode])||P[D.family][mode];return fam+"-"+v;}function apply(){var f,m;try{f=localStorage.getItem("theme:family");m=localStorage.getItem("theme:mode");}catch(e){}var t=resolve(f||D.family,m||"system");document.documentElement.dataset.theme=t;var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute("content",BG[t]||"");}apply();window.__applyTheme=apply;if(!window.__themeBooted){window.__themeBooted=true;try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){var m;try{m=localStorage.getItem("theme:mode");}catch(e){}if((m||"system")==="system")apply();});}catch(e){}document.addEventListener("astro:after-swap",apply);}})();`;
+  return `(function(){var P=${P},D=${D},BG=${B},LM;function resolve(f,m){var sysDark=matchMedia("(prefers-color-scheme: dark)").matches;var mode=(m==="light"||m==="dark")?m:(sysDark?"dark":"light");LM=mode;var fam=P[f]?f:D.family;var v=(P[fam]&&P[fam][mode])||P[D.family][mode];return fam+"-"+v;}function apply(){var f,m;try{f=localStorage.getItem("theme:family");m=localStorage.getItem("theme:mode");}catch(e){}var t=resolve(f||D.family,m||"system");document.documentElement.dataset.theme=t;document.documentElement.dataset.mode=LM;var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute("content",BG[t]||"");}apply();window.__applyTheme=apply;if(!window.__themeBooted){window.__themeBooted=true;try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){var m;try{m=localStorage.getItem("theme:mode");}catch(e){}if((m||"system")==="system")apply();});}catch(e){}document.addEventListener("astro:after-swap",apply);}})();`;
 }
 
 const THEME_BOOT_SRC = buildBootSrc(PAIRS, DEFAULTS, BG);

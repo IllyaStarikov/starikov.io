@@ -51,8 +51,25 @@ export const MEDIA_BASE = '/media/academia';
 // ---------------------------------------------------------------------------
 
 export type MediaRef =
-  | { kind: 'video'; slug: string; alt: string; poster: string; mp4: string; webm: string }
-  | { kind: 'image'; slug: string; alt: string; src: string };
+  | {
+      kind: 'video';
+      slug: string;
+      alt: string;
+      poster: string;
+      mp4: string;
+      webm: string;
+      width?: number;
+      height?: number;
+    }
+  | {
+      kind: 'image';
+      slug: string;
+      alt: string;
+      avif: string;
+      webp: string;
+      width?: number;
+      height?: number;
+    };
 
 /** GIFs become looping muted videos; everything else is served as an image. */
 const VIDEO_EXTS = new Set(['.gif']);
@@ -62,7 +79,8 @@ const VIDEO_EXTS = new Set(['.gif']);
  * the build-time output paths the transcode step produces. Returns null for a
  * srcless/degenerate reference. Pure and deterministic (keyed on the asset's
  * basename) so the loader and scripts/transcode-media.mjs agree on file names
- * without sharing state.
+ * without sharing state -- neither reads the dims manifest here (that's IO;
+ * see withDims/loadManifest below), so this stays a pure string transform.
  */
 export function mediaRefFor(src: string, alt: string): MediaRef | null {
   const file = basename(src.trim());
@@ -79,7 +97,43 @@ export function mediaRefFor(src: string, alt: string): MediaRef | null {
       webm: `${MEDIA_BASE}/${slug}.webm`,
     };
   }
-  return { kind: 'image', slug, alt, src: `${MEDIA_BASE}/${file}` };
+  // Non-GIF images are always AVIF+WebP now (scripts/transcode-media.mjs never
+  // copies a raw PNG/JPG verbatim) -- the source extension only ever
+  // determined `kind` (video vs image), never the served filename.
+  return {
+    kind: 'image',
+    slug,
+    alt,
+    avif: `${MEDIA_BASE}/${slug}.avif`,
+    webp: `${MEDIA_BASE}/${slug}.webp`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Dims manifest (public/media/academia/manifest.json, written every run by
+// scripts/transcode-media.mjs)
+// ---------------------------------------------------------------------------
+
+export interface ManifestEntry {
+  kind: 'image' | 'video';
+  width: number;
+  height: number;
+}
+export type Manifest = Record<string, ManifestEntry>;
+
+/**
+ * PURE. Attach {width,height} from the dims manifest onto a MediaRef, by slug
+ * -- the "dims fall-through": a slug absent from the manifest (never
+ * transcoded yet, or a manifest that predates this asset) or a kind mismatch
+ * (defensive; shouldn't happen since both are keyed off the same source file)
+ * leaves the ref untouched, width/height simply absent, rather than throwing.
+ * The page renders width/height attributes only when present -- CLS-zero on
+ * the common path, a graceful (not broken) degrade on the rare one.
+ */
+export function withDims(ref: MediaRef, manifest: Manifest): MediaRef {
+  const entry = manifest[ref.slug];
+  if (!entry || entry.kind !== ref.kind) return ref;
+  return { ...ref, width: entry.width, height: entry.height };
 }
 
 const IMG_TAG_RE = /<img\b[^>]*>/gi;
@@ -89,14 +143,15 @@ function attr(tag: string, name: string): string | undefined {
   return m ? m[1] : undefined;
 }
 
-/** Every `assets/*` image referenced in a section, in document order. */
-export function extractMedia(sectionMd: string): MediaRef[] {
+/** Every `assets/*` image referenced in a section, in document order, with
+ *  manifest dims attached where available (see withDims). */
+export function extractMedia(sectionMd: string, manifest: Manifest = {}): MediaRef[] {
   const refs: MediaRef[] = [];
   for (const tag of sectionMd.match(IMG_TAG_RE) ?? []) {
     const src = attr(tag, 'src');
     if (!src || !/(^|\/)assets\//.test(src)) continue;
     const ref = mediaRefFor(src, attr(tag, 'alt') ?? '');
-    if (ref) refs.push(ref);
+    if (ref) refs.push(withDims(ref, manifest));
   }
   return refs;
 }
@@ -248,8 +303,11 @@ export interface ParsedProject {
 const NUMBERED_RE = /^(\d+)\.\s+(.*\S)\s*$/;
 const PATH_RE = /\*\*Path:\*\*\s*`([^`]+)`/;
 
-/** The numbered `## N. Title` project sections, ordered by their number. Pure. */
-export function parseShowcase(md: string): ParsedProject[] {
+/** The numbered `## N. Title` project sections, ordered by their number. Pure.
+ *  `manifest` (default empty) attaches media dims via extractMedia/withDims;
+ *  omitting it is exactly the "manifest absent" degrade -- media still parses,
+ *  just without width/height. */
+export function parseShowcase(md: string, manifest: Manifest = {}): ParsedProject[] {
   const projects: ParsedProject[] = [];
   for (const { heading, body } of splitSections(md)) {
     const hm = heading.match(NUMBERED_RE);
@@ -267,7 +325,7 @@ export function parseShowcase(md: string): ParsedProject[] {
       dept,
       courseCode: courseCode(dept),
       theme: classifyTheme(dept, title),
-      media: extractMedia(body),
+      media: extractMedia(body, manifest),
       bodyMarkdown: cleanBody(body),
     });
   }
@@ -345,6 +403,44 @@ function failLoud(source: string, msg: string): void {
   report.warn(source, msg);
 }
 
+/** Repo-root-relative -- matches how scripts/transcode-media.mjs addresses
+ *  the same file, and how portfolioPath's own filePath is made relative below.
+ *  ACADEMIA_MEDIA_MANIFEST (tests only, same override pattern as report.ts's
+ *  COUNTS_DIR / build-themes.mjs's THEMES_OUT_DIR) redirects this to a scratch
+ *  path so the loader-guard tests can exercise "absent"/"corrupt" without
+ *  touching the real, gitignored manifest.json a genuine transcode run wrote. */
+function manifestPath(): string {
+  return process.env.ACADEMIA_MEDIA_MANIFEST ?? join(process.cwd(), 'public/media/academia/manifest.json');
+}
+
+/**
+ * Read the dims manifest scripts/transcode-media.mjs writes every run.
+ * existsSync-guarded: absent (media pipeline never ran locally, or ran before
+ * any showcase asset existed) is a warning, not a failure -- the showcase
+ * still renders, just without intrinsic width/height (see withDims). A
+ * present-but-corrupt file (hand-edited, truncated write) warns the same way
+ * rather than throwing, since a malformed manifest is no worse than a missing
+ * one for this loader's purposes.
+ */
+function loadManifest(logger: { warn: (msg: string) => void }): Manifest {
+  const path = manifestPath();
+  if (!existsSync(path)) {
+    report.warn(
+      SHOWCASE_SOURCE,
+      `${path} missing; academia media renders without intrinsic dims (run scripts/transcode-media.mjs)`,
+    );
+    logger.warn(`${path} missing; academia media will render without width/height`);
+    return {};
+  }
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')) as Manifest;
+  } catch (err) {
+    report.warn(SHOWCASE_SOURCE, `${path} failed to parse: ${(err as Error).message}`);
+    logger.warn(`${path} failed to parse: ${(err as Error).message}`);
+    return {};
+  }
+}
+
 /**
  * `academiaShowcase` collection loader. `root` is the academia checkout
  * (`.sources/academia`). Reads PORTFOLIO.md, renders each project's prose to
@@ -392,9 +488,11 @@ export function academiaShowcaseLoader({ root }: { root: string }): Loader {
         }
       }
 
+      const manifest = loadManifest(logger);
+
       let projects: ParsedProject[];
       try {
-        projects = parseShowcase(md);
+        projects = parseShowcase(md, manifest);
       } catch (err) {
         report.count(
           'academiaShowcase',

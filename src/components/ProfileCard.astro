@@ -1,26 +1,56 @@
 ---
 /*
  * ProfileCard -- the live, self-refreshing neofetch card from the profile repo,
- * shown as the hero of /projects/profile. Two committed SVGs (light + dark) that
- * a daily GitHub Action regenerates; a plain <picture> picks the one matching the
- * viewer's system, no JS. Served remotely from raw.githubusercontent.com, which
- * the site CSP allows (img-src https:). Encapsulated as a component because MDX
- * can't host a scoped <style> (its CSS braces parse as JS expressions).
+ * shown as the hero of /projects/profile. Two committed SVGs (light + dark)
+ * that a daily GitHub Action regenerates. Served remotely from
+ * raw.githubusercontent.com, which the site CSP allows (img-src https:).
+ *
+ * Swapped on the SITE's theme mode (design D6), not the OS scheme:
+ * `<picture><source media="(prefers-color-scheme)">` can only ask the OS,
+ * never "what did the visitor pick in the theme popover" -- so the swap keys
+ * off the boot script's `data-mode` attribute on <html> instead
+ * (src/lib/theme-boot.ts; data-theme's own variant suffixes aren't
+ * consistently light/dark-named, e.g. `storm`/`mocha`/`dark_dimmed`, so
+ * data-mode is the one clean CSS-selectable mode hook). Both images render as
+ * real <img> (full alt text on the visible one, no JS owned by this
+ * component); CSS shows exactly one via `[data-mode]`, so a visitor with no
+ * data-mode yet (or a UA that ignores attribute selectors entirely) still
+ * gets a complete, correct light card by default.
+ *
+ * Both SVGs share one layout (measured once from the raw SVGs' own root
+ * width/height: 968×671) -- carried as real width/height attributes AND an
+ * explicit `aspect-ratio` below, so the frame is reserved before either
+ * image loads (CLS 0).
+ *
+ * Encapsulated as a component because MDX can't host a scoped <style> (its
+ * CSS braces parse as JS expressions).
  */
 const RAW = 'https://raw.githubusercontent.com/IllyaStarikov/IllyaStarikov/main/assets';
+const CARD_ALT =
+  'A neofetch-style GitHub profile card: an ASCII portrait beside live stats — repositories, stars, commits, and top languages — that regenerate daily.';
 ---
 
 <figure class="profile-card">
-  <picture>
-    <source srcset={`${RAW}/readme-dark.svg`} media="(prefers-color-scheme: dark)" />
-    <img
-      src={`${RAW}/readme-light.svg`}
-      alt="A neofetch-style GitHub profile card: an ASCII portrait beside live stats — repositories, stars, commits, and top languages — that regenerate daily."
-      loading="lazy"
-      decoding="async"
-    />
-  </picture>
-  <figcaption>The live card, straight from the profile repo — light or dark to match your system.</figcaption>
+  <img
+    class="profile-card__img profile-card__img--light"
+    src={`${RAW}/readme-light.svg`}
+    width="968"
+    height="671"
+    alt={CARD_ALT}
+    loading="lazy"
+    decoding="async"
+  />
+  <img
+    class="profile-card__img profile-card__img--dark"
+    src={`${RAW}/readme-dark.svg`}
+    width="968"
+    height="671"
+    alt=""
+    aria-hidden="true"
+    loading="lazy"
+    decoding="async"
+  />
+  <figcaption>The live card, straight from the profile repo — light or dark to match the site theme.</figcaption>
 </figure>
 
 <style>
@@ -28,12 +58,33 @@ const RAW = 'https://raw.githubusercontent.com/IllyaStarikov/IllyaStarikov/main/
     margin: var(--s-2) 0 var(--s-6);
   }
 
-  .profile-card img {
+  .profile-card__img {
     display: block;
     width: 100%;
+    /* Measured once (see the frontmatter comment): both SVGs share this
+       layout. Reserves the box pre-load even where the width/height
+       attributes' automatic aspect-ratio mapping is unsupported. */
+    aspect-ratio: 968 / 671;
     height: auto;
     border: 1px solid var(--border);
     border-radius: var(--r-3);
+  }
+
+  /* Default (no data-mode yet, or explicit light): the dark card stays out
+     of flow so it never doubles the reserved space. */
+  .profile-card__img--dark {
+    display: none;
+  }
+
+  /* Site theme mode, not the OS scheme (design D6) -- data-mode is set by the
+     boot script (src/lib/theme-boot.ts) alongside data-theme, pre-paint, so
+     the correct card is already showing at first render, and live-updates
+     when the visitor changes theme mode (apply() re-runs on every change). */
+  :global([data-mode='dark']) .profile-card__img--light {
+    display: none;
+  }
+  :global([data-mode='dark']) .profile-card__img--dark {
+    display: block;
   }
 
   .profile-card figcaption {

@@ -68,7 +68,10 @@ const academiaShowcase = defineCollection({
     theme: z.string(),
     /** Rendered HTML of the project prose (media/Path/details removed). */
     body: z.string(),
-    /** Referenced media as build-time output paths. */
+    /** Referenced media as build-time output paths. width/height come from the
+     *  transcode step's dims manifest (public/media/academia/manifest.json) --
+     *  optional because a missing/stale manifest degrades to no intrinsic
+     *  size rather than a build failure (see academia.ts's withDims). */
     media: z.array(
       z.discriminatedUnion('kind', [
         z.object({
@@ -78,12 +81,17 @@ const academiaShowcase = defineCollection({
           poster: z.string(),
           mp4: z.string(),
           webm: z.string(),
+          width: z.number().optional(),
+          height: z.number().optional(),
         }),
         z.object({
           kind: z.literal('image'),
           slug: z.string(),
           alt: z.string(),
-          src: z.string(),
+          avif: z.string(),
+          webp: z.string(),
+          width: z.number().optional(),
+          height: z.number().optional(),
         }),
       ]),
     ),

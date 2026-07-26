@@ -4,6 +4,14 @@
  * (mp4 + webm + poster) and committed under public/projects/. Imported directly
  * into an MDX overlay (mcp-servers, artificial) as its hero media.
  *
+ * width/height are curated literals passed by each MDX overlay (measured once
+ * via `ffprobe -select_streams v:0 -show_entries stream=width,height <file>`,
+ * not derived at build time -- there are only two clips) -- combined with the
+ * CSS below's `width:100%; height:auto`, the browser's automatic
+ * width/height-attribute aspect-ratio reserves the frame before the video
+ * loads (CLS 0), same contract as the academia showcase's manifest-derived
+ * dims.
+ *
  * Playback mirrors /academia: preload nothing, play only while on screen, and
  * under prefers-reduced-motion never autoplay -- the poster stands in and
  * project-media.ts (shipped by the [...slug] page) adds native controls so the
@@ -16,14 +24,27 @@ interface Props {
   webm: string;
   poster: string;
   alt: string;
+  /** Intrinsic pixel dimensions (curated literal; see comment above). */
+  width: number;
+  height: number;
   /** Mono caption under the frame (e.g. "omnifocus-mcp, driven from Claude"). */
   caption?: string;
 }
-const { mp4, webm, poster, alt, caption } = Astro.props;
+const { mp4, webm, poster, alt, width, height, caption } = Astro.props;
 ---
 
 <figure class="project-video">
-  <video data-project-video muted loop playsinline preload="none" poster={poster} aria-label={alt}>
+  <video
+    data-project-video
+    muted
+    loop
+    playsinline
+    preload="none"
+    poster={poster}
+    aria-label={alt}
+    width={width}
+    height={height}
+  >
     <source src={webm} type="video/webm" />
     <source src={mp4} type="video/mp4" />
   </video>

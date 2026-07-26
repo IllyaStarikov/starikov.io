@@ -10,6 +10,7 @@ import {
   extractMedia,
   cleanBody,
   mediaRefFor,
+  withDims,
   courseSlugFromSrcPath,
   deptFromCourseSlug,
   courseCode,
@@ -47,6 +48,7 @@ afterEach(() => {
   report.flush();
   delete process.env.GITHUB_ACTIONS;
   delete process.env.BUILD_STRICT;
+  delete process.env.ACADEMIA_MEDIA_MANIFEST;
 });
 
 // ---------------------------------------------------------------------------
@@ -128,9 +130,17 @@ describe('parseShowcase', () => {
       'splatoonio_menu',
     ]);
 
-    // Lexical Analyzer references a PNG → image kind, extension preserved.
+    // Lexical Analyzer references a PNG → image kind; AVIF+WebP outputs
+    // regardless of the source extension (scripts/transcode-media.mjs never
+    // copies a raw image verbatim).
     expect(byTitle.get('Lexical Analyzer')!.media).toEqual([
-      { kind: 'image', slug: 'automata', alt: 'Lexer DFA', src: '/media/academia/automata.png' },
+      {
+        kind: 'image',
+        slug: 'automata',
+        alt: 'Lexer DFA',
+        avif: '/media/academia/automata.avif',
+        webp: '/media/academia/automata.webp',
+      },
     ]);
 
     // CFG Tracer only has a <details> code sample — no media.
@@ -186,13 +196,47 @@ describe('mediaRefFor', () => {
     });
   });
 
-  it('maps a non-GIF to an image, preserving the extension', () => {
+  it('maps a non-GIF to an image with AVIF+WebP outputs, regardless of source extension', () => {
     expect(mediaRefFor('assets/socket_chat.png', 'Socket Chat Client')).toEqual({
       kind: 'image',
       slug: 'socket_chat',
       alt: 'Socket Chat Client',
-      src: '/media/academia/socket_chat.png',
+      avif: '/media/academia/socket_chat.avif',
+      webp: '/media/academia/socket_chat.webp',
     });
+    // A .jpg source is exactly as image-typed as a .png -- only the GIF
+    // extension routes to the video branch.
+    expect(mediaRefFor('assets/linear_algebra.jpg', 'Linear Algebra')?.kind).toBe('image');
+  });
+});
+
+describe('withDims (manifest dims fall-through)', () => {
+  const imageRef = mediaRefFor('assets/socket_chat.png', 'Socket Chat Client')!;
+  const videoRef = mediaRefFor('assets/match3.gif', 'Match 3')!;
+
+  it('attaches width/height when the manifest has a matching-kind entry', () => {
+    const manifest = { socket_chat: { kind: 'image' as const, width: 733, height: 1238 } };
+    expect(withDims(imageRef, manifest)).toEqual({ ...imageRef, width: 733, height: 1238 });
+  });
+
+  it('falls through untouched when the slug is absent from the manifest', () => {
+    expect(withDims(imageRef, {})).toEqual(imageRef);
+    expect(withDims(imageRef, { some_other_slug: { kind: 'image', width: 1, height: 1 } })).toEqual(
+      imageRef,
+    );
+  });
+
+  it('falls through untouched on a kind mismatch (defensive; slugs are unique in practice)', () => {
+    const manifest = { socket_chat: { kind: 'video' as const, width: 100, height: 100 } };
+    expect(withDims(imageRef, manifest)).toEqual(imageRef);
+  });
+
+  it('extractMedia threads the manifest through to every ref it produces', () => {
+    const section = ['<img src="assets/match3.gif" alt="Match 3">'].join('\n');
+    const manifest = { match3: { kind: 'video' as const, width: 456, height: 800 } };
+    expect(extractMedia(section, manifest)).toEqual([{ ...videoRef, width: 456, height: 800 }]);
+    // Omitting the manifest (default {}) is exactly the "manifest absent" degrade.
+    expect(extractMedia(section)).toEqual([videoRef]);
   });
 });
 
@@ -332,6 +376,11 @@ describe('academiaShowcaseLoader', () => {
   afterAll(() => rmSync(parent, { recursive: true, force: true }));
 
   it('loads all 14 projects with rendered, media-free bodies', async () => {
+    // Deterministic regardless of whether a real transcode run happened to
+    // leave public/media/academia/manifest.json on disk (see the manifest
+    // guard tests below for that behavior) -- this test only cares about
+    // parsing, not dims.
+    process.env.ACADEMIA_MEDIA_MANIFEST = join(parent, 'no-manifest-here.json');
     const { context, map } = fakeContext();
     await academiaShowcaseLoader({ root }).load(context);
 
@@ -347,6 +396,47 @@ describe('academiaShowcaseLoader', () => {
     expect((map.get('splatoonio')!.data as any).media).toHaveLength(2);
     expect((map.get('cfg-tracer')!.data as any).media).toHaveLength(0);
     expect(map.get('chess-ai')!.digest).toBeTruthy();
+  });
+
+  it('loader guard: warns (not throws) and omits dims when the manifest is absent', async () => {
+    process.env.ACADEMIA_MEDIA_MANIFEST = join(parent, 'still-no-manifest.json');
+    const { context, map } = fakeContext();
+    report.flush();
+    await academiaShowcaseLoader({ root }).load(context);
+
+    const chess = map.get('chess-ai')!.data as Record<string, any>;
+    expect(chess.media[0].width).toBeUndefined();
+    expect(chess.media[0].height).toBeUndefined();
+    // A missing manifest is a warning (build still succeeds), not an error.
+    expect(report.flush().warnings).toBeGreaterThanOrEqual(1);
+  });
+
+  it('loader guard: attaches manifest dims by slug when the manifest is present', async () => {
+    const manifestPath = join(parent, 'has-a-manifest.json');
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ chess_ai: { kind: 'video', width: 572, height: 800 } }),
+    );
+    process.env.ACADEMIA_MEDIA_MANIFEST = manifestPath;
+    const { context, map } = fakeContext();
+    await academiaShowcaseLoader({ root }).load(context);
+
+    const chess = map.get('chess-ai')!.data as Record<string, any>;
+    expect(chess.media[0]).toMatchObject({ width: 572, height: 800 });
+    // splatoonio's slugs aren't in this manifest -- dims absent, no crash.
+    expect((map.get('splatoonio')!.data as any).media[0].width).toBeUndefined();
+  });
+
+  it('loader guard: warns (not throws) on a corrupt manifest', async () => {
+    const manifestPath = join(parent, 'corrupt-manifest.json');
+    writeFileSync(manifestPath, '{ not valid json');
+    process.env.ACADEMIA_MEDIA_MANIFEST = manifestPath;
+    const { context, map } = fakeContext();
+    report.flush();
+    await academiaShowcaseLoader({ root }).load(context);
+
+    expect(map.size).toBe(14); // the showcase itself still loads fine
+    expect(report.flush().warnings).toBeGreaterThanOrEqual(1);
   });
 
   it('warns (not throws) on a missing PORTFOLIO.md without BUILD_STRICT', async () => {
