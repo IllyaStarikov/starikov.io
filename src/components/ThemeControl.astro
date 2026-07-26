@@ -120,17 +120,8 @@ const modes = [
     font-family: var(--font-mono);
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
+  /* .sr-only itself is the global utility (src/styles/global.css) -- no local
+     redefinition here (v1.1 polish Task 5: one .sr-only, not three). */
 
   .theme-control__trigger {
     display: inline-flex;

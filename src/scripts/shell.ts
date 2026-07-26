@@ -16,12 +16,21 @@
  *      1024px breakpoint while it's open, so it can't be stranded open behind
  *      the desktop sidebar with no control left that can reach it.
  *   6. Mobile mode toggle -> window.__setTheme (defined by theme-control.ts).
+ *   7. Kbd platform swap: flip every Kbd.astro instance's ⌘ glyph + sr-only
+ *      label to Ctrl / "Control …" for a non-mac visitor. This is the
+ *      EARLIEST client script that can do that -- the <head> pre-paint theme
+ *      boot script (theme-boot.ts) runs before <body> is even parsed, so a
+ *      Kbd DOM query there would find nothing on first load; by the time this
+ *      module's top-level code runs (a deferred `type="module"` script,
+ *      executed after the document is parsed), the sidebar/hero/404/palette
+ *      markup it needs to touch already exists.
  *
  * Module state persists across ClientRouter navigations (no full reload), so
  * `barPrevY` carries the FLIP origin between pages.
  */
 
 import { lockScroll, unlockScroll } from '../lib/scroll-lock';
+import { isNonMacPlatform, swapKbdToNonMac } from '../lib/kbd-platform';
 
 export {};
 
@@ -271,6 +280,21 @@ function wireModeToggle(): void {
   });
 }
 
+/* --- 7. Kbd platform swap ---------------------------------------------------
+ * Kbd.astro's SSR default is always the Mac glyph/label (server can't know
+ * the visitor's platform). Computed once at module scope -- the platform
+ * doesn't change mid-session. Re-applied every boot(), not just the first:
+ * most navigations swap in fresh SSR markup (back at the ⌘ default) that
+ * needs the swap again; the one persisted element (the desktop sidebar's
+ * search hint, `transition:persist`) is already swapped and simply matches
+ * nothing on repeat calls (swapKbdToNonMac is idempotent). Gated behind
+ * NON_MAC so a mac visitor's session never touches this DOM at all. */
+const NON_MAC = isNonMacPlatform(navigator);
+
+function wireKbdPlatform(): void {
+  if (NON_MAC) swapKbdToNonMac(document);
+}
+
 /* --- boot ----------------------------------------------------------------- */
 
 function boot(animate: boolean): void {
@@ -279,6 +303,7 @@ function boot(animate: boolean): void {
   wireSearch();
   wireDialog();
   wireModeToggle();
+  wireKbdPlatform();
 }
 
 // First paint: position the bar without animating.

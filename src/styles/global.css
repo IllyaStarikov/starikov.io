@@ -130,6 +130,26 @@ samp {
 }
 
 /* -----------------------------------------------------------------------
+ * Accessibility utilities.
+ * ----------------------------------------------------------------------- */
+/* The standard visually-hidden-but-AT-visible clip pattern (v1.1 polish
+   Task 5: one definition, not three -- Palette.astro and ThemeControl.astro
+   each carried their own identical copy before this). Anything that needs a
+   real text node for assistive tech with no on-screen footprint uses this
+   class directly; it needs no scoping ancestor. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* -----------------------------------------------------------------------
  * Skip link: first focusable element (Base.astro), off-screen until focused.
  * ----------------------------------------------------------------------- */
 .skip-link {

@@ -55,10 +55,18 @@
     >
     </div>
 
+    <!-- aria-hidden: a supplementary visual hint, not content (the palette's
+         real keyboard contract is already wired via aria-activedescendant/
+         role="option" above) -- so unlike Kbd.astro's call sites, these kbd
+         glyphs need no sr-only pair. data-kbd-glyph on the ⌘ one only: it's
+         the sole platform-specific glyph in this row (↑ ↓ ↵ esc are the same
+         key on every OS), so it's the one the boot-time platform swap
+         (src/lib/kbd-platform.ts, wired in shell.ts) needs to reach to keep
+         "new tab" honest for a visitor with no ⌘ key. -->
     <div class="cmdk-foot" aria-hidden="true">
       <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
       <span><kbd>↵</kbd> open</span>
-      <span><kbd>⌘</kbd><kbd>↵</kbd> new tab</span>
+      <span><kbd data-kbd-glyph>⌘</kbd><kbd>↵</kbd> new tab</span>
       <span><kbd>esc</kbd> close</span>
     </div>
 
@@ -314,17 +322,8 @@
     border-radius: var(--r-1);
   }
 
-  command-palette .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
+  /* .sr-only itself is the global utility (src/styles/global.css) -- no local
+     redefinition here (v1.1 polish Task 5: one .sr-only, not three). */
 
   @media (max-width: 640px) {
     command-palette {

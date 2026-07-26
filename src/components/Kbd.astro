@@ -1,16 +1,36 @@
 ---
 /*
- * Kbd -- a keycap glyph. Pass `label` whenever the visible text is a symbol a
- * screen reader would mangle (⌘ reads as "place of interest sign"), so the
- * accessible name stays human ("Command K").
+ * Kbd -- a keycap glyph for a keyboard shortcut hint.
+ *
+ * Screen readers get real text, not a mis-applied `aria-label`: `<kbd>` has
+ * no implicit ARIA role, and `aria-label` naming is only defined for roles
+ * that support it -- on a bare, role-less `<kbd>` it's a no-op for most
+ * assistive tech (the previous version of this component did exactly that).
+ * The real pattern: the visible glyph is `aria-hidden`, and an adjacent
+ * `.sr-only` span carries the human name ("Command K") as a real text node,
+ * which every AT reads correctly with no ARIA involved.
+ *
+ * SSR always renders the Mac glyph + label (⌘ / "Command …") -- the server
+ * can't know the visitor's platform. src/scripts/shell.ts (the earliest
+ * client script that runs after the body it needs to touch actually exists --
+ * see that file) swaps both the visible glyph and this label to Ctrl /
+ * "Control …" at first client paint when navigator.platform/userAgentData
+ * says the visitor isn't on an Apple platform (macOS/iOS/iPadOS all keep the
+ * ⌘ default -- see kbd-platform.ts's isNonMacPlatform for why). The swap's
+ * pure logic lives in src/lib/kbd-platform.ts (unit-tested);
+ * `data-kbd-glyph`/`data-kbd-label` below are its hooks into this markup.
  */
 interface Props {
-  label?: string;
+  /** The accessible name, e.g. "Command K" -- always worded for Mac; shell.ts
+   *  swaps it to the Ctrl wording client-side when appropriate. Required: a
+   *  Kbd with no label would aria-hide its only content with nothing to
+   *  replace it for AT. */
+  label: string;
 }
 const { label } = Astro.props;
 ---
 
-<kbd class="kbd" aria-label={label}><slot /></kbd>
+<kbd class="kbd" data-kbd-glyph aria-hidden="true"><slot /></kbd><span class="sr-only" data-kbd-label>{label}</span>
 
 <style>
   .kbd {
