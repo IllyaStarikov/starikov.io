@@ -5,7 +5,10 @@
  * -> 8 apps -> this site pipeline, the full 57-variant gallery, the token
  * a11y disclosure, a type specimen, the stack, and the build provenance line.
  *
- * `/uses` and `/craft` fold in here (design spec §3).
+ * `/uses` and `/craft` fold in here (design spec §3) as the "Daily drivers"
+ * section: the hardware/editor/terminal already public on /about's live
+ * neofetch card, restated short, plus the craft doctrine (v1.1 polish
+ * Task 5).
  */
 import Shell from '../layouts/Shell.astro';
 import ThemeGallery from '../components/ThemeGallery.astro';
@@ -39,6 +42,7 @@ const toc = [
   { id: 'tokens', label: 'Token derivation' },
   { id: 'type', label: 'Type specimen' },
   { id: 'stack', label: 'The stack' },
+  { id: 'drivers', label: 'Daily drivers' },
   { id: 'provenance', label: 'Provenance' },
 ];
 
@@ -70,6 +74,20 @@ const stack = [
   { name: 'Pagefind', note: 'Full-text search indexed at build, loaded on demand. The search runs in your browser, not a server.' },
   { name: 'GitHub Actions + Pages', note: 'One workflow: pull the live sources, generate the themes, build, gate, deploy. A failed build never ships.' },
   { name: 'Inter + Commit Mono', note: 'Self-hosted, subset to latin, preloaded. Metric-matched fallbacks so nothing shifts as they load.' },
+];
+
+// Daily drivers (design spec §3: "/uses and /craft fold into /colophon") --
+// the same hardware/software already public on /about's live neofetch card
+// (the profile repo's readme-{light,dark}.svg, rendered by ProfileCard.astro)
+// restated short, so this closes the obligation without a second copy of the
+// live card itself. Verified against the current card content directly, not
+// carried over from memory.
+const drivers = [
+  { label: 'OS', value: 'macOS, Linux' },
+  { label: 'Editor', value: 'Neovim' },
+  { label: 'Shell', value: 'zsh, tmux' },
+  { label: 'Terminal', value: 'WezTerm' },
+  { label: 'Keyboards', value: 'Keychron Q10 Max (Alice, QMK) · CODE V3 87-Key (Cherry MX Clears)' },
 ];
 ---
 
@@ -128,6 +146,13 @@ const stack = [
           <span class="pipe__note">app #9 — this site</span>
         </div>
       </div>
+
+      <p class="col__prose">
+        The last mile of that pipeline runs live in your browser, too: in <strong>system</strong> mode
+        a <code>matchMedia</code> listener keeps the theme in step with macOS's own light/dark
+        switch in real time, no reload needed — the same auto-behavior the dotfiles apply in the
+        terminal, mirrored here.
+      </p>
     </section>
 
     <!-- ===================== Gallery ===================== -->
@@ -218,6 +243,31 @@ const stack = [
           ))
         }
       </dl>
+    </section>
+
+    <!-- ===================== Daily drivers ===================== -->
+    <section class="col__section" id="drivers" aria-labelledby="drivers-h">
+      <h2 id="drivers-h">Daily drivers</h2>
+      <p class="col__prose">
+        <code>/uses</code> and <code>/craft</code> fold in here rather than living as their own
+        pages — the hardware and terminal are already public on the
+        <a href="/about">live profile card</a>; the short version:
+      </p>
+      <dl class="drivers">
+        {
+          drivers.map((d) => (
+            <div class="drivers__row">
+              <dt>{d.label}</dt>
+              <dd>{d.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+      <p class="col__prose">
+        The craft is the same doctrine as the pipeline above: pulled from live sources at every
+        deploy, gated by tests and a strict build before anything ships, and themed from one
+        engine rather than hand-tuned per page.
+      </p>
     </section>
 
     <!-- ===================== Provenance ===================== -->
@@ -525,6 +575,51 @@ const stack = [
     font-size: var(--fs-14);
     line-height: var(--lh-body);
     color: var(--text-secondary);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Daily drivers -- compact label/value rows (the "facts row" visual
+   * language from RightRail.astro's .facts__row, adapted for the wider
+   * content column: mono uppercase label + real-color mono value, divided by
+   * the same faint ledger-row border changelog.astro's .entry rows use,
+   * rather than .stack's stacked name-over-note shape, which is built for a
+   * longer per-item description, not a short key/value pair).
+   * ------------------------------------------------------------------- */
+  .drivers {
+    margin: var(--s-5) 0 0;
+    display: grid;
+    gap: var(--s-1);
+  }
+
+  .drivers__row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-3);
+    padding: var(--s-2) 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  }
+
+  .drivers__row dt {
+    flex: none;
+    width: 9ch;
+    padding-top: 2px;
+    font: 500 var(--fs-12) / 1.4 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-secondary);
+  }
+
+  .drivers__row dd {
+    /* flex:1 + min-width:0 -- the Keychron/CODE row is long enough to wrap
+       on narrow viewports; without min-width:0 a flex item's default
+       min-width:auto would let it push the row wider than .col instead. */
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    line-height: 1.4;
+    color: var(--fg);
   }
 
   /* ---------------------------------------------------------------------
