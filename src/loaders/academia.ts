@@ -124,16 +124,42 @@ export type Manifest = Record<string, ManifestEntry>;
 /**
  * PURE. Attach {width,height} from the dims manifest onto a MediaRef, by slug
  * -- the "dims fall-through": a slug absent from the manifest (never
- * transcoded yet, or a manifest that predates this asset) or a kind mismatch
- * (defensive; shouldn't happen since both are keyed off the same source file)
- * leaves the ref untouched, width/height simply absent, rather than throwing.
- * The page renders width/height attributes only when present -- CLS-zero on
- * the common path, a graceful (not broken) degrade on the rare one.
+ * transcoded yet, a manifest that predates this asset, or -- the case Task 2
+ * fix round 1 closes -- a single asset whose transcode failed upstream and
+ * was warn-and-skipped) or a kind mismatch (defensive; shouldn't happen since
+ * both are keyed off the same source file) leaves the ref untouched, width/
+ * height simply absent, rather than throwing. This function alone does NOT
+ * guarantee the ref is safe to render -- a dims-less ref may point at output
+ * files that don't exist. academiaShowcaseLoader's hasDims() filters those
+ * out before storing a project's media, so the page only ever sees refs it
+ * can safely render (see hasDims's doc comment).
  */
 export function withDims(ref: MediaRef, manifest: Manifest): MediaRef {
   const entry = manifest[ref.slug];
   if (!entry || entry.kind !== ref.kind) return ref;
   return { ...ref, width: entry.width, height: entry.height };
+}
+
+/**
+ * PURE. Whether a MediaRef's dims were actually attached by withDims -- i.e.
+ * whether the manifest scripts/transcode-media.mjs writes every run confirmed
+ * this slug's output files exist and are readable (imageDims/videoDims there
+ * both read the emitted file's own header, so a manifest entry is written
+ * only when the output genuinely exists on disk -- see that script's module
+ * header). A ref failing this check means either the whole manifest is
+ * absent (dev convenience path: `astro dev` run before ever running the
+ * transcode prebuild) or -- the production case this guards against -- one
+ * asset's transcode failed on a corrupt/unreadable source and was
+ * warn-and-skipped, leaving no output files and no manifest entry for its
+ * slug. Either way the showcase must never emit a <picture>/<video> whose src
+ * points at a file that doesn't exist, so academiaShowcaseLoader filters on
+ * this before storing a project's media (see the loader shell below) --
+ * chosen over rendering the ref dims-less (what withDims's fall-through alone
+ * would otherwise leave in place), which is indistinguishable at render time
+ * from the exact broken-<picture> case this guards against.
+ */
+export function hasDims(ref: MediaRef): ref is MediaRef & { width: number; height: number } {
+  return ref.width !== undefined && ref.height !== undefined;
 }
 
 const IMG_TAG_RE = /<img\b[^>]*>/gi;
@@ -532,7 +558,10 @@ export function academiaShowcaseLoader({ root }: { root: string }): Loader {
           courseCode: p.courseCode,
           dept: p.dept,
           theme: p.theme,
-          media: p.media,
+          // hasDims: never store (and thus never render) a media ref whose
+          // output files the transcode step didn't confirm exist -- see its
+          // doc comment above.
+          media: p.media.filter(hasDims),
           body: (await renderMarkdown(p.bodyMarkdown)).html,
         };
         const validated = await parseData({ id, data, filePath });

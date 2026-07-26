@@ -11,6 +11,7 @@ import {
   cleanBody,
   mediaRefFor,
   withDims,
+  hasDims,
   courseSlugFromSrcPath,
   deptFromCourseSlug,
   courseCode,
@@ -240,6 +241,23 @@ describe('withDims (manifest dims fall-through)', () => {
   });
 });
 
+describe('hasDims (confirmed-output-files gate, Task 2 fix round 1)', () => {
+  const imageRef = mediaRefFor('assets/socket_chat.png', 'Socket Chat Client')!;
+
+  it('is true once both width and height are attached', () => {
+    expect(hasDims({ ...imageRef, width: 733, height: 1238 })).toBe(true);
+  });
+
+  it('is false when dims were never attached (the withDims fall-through shape)', () => {
+    expect(hasDims(imageRef)).toBe(false);
+  });
+
+  it('is false when only one dimension is present (defensive; withDims never produces this today)', () => {
+    expect(hasDims({ ...imageRef, width: 733 })).toBe(false);
+    expect(hasDims({ ...imageRef, height: 1238 })).toBe(false);
+  });
+});
+
 describe('extractMedia / cleanBody', () => {
   const section = [
     '**Path:** `src/demo/`',
@@ -379,7 +397,10 @@ describe('academiaShowcaseLoader', () => {
     // Deterministic regardless of whether a real transcode run happened to
     // leave public/media/academia/manifest.json on disk (see the manifest
     // guard tests below for that behavior) -- this test only cares about
-    // parsing, not dims.
+    // parsing/theme/body-cleanup, not media. No manifest -> no confirmed
+    // output files -> hasDims drops every project's media (Task 2 fix round
+    // 1; see the dedicated "loader guard" tests below for the with-manifest
+    // case), which does not affect these assertions.
     process.env.ACADEMIA_MEDIA_MANIFEST = join(parent, 'no-manifest-here.json');
     const { context, map } = fakeContext();
     await academiaShowcaseLoader({ root }).load(context);
@@ -387,31 +408,32 @@ describe('academiaShowcaseLoader', () => {
     expect(map.size).toBe(14);
     const chess = map.get('chess-ai')!.data as Record<string, any>;
     expect(chess.theme).toBe('ai');
-    expect(chess.media).toHaveLength(1);
-    expect(chess.media[0].kind).toBe('video');
+    expect(chess.media).toEqual([]);
     expect(chess.body).toContain('<render>');
     expect(chess.body).not.toContain('**Path:**');
     expect(chess.body).not.toContain('<img');
 
-    expect((map.get('splatoonio')!.data as any).media).toHaveLength(2);
+    expect((map.get('splatoonio')!.data as any).media).toEqual([]);
     expect((map.get('cfg-tracer')!.data as any).media).toHaveLength(0);
     expect(map.get('chess-ai')!.digest).toBeTruthy();
   });
 
-  it('loader guard: warns (not throws) and omits dims when the manifest is absent', async () => {
+  it('loader guard: warns (not throws) and drops media lacking confirmed dims when the manifest is absent', async () => {
     process.env.ACADEMIA_MEDIA_MANIFEST = join(parent, 'still-no-manifest.json');
     const { context, map } = fakeContext();
     report.flush();
     await academiaShowcaseLoader({ root }).load(context);
 
     const chess = map.get('chess-ai')!.data as Record<string, any>;
-    expect(chess.media[0].width).toBeUndefined();
-    expect(chess.media[0].height).toBeUndefined();
+    // No manifest entry for chess_ai -> withDims can't confirm dims -> hasDims
+    // drops it rather than half-render a <video> whose mp4/webm/poster don't
+    // exist (see hasDims's doc comment in src/loaders/academia.ts).
+    expect(chess.media).toEqual([]);
     // A missing manifest is a warning (build still succeeds), not an error.
     expect(report.flush().warnings).toBeGreaterThanOrEqual(1);
   });
 
-  it('loader guard: attaches manifest dims by slug when the manifest is present', async () => {
+  it('loader guard: attaches manifest dims by slug when present, drops slugs the manifest has no entry for', async () => {
     const manifestPath = join(parent, 'has-a-manifest.json');
     writeFileSync(
       manifestPath,
@@ -423,8 +445,9 @@ describe('academiaShowcaseLoader', () => {
 
     const chess = map.get('chess-ai')!.data as Record<string, any>;
     expect(chess.media[0]).toMatchObject({ width: 572, height: 800 });
-    // splatoonio's slugs aren't in this manifest -- dims absent, no crash.
-    expect((map.get('splatoonio')!.data as any).media[0].width).toBeUndefined();
+    // splatoonio's slugs aren't in this manifest -- dropped, not rendered
+    // dims-less.
+    expect((map.get('splatoonio')!.data as any).media).toEqual([]);
   });
 
   it('loader guard: warns (not throws) on a corrupt manifest', async () => {

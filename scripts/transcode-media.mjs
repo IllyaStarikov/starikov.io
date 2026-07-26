@@ -37,6 +37,20 @@
  * still-image encode. Missing ffmpeg is a hard `::error::` exit — a build that
  * silently shipped GIFs or raw PNGs would blow the media budget without
  * anyone noticing.
+ *
+ * A single corrupt/unreadable source (a truncated GIF, a PNG libvips can't
+ * decode) must NOT fail the whole site build: unlike the old copyFileSync
+ * path (essentially unfailable on content grounds), transcodeGif/
+ * transcodeImage actively decode + re-encode, which a single bad academia
+ * asset CAN fail on content grounds alone. main()'s loop wraps that per-asset
+ * call in try/catch — a failure warns (`::warning::` in CI) and skips just
+ * that one asset, leaving its digest unset (so the next run retries —
+ * self-correcting once the source is fixed upstream) and its manifest entry
+ * absent. src/loaders/academia.ts's hasDims() then drops that slug's media
+ * from the showcase entirely rather than rendering a <picture>/<video>
+ * pointing at output files that were never produced. The manifest-dims read
+ * a few lines below was already try/catch-guarded before this — the
+ * transcode call itself was the gap (Task 2 fix round 1).
  */
 
 import { execFileSync } from 'node:child_process';
@@ -47,10 +61,15 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SOURCE_REPO = join(REPO_ROOT, '.sources/academia');
+// ACADEMIA_MEDIA_SOURCE_DIR / ACADEMIA_MEDIA_OUT_DIR (tests only, same
+// override pattern as build-themes.mjs's THEMES_SOURCE_DIR/THEMES_OUT_DIR)
+// redirect the academia checkout + generated outputs to scratch directories,
+// so the corrupt-asset test (test/transcode-media.test.ts) never touches the
+// real .sources/academia checkout or public/media/academia/.
+const SOURCE_REPO = process.env.ACADEMIA_MEDIA_SOURCE_DIR ?? join(REPO_ROOT, '.sources/academia');
 const ASSETS_DIR = join(SOURCE_REPO, 'assets');
 const PORTFOLIO = join(SOURCE_REPO, 'PORTFOLIO.md');
-const OUT_DIR = join(REPO_ROOT, 'public/media/academia');
+const OUT_DIR = process.env.ACADEMIA_MEDIA_OUT_DIR ?? join(REPO_ROOT, 'public/media/academia');
 const DIGESTS = join(OUT_DIR, '.digests.json');
 const MANIFEST = join(OUT_DIR, 'manifest.json');
 
@@ -184,6 +203,7 @@ async function main() {
 
   let processed = 0;
   let skipped = 0;
+  let failed = 0;
   const manifest = {};
 
   for (const file of assets) {
@@ -200,15 +220,26 @@ async function main() {
     const outputsExist = outputsFor(file).every(existsSync);
 
     if (needsTranscode(digests[file], hash, outputsExist)) {
-      if (isVideo) {
-        log(`transcoding ${file} → ${slug}.{mp4,webm,jpg}`);
-        transcodeGif(input, slug);
-      } else {
-        log(`transcoding ${file} → ${slug}.{avif,webp}`);
-        await transcodeImage(input, slug);
+      // A corrupt/unreadable source must not fail the whole build (see the
+      // module header). Warn and skip just this asset: digests[file] stays
+      // unset (the next run retries -- self-correcting once the source is
+      // fixed upstream), and `continue` past the manifest-dims read below
+      // since there is nothing on disk yet for it to read.
+      try {
+        if (isVideo) {
+          log(`transcoding ${file} → ${slug}.{mp4,webm,jpg}`);
+          transcodeGif(input, slug);
+        } else {
+          log(`transcoding ${file} → ${slug}.{avif,webp}`);
+          await transcodeImage(input, slug);
+        }
+        digests[file] = hash;
+        processed += 1;
+      } catch (e) {
+        warn(`transcoding ${file} failed, skipping this asset: ${e.message}`);
+        failed += 1;
+        continue;
       }
-      digests[file] = hash;
-      processed += 1;
     } else {
       skipped += 1;
     }
@@ -228,7 +259,7 @@ async function main() {
   writeFileSync(DIGESTS, JSON.stringify(digests, null, 2) + '\n');
   writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n');
   log(
-    `done — ${processed} processed, ${skipped} cached, ${assets.length} referenced, ` +
+    `done — ${processed} processed, ${skipped} cached, ${failed} failed, ${assets.length} referenced, ` +
       `manifest: ${Object.keys(manifest).length} entries`,
   );
 }
