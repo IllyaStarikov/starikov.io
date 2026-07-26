@@ -9,6 +9,7 @@ concurrency: { group: pages, cancel-in-progress: false }
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +25,7 @@ jobs:
           sparse-checkout: |
             config/themes.json
             src/theme
+            src/neovim/lazy-lock.json
           sparse-checkout-cone-mode: false
       - uses: actions/checkout@v4
         with:
@@ -38,16 +40,42 @@ jobs:
         with:
           repository: IllyaStarikov/academia
           path: .sources/academia
-      # Restore transcoded academia media (GIF→mp4/webm + posters, PNGs) keyed
-      # on PORTFOLIO.md so the ffmpeg prebuild runs once per source change, not
-      # every nightly build. MUST come before `npm run build` (the transcode
-      # step's digest cache skips whatever this restored).
+      # Restore transcoded academia media (GIF→mp4/webm + posters, AVIF/WebP)
+      # keyed on PORTFOLIO.md so the ffmpeg/sharp prebuild runs once per source
+      # change, not every nightly build. MUST come before `npm run build` (the
+      # transcode step's digest cache skips whatever this restored).
+      #
+      # v2 (Task 2, v1.1 polish): scripts/transcode-media.mjs stopped copying
+      # non-GIF images verbatim and started emitting AVIF+WebP instead -- a
+      # cache restored under the OLD key would have the old verbatim PNG/JPG
+      # copies sitting alongside (or instead of) the new outputs, and the OLD
+      # digests.json would make the digest-skip decision think those stale
+      # sources are already "done". Bumping the key (both here and in
+      # restore-keys) forces a clean-slate rebuild once, so stale raw
+      # originals and stale digests can never resurrect.
       - uses: actions/cache@v4
         with:
           path: public/media
-          key: academia-media-${{ hashFiles('.sources/academia/PORTFOLIO.md') }}
+          key: academia-media-v2-${{ hashFiles('.sources/academia/PORTFOLIO.md') }}
           restore-keys: |
-            academia-media-
+            academia-media-v2-
+      # Resilience middle tier (design spec §7 / A13): live -> .cache ->
+      # committed vendor snapshot for Ghost essays and GitHub repo metadata,
+      # plus Astro's own content-layer cache. Without this the middle tier was
+      # dead -- every CI run started from an empty .cache/ (never persisted
+      # across runs), so a live-fetch hiccup always fell straight to the
+      # committed snapshot, the intended LAST resort, never the actual middle
+      # one. Keyed on the lockfile (a dependency bump can change cache
+      # shapes) plus a static suffix to bump on demand; restore-keys falls
+      # back to the newest same-lockfile cache if the exact key ever misses.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            .astro
+          key: build-cache-${{ hashFiles('package-lock.json') }}-v1
+          restore-keys: |
+            build-cache-
       # ffmpeg is NOT preinstalled on current ubuntu-latest images (every
       # deploy from Task 10 to Task 15 failed on this; the validate gate
       # correctly kept the last good deploy live). The transcode script
@@ -89,6 +117,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
     steps:
       - id: deployment
