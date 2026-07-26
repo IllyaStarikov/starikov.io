@@ -7,6 +7,7 @@
 // it on literal expressions -- so the narrowing has to happen at the source).
 export { SITE } from './site.config.mjs';
 export {
+  EDITOR_STARTUP,
   ACADEMIA_PDF_ORIGIN,
   PDF_VOLUMES,
   ACADEMIA_THEME_RULES,

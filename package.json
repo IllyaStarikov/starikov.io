@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/clear-counts.mjs && node scripts/build-themes.mjs && node scripts/transcode-media.mjs && astro build && node scripts/validate-dist.mjs",
+    "build": "node scripts/clear-counts.mjs && node scripts/build-themes.mjs && node scripts/build-system-stats.mjs && node scripts/transcode-media.mjs && astro build && node scripts/validate-dist.mjs",
     "test": "vitest run",
     "preview": "astro preview"
   },

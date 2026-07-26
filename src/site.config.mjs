@@ -56,6 +56,25 @@ export const SITE = {
 };
 
 // ---------------------------------------------------------------------------
+// Editor cold-start (SystemCard's `editor` row) — v1.1 polish Task 6, A10/A11
+// ---------------------------------------------------------------------------
+
+// Neovim's own startup time isn't something a GitHub Pages build can measure
+// (there's no neovim in the CI runner, and even if there were, "cold start on
+// an M1" is a claim about THIS machine, not the build box) -- so unlike
+// pluginCount/dotfilesFiles/dotfilesLines (build-system-stats.mjs, computed
+// fresh every build), this is disclosed curated data instead: a real number,
+// dated to when it was actually verified, not silently re-asserted forever.
+// `label` is the dotfiles README's own long-standing claim ("~150ms" — see
+// .dotfiles/README.md's "Neovim startup" row); `measured` is a LOCAL
+// three-run `nvim --headless --startuptime` sample taken directly against
+// ~/.dotfiles for this task (104ms / 114ms / 107ms -- comfortably under the
+// label, so it stands as an honest, if rounded, upper bound). SystemCard
+// prints `label`; /colophon's provenance section prints the disclosure line
+// naming `measured`.
+export const EDITOR_STARTUP = { label: '~150ms', measured: '2026-07-26' };
+
+// ---------------------------------------------------------------------------
 // Academia (/academia) — Task 10
 // ---------------------------------------------------------------------------
 

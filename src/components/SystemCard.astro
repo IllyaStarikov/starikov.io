@@ -10,10 +10,18 @@
  *
  * Every row is computed here, at build:
  *   - os        static (the two OSes the dotfiles target)
- *   - editor    neovim + locked plugin count + cold-start (verified, Task 12)
- *   - dotfiles  line/file totals (site-canonical, verified Task 12)
- *   - themes    the WHOLE theme engine's variant/family count, counted from the
- *               committed dotfiles manifest snapshot (17 families / 57 variants)
+ *   - editor    neovim + LIVE locked plugin count (build-system-stats.mjs,
+ *               counted from lazy-lock.json) + a disclosed cold-start figure
+ *               (site.config's EDITOR_STARTUP -- unmeasurable at build, so it
+ *               is curated data with a `measured` date rather than a silent
+ *               hardcode; see /colophon's provenance section for the disclosure)
+ *   - dotfiles  LIVE line/file totals from build-system-stats.mjs: a real git
+ *               checkout counts via the git database (accurate even against a
+ *               sparse worktree), else a filesystem walk, else the committed
+ *               src/data/vendor/system-stats-snapshot.json -- never hardcoded
+ *   - themes    the WHOLE theme engine's variant/family count, read from
+ *               src/data/generated/themes-all.json's meta -- THIS build's
+ *               live output (build-themes.mjs), not a static vendor snapshot
  *   - theme:    the live theme -- SSR prints the default, the client corrects it
  *   - essays    the `essays` collection's count; guarded absent if a build
  *               ever loaded zero (every fallback tier failed) rather than
@@ -31,19 +39,22 @@
  */
 import { getCollection } from 'astro:content';
 import themesData from '../data/generated/themes.json';
-// The full dotfiles theme manifest (committed vendor snapshot -- the same file
-// build-themes.mjs reads live in CI). Counted here so "57 variants / 17
-// families" is real build data, not a hardcoded string, and tracks the engine.
-import themeManifest from '../data/vendor/themes-snapshot/config/themes.json';
+// The full engine's family/variant count, straight from THIS build's own
+// output (scripts/build-themes.mjs) -- not the static vendor snapshot, so a
+// live dotfiles source (CI, or a synced local checkout) is reflected exactly,
+// the same way the curated families/variants above it already are.
+import themesAll from '../data/generated/themes-all.json';
+// Plugin count + dotfiles line/file totals -- scripts/build-system-stats.mjs's
+// output (git database when the checkout has one, else a filesystem walk,
+// else the committed vendor snapshot; see that script's module doc).
+import systemStats from '../data/generated/system-stats.json';
+import { EDITOR_STARTUP } from '../site.config';
 import { THEME_DISPLAY_MAP, themeDisplayName } from '../lib/theme-display';
 import { formatRelativeTime } from '../lib/relative-time';
 
-// -- themes: count the whole engine from the manifest ------------------------
-const familyCount = Object.keys(themeManifest.families).length;
-const variantCount = Object.values(themeManifest.families).reduce(
-  (sum, family) => sum + Object.keys(family.variants).length,
-  0,
-);
+// -- themes: count the whole engine from THIS build's live output ------------
+const familyCount = themesAll.meta.familyCount;
+const variantCount = themesAll.meta.variantCount;
 
 // -- latest: newest push across every NON-STALE tracked repo -----------------
 // Stale entries (cache/vendor fallback, not a live fetch this build) are
@@ -77,8 +88,8 @@ const displayMapJson = JSON.stringify(THEME_DISPLAY_MAP);
 // in this list.
 const rows: { key: string; value: string }[] = [
   { key: 'os', value: 'macOS + Linux' },
-  { key: 'editor', value: 'neovim · 52 plugins · ~150ms' },
-  { key: 'dotfiles', value: '90.8K lines / 770 files' },
+  { key: 'editor', value: `neovim · ${systemStats.pluginCount} plugins · ${EDITOR_STARTUP.label}` },
+  { key: 'dotfiles', value: `${systemStats.dotfilesLinesLabel} lines / ${systemStats.dotfilesFiles} files` },
   { key: 'themes', value: `${variantCount} variants / ${familyCount} families` },
 ];
 
