@@ -2,15 +2,21 @@
 /*
  * Home (`~`) -- the first five seconds of the site (design spec §3, §5).
  *
- * Hero: a mono `whoami` prompt, the 44px statement it answers, a two-line dek,
- * and two mono links (`browse the index →`, `press ⌘K`). Beside it, the live
- * SystemCard -- a neofetch panel whose `theme:` row is the theme picker itself.
+ * Hero: a mono `whoami` prompt, a mono identity line, the statement (fluid
+ * --fs-statement, 30px→44px) it answers, a two-line dek, and two mono links
+ * (`browse the index →`, `press ⌘K` on hover-capable pointers / `search →` on
+ * touch -- pure CSS swap, see .hero__link--kbd/--touch below). Beside it, the
+ * live SystemCard -- a neofetch panel whose `theme:` row is the theme picker
+ * itself.
  *
  * Below the fold, three ledgers:
  *   - Start here      the four front doors (dotfiles, eclecta, mcp, academia)
  *                      (SiteItem model)
- *   - Recently updated the six newest items across every collection, essays
- *                      included (SiteItem model)
+ *   - Recently updated the five newest DATED, non-essay items across every
+ *                      collection, excluding anything already curated in
+ *                      Start here above (SiteItem model; see src/lib/recent.ts
+ *                      for the pure selection rule); guarded absent if that
+ *                      ever leaves zero rows
  *   - Latest essays    the 3 most recent Ghost posts, queried directly (not
  *                      via SiteItem) for the tag-dot accent; guarded absent
  *                      if the essays collection ever loads zero
@@ -24,12 +30,16 @@ import SystemCard from '../components/SystemCard.astro';
 import LedgerRow from '../components/LedgerRow.astro';
 import Kbd from '../components/Kbd.astro';
 import { getCollection } from 'astro:content';
-import { getAllItems, joinRepos, summarizeRepos } from '../lib/model';
+import { getAllItems, joinRepos, summarizeRepos, selectRecentItems } from '../lib/model';
 import { formatRelativeTime } from '../lib/relative-time';
 import { firstTagAccent } from '../lib/essays';
 
+// Editorial rule (v1.1 polish, Task 3): the statement is ONE sentence, ≤90
+// chars, and must render in ≤4 lines at the 24ch measure `.hero__statement`
+// gives it -- a punchy answer to `whoami`, not a paragraph. Name + role
+// already live in the mono id line above it, so this doesn't repeat them.
 const STATEMENT =
-  'Illya Starikov — software engineer. This is the workshop: ten years of dotfiles, tools, coursework, and essays — documented like it matters.';
+  'The workshop: ten years of dotfiles, tools, and essays — documented like it matters.';
 
 // ★stars · language · updated (relative) -- any unavailable fact is dropped.
 const repos = await getCollection('repos');
@@ -69,29 +79,32 @@ startHere.push({
   meta: repoMeta(['IllyaStarikov/academia']),
 });
 
-// -- Recently updated: the six newest dated items across everything -----------
+// -- Recently updated: newest non-essay items not already curated above ------
+// (design spec §3): essays own LATEST ESSAYS below and curated START HERE rows
+// already show their own `updated` meta, so both are unconditionally excluded
+// here rather than merely deduplicated against a longer list. Pure selection
+// logic lives in src/lib/recent.ts (selectRecentItems) so it's unit-tested
+// (test/recent.test.ts) independent of this page's Astro glue.
 const allItems = await getAllItems();
 const TYPE_LABEL: Record<string, string> = {
   tool: 'tool',
   project: 'project',
   page: 'page',
-  essay: 'essay',
 };
-const recent = allItems
-  .filter((item) => item.date)
-  .slice(0, 6)
-  .map((item) => {
-    const rel = item.date ? formatRelativeTime(item.date) : null;
-    return {
-      href: item.href,
-      title: item.title,
-      dek: item.tagline,
-      external: item.type === 'essay',
-      meta: [TYPE_LABEL[item.type] ?? item.type, rel ? `updated ${rel}` : null].filter(
-        (x): x is string => Boolean(x),
-      ),
-    };
-  });
+// Built AFTER startHere's `.push()` above, so /academia (added there, not in
+// the initial three-project array) is included in the exclusion set too.
+const startHereHrefs = new Set(startHere.map((row) => row.href));
+const recent = selectRecentItems(allItems, startHereHrefs).map((item) => {
+  const rel = item.date ? formatRelativeTime(item.date) : null;
+  return {
+    href: item.href,
+    title: item.title,
+    dek: item.tagline,
+    meta: [TYPE_LABEL[item.type] ?? item.type, rel ? `updated ${rel}` : null].filter(
+      (x): x is string => Boolean(x),
+    ),
+  };
+});
 
 // -- Latest essays: the 3 most recent Ghost posts, tag dot + relative date --
 // (design spec §3). Queried directly (not via allItems/SiteItem) because the
@@ -136,6 +149,7 @@ const nextRow = () => rowIndex++;
     <section class="hero" aria-label="Introduction">
       <div class="hero__lede">
         <p class="hero__prompt"><span class="hero__caret" aria-hidden="true">~ ❯</span> whoami</p>
+        <p class="hero__id">Illya Starikov — software engineer</p>
         <h1 class="text-statement hero__statement">{STATEMENT}</h1>
         <p class="hero__dek">
           Everything I've built, kept like a wiki and wired to grow on its own — pulled from live
@@ -143,8 +157,17 @@ const nextRow = () => rowIndex++;
         </p>
         <div class="hero__links">
           <a class="hero__link" href="/projects">browse the index →</a>
-          <button class="hero__link hero__link--btn" type="button" data-open-palette>
+          {/* Touch affordance: both buttons share the exact data-open-palette
+              mechanism shell.ts already wires (querySelectorAll over every
+              match -- no JS branching needed). @media (hover: none) below is
+              the only thing that decides which one is shown: a keyboard
+              shortcut is a lie on a touchscreen, so touch gets a plain
+              "search →" button instead of the ⌘K glyph. */}
+          <button class="hero__link hero__link--btn hero__link--kbd" type="button" data-open-palette>
             press <Kbd label="Command K">⌘K</Kbd>
+          </button>
+          <button class="hero__link hero__link--btn hero__link--touch" type="button" data-open-palette>
+            search →
           </button>
         </div>
       </div>
@@ -176,35 +199,33 @@ const nextRow = () => rowIndex++;
       </div>
     </section>
 
-    <section class="home-section" aria-labelledby="recent-label">
-      <div class="section-head">
-        <h2 class="section-head__label" id="recent-label">recently updated</h2>
-        <span class="section-head__rule" aria-hidden="true"></span>
-      </div>
-      <div class="ledger" data-entrance>
-        {
-          recent.map((row) => {
-            const i = nextRow();
-            const staggered = i < STAGGER_ROWS;
-            return (
-            <div
-              class="ledger__item"
-              style={staggered ? `--row-i:${i}` : undefined}
-              data-no-stagger={staggered ? undefined : ''}
-            >
-              <LedgerRow
-                href={row.href}
-                title={row.title}
-                dek={row.dek}
-                meta={row.meta}
-                external={row.external}
-              />
-            </div>
-            );
-          })
-        }
-      </div>
-    </section>
+    {
+      recent.length > 0 && (
+        <section class="home-section" aria-labelledby="recent-label">
+          <div class="section-head">
+            <h2 class="section-head__label" id="recent-label">recently updated</h2>
+            <span class="section-head__rule" aria-hidden="true"></span>
+          </div>
+          <div class="ledger" data-entrance>
+            {
+              recent.map((row) => {
+                const i = nextRow();
+                const staggered = i < STAGGER_ROWS;
+                return (
+                  <div
+                    class="ledger__item"
+                    style={staggered ? `--row-i:${i}` : undefined}
+                    data-no-stagger={staggered ? undefined : ''}
+                  >
+                    <LedgerRow href={row.href} title={row.title} dek={row.dek} meta={row.meta} />
+                  </div>
+                );
+              })
+            }
+          </div>
+        </section>
+      )
+    }
 
     {
       latestEssays.length > 0 && (
@@ -250,15 +271,28 @@ const nextRow = () => rowIndex++;
 
   /* ---------------------------------------------------------------------
    * Hero: statement beside the system card
+   *
+   * Breakpoint is a CONTAINER query bound to `.content-col`'s inline-size
+   * (Shell.astro: `container: content / inline-size`), not the viewport --
+   * the old `@media (min-width: 900px)` didn't know the sidebar exists, so it
+   * forced two columns into a squeeze once the ≥1024px sidebar ate 240px.
+   * `@container content (min-width: 720px)` reacts to the space .content-col
+   * actually has, so it correctly drops to one column in that squeeze zone
+   * and returns to two once the container regains room. No-container-query
+   * browsers never match `@container` at all, so they get the base (single
+   * column) rule -- an acceptable, honest degrade.
    * ------------------------------------------------------------------- */
   .hero {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--s-6);
-    padding: var(--s-6) 0 var(--s-8);
+    /* Small-viewport padding trimmed (was --s-6/--s-8) so the SystemCard's
+       top edge enters the first 390×844 viewport instead of sitting just
+       past its bottom edge. */
+    padding: var(--s-5) 0 var(--s-7);
   }
 
-  @media (min-width: 900px) {
+  @container content (min-width: 720px) {
     .hero {
       grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
       gap: var(--s-8);
@@ -278,16 +312,17 @@ const nextRow = () => rowIndex++;
     color: var(--accent);
   }
 
-  .hero__statement {
-    margin-top: var(--s-4);
-    max-width: 20ch;
-    text-wrap: balance;
+  .hero__id {
+    margin-top: var(--s-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    color: var(--text-secondary);
   }
 
-  @media (min-width: 900px) {
-    .hero__statement {
-      max-width: 16ch;
-    }
+  .hero__statement {
+    margin-top: var(--s-4);
+    max-width: 24ch;
+    text-wrap: balance;
   }
 
   .hero__dek {
@@ -329,6 +364,25 @@ const nextRow = () => rowIndex++;
     background: none;
     border: 0;
     cursor: pointer;
+  }
+
+  /* Touch affordance: default (hover-capable pointer) shows the ⌘K button;
+     a touchscreen can't press a keyboard shortcut, so `(hover: none)` swaps
+     to a plain "search →" button instead. Both buttons carry the identical
+     data-open-palette attribute, so shell.ts's existing wireSearch() wires
+     both without any JS branching -- this swap is pure CSS. */
+  .hero__link--touch {
+    display: none;
+  }
+
+  @media (hover: none) {
+    .hero__link--kbd {
+      display: none;
+    }
+
+    .hero__link--touch {
+      display: inline-flex;
+    }
   }
 
   /* ---------------------------------------------------------------------

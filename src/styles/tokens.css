@@ -71,6 +71,13 @@
   --fs-32: 32px;
   --fs-44: 44px;
 
+  /* Home hero statement only: a fluid clamp rather than a fixed step, so it
+     scales continuously between the 390px first viewport (floors at 30px)
+     and roomier ones (ceils at 44px once the viewport reaches ~1180px) --
+     the copy is one short sentence, so this stays legible without the
+     multi-line overflow a flat 44px would force at phone widths. */
+  --fs-statement: clamp(30px, 18px + 2.2vw, 44px);
+
   /* Heading rhythm */
   --lh-heading: 1.15;
   --ls-heading: -0.02em;

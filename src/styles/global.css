@@ -81,7 +81,7 @@ h3 {
 
 /* Home statement only -- opt-in, not a default heading size. */
 .text-statement {
-  font-size: var(--fs-44);
+  font-size: var(--fs-statement);
   font-weight: 600;
   line-height: var(--lh-heading);
   letter-spacing: var(--ls-heading);

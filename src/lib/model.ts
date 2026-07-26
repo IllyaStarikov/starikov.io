@@ -35,6 +35,7 @@ import {
   type ProjectRepoData,
   type RepoSummary,
 } from './projects';
+import { selectRecentItems } from './recent';
 
 // Re-exported so the pure project cores have one public home (model.ts) even
 // though they live in the Astro-free `./projects` module for testability.
@@ -46,6 +47,10 @@ export {
   type ProjectRepoData,
   type RepoSummary,
 };
+
+// Same re-export arrangement for the home page's RECENTLY UPDATED selection
+// (see `./recent` -- Astro-free for the same testability reason).
+export { selectRecentItems };
 
 export type SiteItemType = 'tool' | 'project' | 'essay' | 'page';
 

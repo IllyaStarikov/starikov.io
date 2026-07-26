@@ -211,11 +211,36 @@ const isErrorPage = pageType === '404';
   .content-col {
     min-width: 0;
     padding: var(--s-5) var(--s-4) var(--s-9);
+    /* Container-query foundation (v1.1 polish, Task 3): named so descendant
+       pages can bind `@container content (...)` to THIS element's own
+       inline-size specifically (not just "the nearest container"), rather
+       than the viewport -- the home hero's two-column breakpoint uses this
+       to react honestly to the ≥1024px sidebar eating 240px, which a
+       viewport media query can't see. `inline-size` (not full `size`)
+       containment is enough for width-only queries and is safe here: nothing
+       inside .content-col is sticky or relies on this element's own layout
+       being influenced by its contents' block-size. */
+    container: content / inline-size;
+  }
+
+  /* Breadcrumbs renders directly inside .content-col, above main, with no
+     wrapper element -- give it main's own max-width + centering below
+     1024px or the crumb (otherwise full-width) misaligns against main's
+     centered column at 720-1023px (the content-col padding step, before the
+     sidebar exists). `.breadcrumbs` is unique to Breadcrumbs.astro; :global()
+     reaches its root <nav> without depending on Astro's parent-scopes-child's-
+     root-element attribute propagation. */
+  :global(.breadcrumbs) {
+    max-width: 720px;
+    margin-inline: auto;
   }
 
   main {
     max-width: 720px;
     margin-top: var(--s-4);
+    /* Centered below 1024px (content-col can be wider than 720px there);
+       reset to left-anchored beside the sidebar in the ≥1024px block below. */
+    margin-inline: auto;
   }
 
   /* The skip link moves focus here (tabindex="-1"); it's a scroll/AT target, not
@@ -250,6 +275,17 @@ const isErrorPage = pageType === '404';
 
     .content-col {
       padding: var(--s-7) var(--s-7) var(--s-9);
+    }
+
+    /* Left-anchored beside the sidebar by design (not centered in the
+       remaining track) -- the base rule above centers both main and the
+       breadcrumb only for the sidebar-less 720-1023px range. */
+    :global(.breadcrumbs) {
+      margin-inline: 0;
+    }
+
+    main {
+      margin-inline: 0;
     }
   }
 
