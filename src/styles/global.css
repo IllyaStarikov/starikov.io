@@ -502,10 +502,23 @@ samp {
   }
 
   /* Tag dots (Task 2's ledger-row ::before) are a background-color circle;
-     browsers drop background colors under print by default, so the dot
-     needs an inset ring (not a background) to stay visible on paper. */
+     browsers drop background colors under print by default (the default
+     print-color-adjust: economy), so the dot needs a non-background way to
+     stay visible on paper. A first attempt here used an inset box-shadow
+     ring, but box-shadow is ALSO suppressed by economy mode in Chrome and
+     Firefox -- it's classed with backgrounds as ink-hungry decoration, not
+     content. `border` is not: no browser's economy mode ever strips border
+     color, so it is the one mechanism that provably survives regardless of
+     the visitor's print settings, with no need to override the site's
+     deliberate "backgrounds don't print" stance via print-color-adjust:
+     exact. `background: none` is explicit (not left to economy mode's
+     default) so the dot reads as a plain gray ring even if the visitor HAS
+     enabled "print backgrounds" -- consistent with the rest of this block
+     forcing a monochrome ramp rather than depending on the tag's original
+     (non-token) accent color either way. */
   .ledger-row__tag::before {
-    box-shadow: inset 0 0 0 1px #999 !important;
+    background: none !important;
+    border: 1px solid #999 !important;
   }
 
   h1,

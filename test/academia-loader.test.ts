@@ -477,6 +477,61 @@ describe('academiaShowcaseLoader', () => {
   });
 });
 
+describe('academiaShowcaseLoader -- project bodies get the prose-table-wrap treatment', () => {
+  // A separate, minimal PORTFOLIO.md (not the shared 14-project fixture --
+  // this exercises one thing in isolation) whose one project's body embeds a
+  // raw HTML table. fakeContext()'s renderMarkdown is a dumb echo
+  // (`<render>${content}</render>`), not a real markdown-to-HTML pass -- a
+  // raw HTML table is valid CommonMark (an HTML block passes through
+  // untouched), so it survives into the echoed string exactly as written,
+  // letting this test prove the loader's real wiring of wrapProseTables()
+  // over the body render, not just the pure function in isolation
+  // (test/bin-loader.test.ts already covers that; see Task 4 review finding
+  // 1 -- this loader's body render had the same overflow-x gap bin-tools.ts
+  // was fixed for, just latent since no current project body has a table).
+  let parent: string;
+  let root: string;
+
+  beforeAll(() => {
+    parent = mkdtempSync(join(tmpdir(), 'academia-table-'));
+    root = join(parent, 'academia');
+    mkdirSync(root);
+    writeFileSync(
+      join(root, 'PORTFOLIO.md'),
+      [
+        '# Portfolio',
+        '',
+        '## 1. Table Project',
+        '',
+        '**Path:** `src/demo/`',
+        '',
+        'Intro prose before the table.',
+        '',
+        '<table><thead><tr><th>Step</th><th>What happens</th></tr></thead><tbody><tr><td>1</td><td>Reads config</td></tr></tbody></table>',
+        '',
+        'Prose after the table.',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  afterAll(() => rmSync(parent, { recursive: true, force: true }));
+
+  it('wraps a table in the project body in .prose-table-wrap in the stored HTML', async () => {
+    process.env.ACADEMIA_MEDIA_MANIFEST = join(parent, 'no-manifest-here.json');
+    const { context, map } = fakeContext();
+    await academiaShowcaseLoader({ root }).load(context);
+
+    const data = map.get('table-project')!.data as Record<string, any>;
+    expect(data.body).toContain('<div class="prose-table-wrap"><table>');
+    expect(data.body).toContain('</table></div>');
+    expect(data.body).toContain('Reads config');
+    // Prose on either side of the table survives untouched.
+    expect(data.body).toContain('Intro prose before the table.');
+    expect(data.body).toContain('Prose after the table.');
+  });
+});
+
 describe('coursesLoader (src ∪ latex union)', () => {
   let parent: string;
   let root: string;

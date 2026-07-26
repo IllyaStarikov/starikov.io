@@ -31,6 +31,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, extname, join, relative, resolve } from 'node:path';
 import type { Loader } from 'astro/loaders';
 import { parseReadme } from './lib/markdown-tables';
+import { wrapProseTables } from './lib/prose-tables';
 import { report } from './lib/report';
 import { GITHUB_URL } from '../lib/nav';
 import {
@@ -562,7 +563,12 @@ export function academiaShowcaseLoader({ root }: { root: string }): Loader {
           // output files the transcode step didn't confirm exist -- see its
           // doc comment above.
           media: p.media.filter(hasDims),
-          body: (await renderMarkdown(p.bodyMarkdown)).html,
+          // wrapProseTables: same overflow-x treatment bin-tools.ts's README
+          // sections get -- this body lands in `.prose acad-project__body`
+          // via `set:html` (academia/index.astro) exactly like a tool page's
+          // sections do, so a PORTFOLIO.md project whose body happens to
+          // contain a table gets the same scroller, not a browser-default one.
+          body: wrapProseTables((await renderMarkdown(p.bodyMarkdown)).html),
         };
         const validated = await parseData({ id, data, filePath });
         store.set({ id, data: validated, digest: generateDigest(data), filePath });
