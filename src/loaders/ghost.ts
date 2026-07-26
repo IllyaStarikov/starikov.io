@@ -320,7 +320,11 @@ export function resetGhostSnapshotCache(): void {
 // The two Astro loaders
 // ---------------------------------------------------------------------------
 
-/** `essays` collection loader. Keys each entry by its Ghost slug. */
+/** `essays` collection loader. Keys each entry by its Ghost slug. Every entry
+ *  carries `stale: result.stale` (mirrors `repos`) -- ONE shared fetch feeds
+ *  every post in a given build, so it's uniform across entries; /writing
+ *  reads it off the first one to pick its footer's honesty disclosure
+ *  ("live from starikov.co" vs "index from snapshot"). */
 export function ghostEssaysLoader(options: GhostLoaderOptions = {}): Loader {
   return {
     name: 'ghost-essays',
@@ -350,6 +354,7 @@ export function ghostEssaysLoader(options: GhostLoaderOptions = {}): Loader {
           publishedAt: post.published_at,
           readingTime: post.reading_time,
           tags: post.tags.map((t) => t.slug),
+          stale: result.stale,
         };
         try {
           const validated = await parseData({ id, data });
@@ -365,7 +370,8 @@ export function ghostEssaysLoader(options: GhostLoaderOptions = {}): Loader {
   };
 }
 
-/** `essayTags` collection loader. Keys each entry by its Ghost tag slug. */
+/** `essayTags` collection loader. Keys each entry by its Ghost tag slug.
+ *  Also carries `stale: result.stale` per entry -- see ghostEssaysLoader's doc. */
 export function ghostTagsLoader(options: GhostLoaderOptions = {}): Loader {
   return {
     name: 'ghost-tags',
@@ -393,6 +399,7 @@ export function ghostTagsLoader(options: GhostLoaderOptions = {}): Loader {
           accentColor: tag.accent_color,
           description: tag.description,
           count: tag.count,
+          stale: result.stale,
         };
         try {
           const validated = await parseData({ id, data });

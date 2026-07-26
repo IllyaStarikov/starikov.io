@@ -4,6 +4,7 @@ import {
   filterableTagChips,
   firstTagAccent,
   formatEssayDate,
+  essayFreshnessLine,
   type EssayRow,
 } from '../src/lib/essays';
 
@@ -116,5 +117,20 @@ describe('formatEssayDate', () => {
 
   it('is pinned to UTC regardless of local runner timezone (near-midnight edge)', () => {
     expect(formatEssayDate(new Date('2026-01-01T00:30:00.000Z'))).toBe('Jan 1, 2026');
+  });
+});
+
+// v1.1 polish Task 6, A12 -- /writing's honest freshness footer.
+describe('essayFreshnessLine', () => {
+  it('reports "live from starikov.co · fetched <build time>" when not stale', () => {
+    expect(
+      essayFreshnessLine({ stale: false, buildStamp: '2026-07-26 22:10 UTC', snapshotDate: '2026-07-18' }),
+    ).toBe('essays live from starikov.co · fetched 2026-07-26 22:10 UTC');
+  });
+
+  it('reports "index from snapshot · synced <snapshot date>" when stale, NEVER the build stamp', () => {
+    const line = essayFreshnessLine({ stale: true, buildStamp: '2026-07-26 22:10 UTC', snapshotDate: '2026-07-18' });
+    expect(line).toBe('essay index from snapshot · synced 2026-07-18');
+    expect(line).not.toContain('22:10 UTC'); // the stale path must never imply THIS build's freshness
   });
 });

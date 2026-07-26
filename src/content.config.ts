@@ -203,6 +203,12 @@ const essays = defineCollection({
     readingTime: z.number(),
     /** Tag SLUGS, in Ghost's order -- index 0 drives a row's dot color. */
     tags: z.array(z.string()),
+    /** True when THIS build's shared Ghost fetch (src/loaders/ghost.ts) did
+     *  not come from a successful live call -- same meaning as `repos`'s
+     *  `stale` above, uniform across every entry in a given build (one
+     *  shared fetch, see ghost.ts's module doc). /writing reads it off the
+     *  first entry to pick its footer's honesty disclosure. */
+    stale: z.boolean(),
   }),
 });
 
@@ -222,6 +228,9 @@ const essayTags = defineCollection({
     /** Published-post count -- drives the /writing filter chip list
      *  (count >= 3, sorted by count desc). */
     count: z.number(),
+    /** Same meaning as `essays.stale` above (one shared Ghost fetch feeds
+     *  both collections every build). */
+    stale: z.boolean(),
   }),
 });
 

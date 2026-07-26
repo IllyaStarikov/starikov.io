@@ -20,15 +20,29 @@
  * Page styles are `is:global` for the same reason (Task 2): `.writing`/
  * `.chip`/etc. are used nowhere else in the codebase, so scoping buys no
  * collision safety, only a data-astro-cid-* attribute on every element.
+ *
+ * Freshness footer (v1.1 polish Task 6, A12): the essay index's own honesty
+ * disclosure, ProvenanceFooter's pattern applied to a collection rather than
+ * a single overlay+repo (that component's `overlayPath` prop is mandatory and
+ * its sourceLine logic is repo-shaped, so this is page-local markup, not a
+ * forced reuse). `essays[0].data.stale` is src/loaders/ghost.ts's `withFallback`
+ * result -- false only when THIS build's shared Ghost fetch was live; every
+ * post in a build shares one fetch, so any entry's flag speaks for all of
+ * them. When stale, the date named is the committed vendor snapshot's own
+ * provenance (src/data/vendor/ghost-snapshot-meta.json, derived from `git log`
+ * on ghost-snapshot.json -- see that file's sibling comment / task-6-report.md),
+ * never a fabricated "just fetched" claim.
  */
 import { getCollection } from 'astro:content';
 import Shell from '../../layouts/Shell.astro';
 import LedgerRow from '../../components/LedgerRow.astro';
+import ghostSnapshotMeta from '../../data/vendor/ghost-snapshot-meta.json';
 import {
   groupByYear,
   filterableTagChips,
   firstTagAccent,
   formatEssayDate,
+  essayFreshnessLine,
   type EssayRow,
 } from '../../lib/essays';
 
@@ -50,6 +64,15 @@ const rows: EssayRow[] = essayEntries.map((e) => ({
 const years = groupByYear(rows);
 const count = rows.length;
 
+// -- Freshness disclosure: which source actually served THIS build's essays --
+const stale = essayEntries.length > 0 ? essayEntries[0].data.stale : false;
+const nowIso = new Date().toISOString();
+const freshnessLine = essayFreshnessLine({
+  stale,
+  buildStamp: `${nowIso.slice(0, 10)} ${nowIso.slice(11, 16)} UTC`,
+  snapshotDate: ghostSnapshotMeta.fetchedAt.slice(0, 10),
+});
+
 // Filter chips: only tags with >= 3 essays (design spec), sorted by count
 // descending -- a tag with one or two posts isn't worth a chip.
 const chips = filterableTagChips(
@@ -60,12 +83,22 @@ const chips = filterableTagChips(
     count: t.data.count,
   })),
 );
+
+// Right-rail facts (D5, v1.1 polish Task 6): data, not decoration -- the
+// SAME numbers already visible on the page (the "All N" chip, the tag list),
+// surfaced where >=1280px would otherwise be a bare rail.
+const facts = [
+  { label: 'Essays', value: String(count) },
+  { label: 'Tags', value: String(tagEntries.length) },
+  { label: 'Feed', value: 'rss.xml', href: '/rss.xml' },
+];
 ---
 
 <Shell
   title="writing — starikov.io"
   description="Essays on software, systems, and the occasional detour -- written and read at starikov.co."
   crumbs={[{ href: '/writing', label: 'writing' }]}
+  facts={facts}
   pageType="writing"
 >
   <div class="writing">
@@ -118,6 +151,12 @@ const chips = filterableTagChips(
               </div>
             </section>
           ))}
+
+          <!-- data-pagefind-ignore: build provenance, not page content -- see
+               ProvenanceFooter's identical note on its own footer. -->
+          <footer class="writing__provenance" data-pagefind-ignore>
+            {freshnessLine}
+          </footer>
         </>
       )
     }
@@ -221,6 +260,20 @@ const chips = filterableTagChips(
     margin-bottom: 0;
     border-bottom: 1px solid var(--border);
     font: 600 var(--fs-16) / 1 var(--font-mono);
+    color: var(--text-secondary);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Freshness footer -- ProvenanceFooter's visual pattern (mono, quiet,
+   * hairline-topped), applied here as page-local markup since that
+   * component's props are shaped for one overlay+repo, not a collection.
+   * ------------------------------------------------------------------- */
+  .writing__provenance {
+    margin-top: var(--s-8);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: var(--fs-12);
     color: var(--text-secondary);
   }
 </style>

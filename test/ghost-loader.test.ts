@@ -299,6 +299,7 @@ describe('ghostEssaysLoader / ghostTagsLoader', () => {
       publishedAt: '2026-07-14T13:01:17.000Z',
       readingTime: 14,
       tags: ['ai', 'software-engineering'],
+      stale: false,
     });
   });
 
@@ -324,6 +325,11 @@ describe('ghostEssaysLoader / ghostTagsLoader', () => {
     ).resolves.not.toThrow();
 
     expect(map.has('from-cache')).toBe(true);
+    // Freshness surfacing (v1.1 polish Task 6, A12): a cache-tier result is
+    // NOT live -- every entry's `stale` must say so, the same signal
+    // /writing's footer reads to choose "live from starikov.co" vs "index
+    // from snapshot".
+    expect(map.get('from-cache')!.data.stale).toBe(true);
   });
 
   it('falls back to the committed vendor snapshot when live + cache both fail (quiet warning, not an error)', async () => {
@@ -345,6 +351,7 @@ describe('ghostEssaysLoader / ghostTagsLoader', () => {
     ).resolves.not.toThrow();
 
     expect(map.has('from-vendor')).toBe(true);
+    expect(map.get('from-vendor')!.data.stale).toBe(true);
     expect(report.flush().warnings).toBeGreaterThan(0);
   });
 
@@ -370,5 +377,79 @@ describe('ghostEssaysLoader / ghostTagsLoader', () => {
     expect(essays.map.size).toBe(0);
     expect(tags.map.size).toBe(0);
     expect(report.flush().warnings).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Essay freshness surfacing (v1.1 polish Task 6, A12) -- /writing's footer
+// picks "essays live from starikov.co · fetched <build time>" vs "essay index
+// from snapshot · synced <snapshot date>" off `essays[0].data.stale`. This is
+// the SAME `result.stale` withFallback already computes (mirroring `repos`),
+// just propagated onto every stored entry instead of being dropped on the
+// floor -- these tests pin that propagation is uniform across every post/tag
+// in a build, both when it's false (live) and true (any fallback tier).
+// ---------------------------------------------------------------------------
+describe('essay/tag `stale` propagation (essay freshness surfacing)', () => {
+  let parent: string;
+
+  beforeAll(() => {
+    parent = mkdtempSync(join(tmpdir(), 'ghost-freshness-'));
+  });
+
+  afterAll(() => {
+    rmSync(parent, { recursive: true, force: true });
+  });
+
+  beforeEach(() => {
+    resetGhostSnapshotCache();
+  });
+
+  function multiPostSnapshot() {
+    return {
+      posts: [mapPost(POST_FIXTURE), mapPost({ ...POST_FIXTURE, slug: 'second-post', title: 'Second' })],
+      tags: [mapTag(TAG_FIXTURE), mapTag({ ...TAG_FIXTURE, slug: 'second-tag', name: 'Second Tag' })],
+    };
+  }
+
+  it('every essay AND every tag is stale:false on a successful live fetch', async () => {
+    const cachePath = join(parent, 'live', 'cache.json');
+    const vendorPath = join(parent, 'live', 'vendor.json');
+    mkdirSync(join(parent, 'live'), { recursive: true });
+    writeFileSync(vendorPath, JSON.stringify(multiPostSnapshot()));
+
+    const options = { cachePath, vendorPath, fetchLive: async () => multiPostSnapshot() };
+    const essays = fakeContext('essays');
+    const tags = fakeContext('essayTags');
+    await ghostEssaysLoader(options).load(essays.context);
+    await ghostTagsLoader(options).load(tags.context);
+
+    expect(essays.map.size).toBe(2);
+    expect(tags.map.size).toBe(2);
+    for (const entry of essays.map.values()) expect(entry.data.stale).toBe(false);
+    for (const entry of tags.map.values()) expect(entry.data.stale).toBe(false);
+  });
+
+  it('every essay AND every tag is stale:true when the build fell back to any tier', async () => {
+    const cachePath = join(parent, 'fallback', 'cache.json'); // missing -- forces the vendor tier
+    const vendorPath = join(parent, 'fallback', 'vendor.json');
+    mkdirSync(join(parent, 'fallback'), { recursive: true });
+    writeFileSync(vendorPath, JSON.stringify(multiPostSnapshot()));
+
+    const options = {
+      cachePath,
+      vendorPath,
+      fetchLive: async () => {
+        throw new Error('offline');
+      },
+    };
+    const essays = fakeContext('essays');
+    const tags = fakeContext('essayTags');
+    await ghostEssaysLoader(options).load(essays.context);
+    await ghostTagsLoader(options).load(tags.context);
+
+    expect(essays.map.size).toBe(2);
+    expect(tags.map.size).toBe(2);
+    for (const entry of essays.map.values()) expect(entry.data.stale).toBe(true);
+    for (const entry of tags.map.values()) expect(entry.data.stale).toBe(true);
   });
 });

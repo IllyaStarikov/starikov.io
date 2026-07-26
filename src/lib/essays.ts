@@ -112,3 +112,34 @@ const ESSAY_DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
 export function formatEssayDate(date: Date): string {
   return ESSAY_DATE_FORMAT.format(date);
 }
+
+export interface EssayFreshnessInput {
+  /** True when THIS build's shared Ghost fetch (src/loaders/ghost.ts) did
+   *  NOT come from a successful live call -- `essays[0].data.stale`, one
+   *  shared fetch per build so any entry's flag speaks for all of them. */
+  stale: boolean;
+  /** This build's own timestamp, pre-formatted "YYYY-MM-DD HH:MM UTC" --
+   *  supplied by the caller (not read from `new Date()` here) so this stays a
+   *  pure function of its inputs. */
+  buildStamp: string;
+  /** The committed vendor snapshot's own provenance date ("YYYY-MM-DD"), from
+   *  src/data/vendor/ghost-snapshot-meta.json (derived via `git log` on
+   *  ghost-snapshot.json -- an honest historical date, never "now"). */
+  snapshotDate: string;
+}
+
+/**
+ * /writing's freshness disclosure (v1.1 polish Task 6, A12; ProvenanceFooter's
+ * pattern applied to a collection instead of one overlay+repo): "essays live
+ * from starikov.co · fetched <build time>" when this build's shared Ghost
+ * fetch was live, else "essay index from snapshot · synced <date>" -- cache
+ * and vendor fallback tiers both collapse to the one "snapshot" bucket, same
+ * as ProvenanceFooter's own `stale` (a stale cache result is not "live from
+ * starikov.co" either, and the codebase has no finer-grained provenance for
+ * a cache-tier hit than "not live this build"). PURE.
+ */
+export function essayFreshnessLine({ stale, buildStamp, snapshotDate }: EssayFreshnessInput): string {
+  return stale
+    ? `essay index from snapshot · synced ${snapshotDate}`
+    : `essays live from starikov.co · fetched ${buildStamp}`;
+}

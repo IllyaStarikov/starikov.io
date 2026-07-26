@@ -8,10 +8,13 @@
 // Usage:
 //   node scripts/refresh-snapshots.mjs            # refresh the themes snapshot
 //   node scripts/refresh-snapshots.mjs --themes    # (explicit, same as above)
+//   node scripts/refresh-snapshots.mjs --ghost     # re-stamp the ghost snapshot's provenance
 //
-// Future `--ghost` etc. flags are anticipated (Task 14) but not implemented yet.
+// NOT wired into CI or `npm run build` (v1.1 polish Task 6 brief, A12) --
+// refreshing a vendor snapshot is a deliberate, human-run action (a real
+// content update, or a "yes, re-verify this"), never an automatic build step.
 
-import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadThemeSource } from './lib/theme-source.mjs';
@@ -22,6 +25,8 @@ const REPO_ROOT = join(__dirname, '..');
 
 const LIVE_DIR = join(REPO_ROOT, '.sources/dotfiles');
 const SNAPSHOT_DIR = join(REPO_ROOT, 'src/data/vendor/themes-snapshot');
+const GHOST_SNAPSHOT_PATH = join(REPO_ROOT, 'src/data/vendor/ghost-snapshot.json');
+const GHOST_SNAPSHOT_META_PATH = join(REPO_ROOT, 'src/data/vendor/ghost-snapshot-meta.json');
 
 function warn(msg) {
   console.log(`::warning::refresh-snapshots: ${msg}`);
@@ -78,9 +83,58 @@ function refreshThemesSnapshot() {
   console.log(`refresh-snapshots: wrote ${count} colors.json files across ${SITE.curatedFamilies.length} curated families to ${SNAPSHOT_DIR}`);
 }
 
+/**
+ * Re-stamps ghost-snapshot-meta.json's `fetchedAt` to "now" -- the honest
+ * provenance date /writing's footer shows ("essay index from snapshot ·
+ * synced <date>") whenever a build's shared Ghost fetch (src/loaders/
+ * ghost.ts) falls back off live.
+ *
+ * Unlike refreshThemesSnapshot() above, this does NOT itself re-fetch content
+ * from Ghost -- there is no `.sources/`-style local checkout for a remote
+ * Content API to copy from, and GHOST_CONTENT_API_KEY isn't configured in
+ * this environment to verify a real fetch-and-write path against (see
+ * ghost.ts's module doc: "no Content API key exists yet"). This command's
+ * contract is narrower and honest about that: it assumes
+ * src/data/vendor/ghost-snapshot.json's CONTENT has already been refreshed by
+ * whatever process does that (a future task, or a manual pull against the
+ * Content API), validates that file still looks like a real {posts, tags}
+ * snapshot, and only then re-stamps the sidecar to the moment of refresh --
+ * so the meta file's date never drifts further from reality than "whenever
+ * this command was last run after a real content update."
+ */
+function refreshGhostSnapshotMeta() {
+  if (!existsSync(GHOST_SNAPSHOT_PATH)) {
+    error(`${GHOST_SNAPSHOT_PATH} not found -- nothing to stamp`);
+    process.exit(1);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(GHOST_SNAPSHOT_PATH, 'utf8'));
+  } catch (err) {
+    error(`${GHOST_SNAPSHOT_PATH} failed to parse: ${err.message} -- refusing to stamp a meta file next to a corrupt snapshot`);
+    process.exit(1);
+  }
+  if (!Array.isArray(parsed?.posts) || !Array.isArray(parsed?.tags)) {
+    error(`${GHOST_SNAPSHOT_PATH} does not look like a {posts, tags} snapshot -- refusing to stamp`);
+    process.exit(1);
+  }
+
+  const fetchedAt = new Date().toISOString();
+  writeFileSync(GHOST_SNAPSHOT_META_PATH, JSON.stringify({ fetchedAt }, null, 2) + '\n');
+  console.log(
+    `refresh-snapshots: stamped ${GHOST_SNAPSHOT_META_PATH} with fetchedAt=${fetchedAt} ` +
+      `(${parsed.posts.length} posts, ${parsed.tags.length} tags in the snapshot it describes)`,
+  );
+}
+
 const args = process.argv.slice(2);
 const wantsThemes = args.length === 0 || args.includes('--themes');
+const wantsGhost = args.includes('--ghost');
 
 if (wantsThemes) {
   refreshThemesSnapshot();
+}
+if (wantsGhost) {
+  refreshGhostSnapshotMeta();
 }
