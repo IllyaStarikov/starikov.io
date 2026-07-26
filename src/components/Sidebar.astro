@@ -186,7 +186,8 @@ const isDesktop = variant === 'desktop';
     cursor: pointer;
   }
 
-  .search:hover {
+  .search:hover,
+  .search:focus-visible {
     background: var(--surface-hover, var(--surface));
     border-color: var(--accent);
   }
@@ -211,7 +212,7 @@ const isDesktop = variant === 'desktop';
   .nav-group__label {
     margin-bottom: var(--s-2);
     padding: 0 var(--s-2);
-    font: 500 11px / 1 var(--font-mono);
+    font: 500 var(--fs-11) / 1 var(--font-mono);
     text-transform: uppercase;
     letter-spacing: var(--ls-eyebrow);
     color: var(--text-secondary);
@@ -236,7 +237,8 @@ const isDesktop = variant === 'desktop';
     min-height: 32px;
   }
 
-  .nav-link:hover {
+  .nav-link:hover,
+  .nav-link:focus-visible {
     color: var(--fg);
     background: var(--surface-hover, var(--surface));
   }

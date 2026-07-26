@@ -93,6 +93,15 @@
   --r-3: 10px;
   --r-pill: 999px;
 
+  /* Elevation: exactly one shadow site-wide (design spec §4 -- "surface step +
+     1px border; exactly one shadow, floating layers only"). Popovers/dialogs
+     that float above the page (ThemeControl's popover, the ⌘K palette panel)
+     use this; nothing else may declare a box-shadow for elevation. Inset
+     box-shadows used as ring/border substitutes elsewhere (e.g. a pressed
+     state's focus ring, ThemeControl mode's inset border) are pseudo-borders,
+     not elevation, and are not this token. */
+  --shadow-pop: 0 16px 48px rgb(0 0 0 / 0.36);
+
   /* Motion */
   --dur-1: 100ms;
   --dur-2: 150ms;

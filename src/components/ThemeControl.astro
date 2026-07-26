@@ -176,7 +176,8 @@ const modes = [
     background: var(--surface-raised, var(--surface));
     border: 1px solid var(--border);
     border-radius: var(--r-3);
-    box-shadow: 0 8px 32px rgb(0 0 0 / 0.28);
+    /* The single sanctioned shadow in the system (design §4): floating layers. */
+    box-shadow: var(--shadow-pop);
   }
 
   .theme-control__popover[hidden] {

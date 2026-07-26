@@ -438,4 +438,12 @@ const isErrorPage = pageType === '404';
     text-align: left;
     cursor: pointer;
   }
+
+  /* Mirrors the desktop sidebar's .search hover/focus-visible treatment
+     (Sidebar.astro) -- same control, same affordance, mobile context. */
+  .nav-sheet__search:hover,
+  .nav-sheet__search:focus-visible {
+    background: var(--surface-hover, var(--surface));
+    border-color: var(--accent);
+  }
 </style>

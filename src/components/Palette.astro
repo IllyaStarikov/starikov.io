@@ -148,7 +148,7 @@
     border: 1px solid var(--border);
     border-radius: var(--r-3);
     /* The single sanctioned shadow in the system (design §4): floating layers. */
-    box-shadow: 0 16px 48px rgb(0 0 0 / 0.36);
+    box-shadow: var(--shadow-pop);
     overflow: hidden;
     opacity: 0;
     transform: scale(0.98);
@@ -208,7 +208,7 @@
 
   .cmdk-group {
     padding: var(--s-2) var(--s-2) var(--s-1);
-    font: 500 11px / 1 var(--font-mono);
+    font: 500 var(--fs-11) / 1 var(--font-mono);
     text-transform: uppercase;
     letter-spacing: var(--ls-eyebrow);
     color: var(--text-secondary);
@@ -304,7 +304,7 @@
     min-width: 1.4em;
     padding: 1px 4px;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-11);
     line-height: 1;
     color: var(--text-secondary);
     background: var(--surface);

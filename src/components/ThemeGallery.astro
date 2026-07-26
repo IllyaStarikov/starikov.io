@@ -265,14 +265,28 @@ const liveCount = clickable.size;
 
   .tg-swatch__tag {
     flex: none;
-    font-size: 10px;
+    font-size: var(--fs-11);
     letter-spacing: 0.02em;
     text-transform: lowercase;
-    opacity: 0.6;
+    /* Real derived color, not opacity on text: this chip sits on the
+       swatch's OWN self-painted --sw-bg/--sw-fg (every swatch is drawn in
+       its own palette, per this component's header comment), so the site's
+       real --text-secondary token (derived from the SITE's current theme)
+       would not reliably contrast against an arbitrary swatch's colors.
+       color-mix at 60% reproduces the exact pixel the old opacity:0.6
+       produced (alpha-compositing fg at 60% over an opaque bg IS this
+       color-mix), but as a real solid color rather than alpha -- this is
+       the "no opacity on text" fix colophon's own doctrine calls for (this
+       component renders 41 of these terminal-only tags on /colophon alone). */
+    color: color-mix(in srgb, var(--sw-fg) 60%, var(--sw-bg));
   }
 
-  /* Clickable: a real control. Cursor + hover lift + focus ring; the active
-     variant is ring-marked via aria-pressed. */
+  /* Clickable: a real control. Cursor + hover/focus-visible lift; the active
+     variant is ring-marked via aria-pressed. Per design §4 ("exactly one
+     shadow, floating layers only"): this swatch is not a floating layer, so
+     the hover-lift keeps its translate and loses the box-shadow that used
+     to accompany it (the sanctioned shadow lives only on Palette's and
+     ThemeControl's popovers now, via --shadow-pop). */
   .tg-swatch--live {
     cursor: pointer;
     transition:
@@ -280,9 +294,9 @@ const liveCount = clickable.size;
       box-shadow var(--dur-2) var(--ease-out);
   }
 
-  .tg-swatch--live:hover {
+  .tg-swatch--live:hover,
+  .tg-swatch--live:focus-visible {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
   }
 
   .tg-swatch--live:focus-visible {

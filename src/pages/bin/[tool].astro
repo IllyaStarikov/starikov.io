@@ -364,7 +364,8 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
     }
   }
 
-  .tool :global(.copy-btn:hover) {
+  .tool :global(.copy-btn:hover),
+  .tool :global(.copy-btn:focus-visible) {
     color: var(--fg);
     border-color: var(--accent);
   }
