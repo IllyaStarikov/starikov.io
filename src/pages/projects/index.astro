@@ -28,12 +28,21 @@ function metaFor(data: (typeof projects)[number]['data']): string[] {
 }
 
 const count = projects.length;
+const featuredCount = projects.filter((p) => p.data.featured).length;
+
+// Right-rail facts (D5, v1.1 polish Task 6): data, not decoration -- the
+// same featured-first/rest breakdown sortProjects above already orders by.
+const facts = [
+  { label: 'Projects', value: String(count) },
+  { label: 'Featured', value: String(featuredCount) },
+];
 ---
 
 <Shell
   title="Projects — starikov.io"
   description="Flagship projects: a decade of dotfiles, an LLM news pipeline, MCP servers, AI algorithms, and more — each a curated page over live repo metadata."
   crumbs={[{ href: '/projects', label: 'projects' }]}
+  facts={facts}
   pageType="projects"
 >
   <div class="projects-index">

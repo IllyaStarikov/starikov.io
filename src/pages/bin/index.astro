@@ -8,18 +8,26 @@
 import Shell from '../../layouts/Shell.astro';
 import LedgerRow from '../../components/LedgerRow.astro';
 import { getCollection } from 'astro:content';
+import { GITHUB_URL } from '../../lib/nav';
 
 const tools = (await getCollection('tools')).sort((a, b) =>
   (b.data.updated ?? '').localeCompare(a.data.updated ?? ''),
 );
 
 const count = tools.length;
+
+// Right-rail facts (D5, v1.1 polish Task 6): data, not decoration.
+const facts = [
+  { label: 'Tools', value: String(count) },
+  { label: 'Source', value: 'bin', href: `${GITHUB_URL}/bin`, external: true },
+];
 ---
 
 <Shell
   title="bin — command-line tools — starikov.io"
   description="Small standalone command-line tools, one man-page per tool, generated from the bin repo."
   crumbs={[{ href: '/bin', label: 'bin' }]}
+  facts={facts}
   pageType="tools"
 >
   <div class="bin-index">

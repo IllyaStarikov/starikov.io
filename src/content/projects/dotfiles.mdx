@@ -6,13 +6,18 @@ license: MIT
 featured: true
 order: 1
 hero: ../../assets/projects/dotfiles.png
-essayTags: ['code', 'software-engineering']
+# Manual-first (design spec §6): the exact 3 essays `essayTags: ['code',
+# 'software-engineering']` used to resolve to, pinned explicit so this
+# overlay exercises resolveRelatedEssaysCore's manual-slug path instead of
+# tag-matching (v1.1 polish Task 6, A14) -- verified against the live essays
+# collection for this task.
+essays: ['commit-lifecycle', 'commit-checklist', 'begin-a-brag-doc']
 ---
 
 import Highlights from '../../components/Highlights.astro';
 import Highlight from '../../components/Highlight.astro';
 
-## Story
+## The decade of shell
 
 The git history starts in March 2017. The habits are older than that. This is the
 home directory I have carried across every machine I have owned for the better part
