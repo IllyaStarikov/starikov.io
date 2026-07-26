@@ -9,6 +9,7 @@ import {
   stripSubsectionTable,
   detectLanguage,
   binToolsLoader,
+  wrapProseTables,
 } from '../src/loaders/bin-tools';
 import { report } from '../src/loaders/lib/report';
 
@@ -140,6 +141,46 @@ describe('stripSubsectionTable', () => {
     const { text, removed } = stripSubsectionTable(md, 'options');
     expect(removed).toBe(false);
     expect(text).toBe(md);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// wrapProseTables -- the overflow-x wrapper div around rendered README tables
+// ---------------------------------------------------------------------------
+describe('wrapProseTables', () => {
+  it('wraps a single table in a .prose-table-wrap div, preserving the table itself', () => {
+    const html = '<p>intro</p><table><thead><tr><th>A</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table><p>after</p>';
+    const wrapped = wrapProseTables(html);
+
+    expect(wrapped).toContain(
+      '<div class="prose-table-wrap"><table><thead><tr><th>A</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table></div>',
+    );
+    // Content on either side of the table is untouched.
+    expect(wrapped).toContain('<p>intro</p>');
+    expect(wrapped).toContain('<p>after</p>');
+  });
+
+  it('wraps a table that carries its own attributes (e.g. a class from a remark plugin)', () => {
+    const html = '<table class="gfm-table" data-x="1"><tr><td>1</td></tr></table>';
+    const wrapped = wrapProseTables(html);
+    expect(wrapped).toBe(
+      '<div class="prose-table-wrap"><table class="gfm-table" data-x="1"><tr><td>1</td></tr></table></div>',
+    );
+  });
+
+  it('wraps multiple tables independently, not greedily across both', () => {
+    const html = '<table><tr><td>1</td></tr></table><p>between</p><table><tr><td>2</td></tr></table>';
+    const wrapped = wrapProseTables(html);
+
+    expect(wrapped.match(/prose-table-wrap/g)).toHaveLength(2);
+    expect(wrapped).toContain('<div class="prose-table-wrap"><table><tr><td>1</td></tr></table></div>');
+    expect(wrapped).toContain('<div class="prose-table-wrap"><table><tr><td>2</td></tr></table></div>');
+    expect(wrapped).toContain('<p>between</p>');
+  });
+
+  it('leaves html without a table byte-for-byte untouched', () => {
+    const html = '<p>no tables here</p><pre><code>plain code</code></pre>';
+    expect(wrapProseTables(html)).toBe(html);
   });
 });
 
@@ -507,5 +548,64 @@ describe('binToolsLoader -- optionsDropped fallback consequence', () => {
     expect(data.sections.usage).toContain('Run it like this.');
     // The one warning is the drop warning (drop-tool is listed, so no others).
     expect(report.flush().warnings).toBe(1);
+  });
+});
+
+describe('binToolsLoader -- rendered sections get the prose-table-wrap treatment', () => {
+  let parent: string;
+  let root: string;
+
+  beforeAll(() => {
+    // fakeContext()'s renderMarkdown is a dumb echo (`<render>${content}</render>`),
+    // not a real markdown-to-HTML pass -- so a raw HTML table embedded directly
+    // in the "How it works" markdown (valid CommonMark: an HTML block passes
+    // through untouched) survives into the echoed string exactly as written,
+    // letting this test prove render()'s wiring of wrapProseTables() over the
+    // ACTUAL loader code path, not just the pure function in isolation above.
+    parent = mkdtempSync(join(tmpdir(), 'bin-loader-table-'));
+    root = join(parent, 'bin');
+    mkdirSync(root);
+    writeFileSync(
+      join(root, 'README.md'),
+      [
+        '# bin',
+        '',
+        '## Scripts',
+        '',
+        '| Script | What it does |',
+        '| ------ | ------------ |',
+        '| [`table-tool`](table-tool/) | Has a table in How it works. |',
+        '',
+      ].join('\n'),
+    );
+    mkdirSync(join(root, 'table-tool'));
+    writeFileSync(
+      join(root, 'table-tool', 'README.md'),
+      [
+        '# table-tool',
+        '',
+        'Does a thing with steps.',
+        '',
+        '## How it works',
+        '',
+        '<table><thead><tr><th>Step</th><th>What happens</th></tr></thead><tbody><tr><td>1</td><td>Reads config</td></tr></tbody></table>',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(join(root, 'table-tool', 'table_tool.py'), '# no execution\n');
+  });
+
+  afterAll(() => {
+    rmSync(parent, { recursive: true, force: true });
+  });
+
+  it('wraps the How-it-works table in .prose-table-wrap in the stored HTML', async () => {
+    const { context, map } = fakeContext();
+    await binToolsLoader({ root }).load(context);
+
+    const data = map.get('table-tool')!.data as Record<string, any>;
+    expect(data.sections.howItWorks).toContain('<div class="prose-table-wrap"><table>');
+    expect(data.sections.howItWorks).toContain('</table></div>');
+    expect(data.sections.howItWorks).toContain('Reads config');
   });
 });

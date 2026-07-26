@@ -186,6 +186,26 @@ function detectStdlibOnly(md: string | undefined): boolean {
   );
 }
 
+/**
+ * Wraps every `<table>...</table>` in rendered README HTML with a
+ * `.prose-table-wrap` div (global.css: `overflow-x: auto` + a themed
+ * scrollbar) -- the pocketcasts-reset "How it works" table is the live
+ * example this was written against (browser-default, unstyled, and wider
+ * than its column with no way to scroll before this).
+ *
+ * A CSS-only fix (`table { display: block; overflow-x: auto }`) was
+ * considered and rejected: it strips the table's row/column semantics from
+ * assistive tech. A wrapper div preserves the real `<table>` completely
+ * while still giving a too-wide table somewhere to scroll besides the whole
+ * page. Regex, not a DOM parse: the input is Astro's own Shiki/remark-gfm
+ * output (deterministic, no nested tables in a README's flat sections), so
+ * a non-greedy match per `<table>...</table>` is exact and avoids a real
+ * HTML-parsing dependency for one wrapper div.
+ */
+export function wrapProseTables(html: string): string {
+  return html.replace(/<table\b[^>]*>[\s\S]*?<\/table>/g, (table) => `<div class="prose-table-wrap">${table}</div>`);
+}
+
 // --------------------------------------------------------------------------
 // parseToolDir -- the pure heart of the loader
 // --------------------------------------------------------------------------
@@ -372,8 +392,11 @@ export function binToolsLoader({
         .filter((name) => existsSync(join(absRoot, name, 'README.md')))
         .sort();
 
-      const render = async (md: string | undefined): Promise<string | undefined> =>
-        md ? (await renderMarkdown(md)).html : undefined;
+      const render = async (md: string | undefined): Promise<string | undefined> => {
+        if (!md) return undefined;
+        const { html } = await renderMarkdown(md);
+        return wrapProseTables(html);
+      };
 
       const loaded = new Set<string>();
       for (const slug of toolDirs) {

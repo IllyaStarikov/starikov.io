@@ -230,6 +230,37 @@ samp {
   font-size: var(--fs-20);
 }
 
+/* h4-h6: real (non-generic) top/bottom margins, tightened from h1-h3's
+   --s-7/--s-3 since these are minor subheadings, not section breaks. h5/h6
+   go mono per the type scale -- letter-spacing resets to normal because the
+   base h1-h6 rule's --ls-heading (-0.02em) is tuned for Inter, not monospace,
+   where negative tracking crowds fixed-width glyphs. */
+.prose h4,
+.prose h5,
+.prose h6 {
+  margin-top: var(--s-5);
+  margin-bottom: var(--s-2);
+}
+
+.prose h4 {
+  font-size: var(--fs-16);
+}
+
+.prose h5,
+.prose h6 {
+  font-family: var(--font-mono);
+  letter-spacing: normal;
+}
+
+.prose h5 {
+  font-size: var(--fs-14);
+}
+
+.prose h6 {
+  font-size: var(--fs-13);
+  color: var(--text-secondary);
+}
+
 .prose p,
 .prose ul,
 .prose ol {
@@ -272,4 +303,229 @@ samp {
 
 .prose img {
   border-radius: var(--r-2);
+}
+
+/* -- Blockquote ------------------------------------------------------------
+   Same accent-left-border callout idiom as .tool__tagline/.acad-archived
+   elsewhere in the codebase, not a new pattern. */
+.prose blockquote {
+  padding: var(--s-1) var(--s-4);
+  border-left: 2px solid var(--accent);
+  color: var(--text-secondary);
+}
+
+.prose blockquote > * + * {
+  margin-top: var(--s-2);
+}
+
+/* -- hr ---------------------------------------------------------------- */
+.prose hr {
+  margin: var(--s-6) 0;
+  border: 0;
+  border-top: 1px solid var(--border, #3b4261);
+}
+
+/* -- figure/figcaption --------------------------------------------------- */
+.prose figure > * + * {
+  margin-top: var(--s-2);
+}
+
+.prose figcaption {
+  color: var(--text-secondary);
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+}
+
+/* -- Tables --------------------------------------------------------------
+   Ledger aesthetic: 1px borders via --border, mono header eyebrows, --s-2/3
+   cell padding -- the same visual language as LedgerRow/.tool__tagline, not
+   a card or a zebra-striped grid. The pocketcasts-reset "How it works" table
+   is the live example this was written against.
+
+   .prose-table-wrap is injected by src/loaders/bin-tools.ts's wrapProseTables()
+   around every README table's rendered HTML -- a real wrapper div, not
+   `table { display: block }`. The latter was considered and rejected: it
+   strips the table's row/column semantics from assistive tech, where a
+   wrapper div preserves them completely while still giving a wide table
+   somewhere to scroll besides the whole page. */
+.prose-table-wrap {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #3b4261) transparent;
+}
+
+.prose table {
+  width: 100%;
+  border: 1px solid var(--border, #3b4261);
+  border-collapse: collapse;
+  font-size: var(--fs-14);
+}
+
+.prose th,
+.prose td {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border, #3b4261);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.prose th {
+  background: var(--surface, #1f2335);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow);
+  color: var(--text-secondary, #8890b2);
+}
+
+.prose td {
+  color: var(--fg, #c0caf5);
+}
+
+/* -----------------------------------------------------------------------
+ * Print (v1.1 polish, Task 4). One block. Every theme variant lives in a
+ * generated `[data-theme="..."]` attribute selector -- specificity (0,1,0).
+ * `:root[data-theme], :root` is (0,1,1) (an attribute selector plus the
+ * :root pseudo-class, which counts as a class in the specificity model) --
+ * strictly higher than EVERY generated block, regardless of which variant is
+ * active or where its rule sits in source order (themes.generated.css is
+ * linked in <head> before tokens.css/global.css load, but loses anyway on
+ * specificity, not order). That is what lets one block override the full
+ * token set for print without touching any of the 38 generated blocks.
+ *
+ * Everything the token block does NOT reach (Shell.astro's `.shell`/
+ * `.content-col`/`main`, and the chrome-hide list below) lives in Astro
+ * components with SCOPED styles -- the compiler adds a `data-astro-cid-*`
+ * attribute to every one of their selectors, which out-specifies a plain
+ * selector here even at equal source-order position. `!important` throughout
+ * the rest of this block is load-bearing against that, not decorative
+ * (standard practice for print stylesheets regardless).
+ * ----------------------------------------------------------------------- */
+@media print {
+  :root[data-theme],
+  :root {
+    color-scheme: light;
+    --bg: #fff;
+    --fg: #000;
+    --surface: #fff;
+    --surface-raised: #fff;
+    --surface-hover: #fff;
+    --border: #999;
+    --muted: #767676;
+    --accent: #000;
+    --accent-alt: #000;
+    --selection: transparent;
+    --text-secondary: #333;
+    --code-comment: #666;
+    --focus-ring: transparent;
+
+    /* ANSI ramp: colophon's own doctrine says these drive chrome only, never
+       text -- but a couple of real content accents read them directly
+       (changelog's entry-type tags, 404's error copy), so they're grayed
+       too rather than trusted to stay chrome-only forever. */
+    --ansi-black: #000;
+    --ansi-red: #333;
+    --ansi-green: #333;
+    --ansi-yellow: #555;
+    --ansi-blue: #333;
+    --ansi-magenta: #333;
+    --ansi-cyan: #555;
+
+    /* Shiki ("css-variables" theme, see astro.config.mjs): overridden
+       directly rather than only through the ansi ramp above, because the 9
+       token roles want more distinct steps than 7 ansi slots give -- a
+       5-step ramp (#000/#222/#333/#444/#555/#666) carries the hierarchy in
+       visual weight (darker = more prominent) since Shiki's css-variables
+       theme does not vary font-weight per token, only color. */
+    --astro-code-foreground: #000;
+    --astro-code-background: #fff;
+    --astro-code-token-keyword: #000;
+    --astro-code-token-function: #000;
+    --astro-code-token-link: #000;
+    --astro-code-token-constant: #222;
+    --astro-code-token-string: #333;
+    --astro-code-token-string-expression: #333;
+    --astro-code-token-parameter: #444;
+    --astro-code-token-punctuation: #555;
+    --astro-code-token-comment: #666;
+  }
+
+  /* Chrome never prints. `dialog` catches Shell's mobile nav-sheet; the ⌘K
+     palette needs no entry here -- it ships `hidden` server-side and only a
+     JS `open()` call ever removes that attribute, so a static print render
+     always sees it already display:none via its own [hidden] rule. */
+  .topbar,
+  .sidebar,
+  .rail-col,
+  dialog,
+  .theme-control,
+  .sys__ansi,
+  video,
+  .hero__links {
+    display: none !important;
+  }
+
+  .shell {
+    display: block !important;
+    min-height: auto !important;
+  }
+
+  .content-col {
+    padding: 0 !important;
+  }
+
+  main {
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  /* Shiki bakes `overflow-x: auto` into the <pre>'s own inline style
+     attribute (see @astrojs/markdown-remark's shiki transformer) -- nothing
+     short of !important in a stylesheet beats an inline style. */
+  pre {
+    border: 1px solid #999 !important;
+    white-space: pre-wrap !important;
+    overflow: visible !important;
+  }
+
+  .prose-table-wrap {
+    overflow: visible !important;
+  }
+
+  /* Tag dots (Task 2's ledger-row ::before) are a background-color circle;
+     browsers drop background colors under print by default, so the dot
+     needs an inset ring (not a background) to stay visible on paper. */
+  .ledger-row__tag::before {
+    box-shadow: inset 0 0 0 1px #999 !important;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  img {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 18mm;
+  }
+
+  /* Expand external links inline since a printed page can't be clicked --
+     scoped to main so chrome (already hidden above) never gets annotated,
+     and internal links (no value printed on paper) are left alone. */
+  main a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    color: #333;
+    word-break: break-all;
+  }
 }
