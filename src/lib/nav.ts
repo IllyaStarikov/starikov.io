@@ -2,13 +2,17 @@
  * Static navigation model for the app shell.
  *
  * The sidebar is a filesystem: five groups (Index / Projects / Tools /
- * Academia / Writing) whose items are routes. Most routes 404 today and fill
- * in over Tasks 9-18 -- expected. This module is the single source of truth for
- * the tree, the ">8 entries -> slice 8 + All N ->" rule, and longest-prefix
- * active detection (rendered server-side so it is correct with no JS).
+ * Academia / Writing) whose items are routes -- every route in the site now
+ * resolves (v1 shipped Tasks 9-18). This module is the single source of
+ * truth for the tree, the ">8 entries -> slice 8 + All N ->" rule, and
+ * longest-prefix active detection (rendered server-side so it is correct
+ * with no JS).
  *
- * Tools seam: the Tools group is empty in v1. Task 9 will call getCollection
- * ('tools') and pass the result to buildNav(tools) -- the shape is fixed here.
+ * Tools seam: Shell.astro calls `getCollection('tools')` and passes the
+ * result into `buildNav(tools, projects)` on every route, so the Tools group
+ * always reflects the live `tools` collection (FLAGSHIP_PROJECTS below is
+ * only the Projects fallback, used when nothing is injected -- e.g. a
+ * standalone Sidebar render in a test).
  */
 
 export interface NavItem {

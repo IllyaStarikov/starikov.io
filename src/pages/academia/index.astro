@@ -3,7 +3,7 @@
  * /academia — the coursework marquee (design §3 route, §6 media). A single
  * record page over the archived Missouri S&T repo, in four movements:
  *
- *   HEADER    degree line + a frozen mono stat strip + an archived-repo note
+ *   HEADER    degree line + a live mono stat strip + an archived-repo note
  *   VOLUMES   the four bound LaTeX PDFs — first-page thumbnail, page count,
  *             "Open PDF ↗" to the ROOT of academia.starikov.io (never /latex/;
  *             no inline iframe in v1 — iOS renders those as a frozen page)
@@ -11,13 +11,30 @@
  *             looping <video> that play only while on screen (scripts/academia.ts)
  *   COURSES   the auto course index (code + title, unlinked in v1)
  *
- * Everything but the four committed PDF thumbnails and the frozen stat numbers
- * is generated from the academia checkout by the academia loader.
+ * Everything but the four committed PDF thumbnails is generated from the
+ * academia checkout, either by the academia loader's collections or (the
+ * header stat strip below) by this page reading the checkout directly --
+ * v1.1 polish Task 6 (honesty debt A9): Task 10 originally froze this strip
+ * at "34 courses · 147 assignments · 91.5K LOC · 9 languages" straight from
+ * the brief text, never verified against the real data (see
+ * task-10-report.md's D1: "147" had no source at all -- PORTFOLIO.md's
+ * Summary table doesn't even have an assignment total). Courses/Assignments
+ * now come from the `courses` collection already loaded below (a live
+ * enumeration that, it turns out, IS 34 once latex-only gen-eds are unioned
+ * in — the frozen figure and the honest one converge); Lines of
+ * code/Languages are read from PORTFOLIO.md's own `### Summary` table via
+ * `parseSummary` (src/loaders/academia.ts), with a curated, dated fallback
+ * (SUMMARY_FALLBACK below) only if that file can't be read when this page
+ * builds. Pages (the Volumes section's "2,368 pages") is `PDF_VOLUMES`
+ * arithmetic; Stars is joined live off the `repos` collection.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import Shell from '../../layouts/Shell.astro';
 import { GITHUB_URL } from '../../lib/nav';
+import { parseSummary } from '../../loaders/academia';
 import { PDF_VOLUMES, ACADEMIA_PDF_ORIGIN, ACADEMIA_THEME_ORDER } from '../../site.config';
 
 import curatedThumb from '../../assets/academia/curated.jpg';
@@ -32,22 +49,9 @@ const THUMBS: Record<string, ImageMetadata> = {
   complete: completeThumb,
 };
 
-// Frozen coursework stats. The academia repo is archived at graduation, so
-// these never move; hardcoded here (not loader-derived) per the Task 10 brief.
-// Source: PORTFOLIO.md `### Summary` (LOC 91,512 → 91.5K; 9 languages) plus the
-// brief's normative course/assignment totals. NOTE: the brief freezes "34
-// courses" while PORTFOLIO's Summary table says 25 and the auto course index
-// below enumerates the src/ course dirs — the strip is the headline figure, the
-// table is the live enumeration (see task-10-report.md).
-const STATS = [
-  { value: '34', label: 'Courses' },
-  { value: '147', label: 'Assignments' },
-  { value: '91.5K', label: 'Lines of code' },
-  { value: '9', label: 'Languages' },
-];
-
 const DEGREE = 'Missouri S&T · B.S. + M.S. Computer Science · 2014–2018';
 const REPO_URL = `${GITHUB_URL}/academia`;
+const ACADEMIA_ROOT = '.sources/academia';
 
 const showcase = (await getCollection('academiaShowcase')).sort(
   (a, b) => a.data.order - b.data.order,
@@ -62,6 +66,52 @@ const courses = (await getCollection('courses')).sort(
     a.data.dept.replace(/\d+/, '').localeCompare(b.data.dept.replace(/\d+/, '')) ||
     Number(a.data.number) - Number(b.data.number),
 );
+const totalAssignments = courses.reduce((sum, c) => sum + c.data.assignmentCount, 0);
+
+// Curated resilience floor for Lines-of-code/Languages ONLY -- PORTFOLIO.md's
+// own committed `### Summary` table, verified directly against the live
+// checkout for this task (Lines of Code 91,512; Languages 9). The archived
+// repo means this table cannot drift, so the live read below will always
+// confirm the same two numbers; this constant exists purely so a missing/
+// corrupt checkout degrades to an honest, dated figure instead of `undefined`
+// on the page -- never a fabricated one.
+const SUMMARY_FALLBACK = { linesOfCode: 91512, languages: 9 };
+const SUMMARY_FALLBACK_MEASURED = '2026-07-26';
+
+function readPortfolioSummary(): Partial<{ linesOfCode: number; languages: number }> {
+  try {
+    return parseSummary(readFileSync(join(ACADEMIA_ROOT, 'PORTFOLIO.md'), 'utf8'));
+  } catch {
+    return {};
+  }
+}
+const liveSummary = readPortfolioSummary();
+const summaryIsLive = liveSummary.linesOfCode !== undefined && liveSummary.languages !== undefined;
+const linesOfCode = liveSummary.linesOfCode ?? SUMMARY_FALLBACK.linesOfCode;
+const languages = liveSummary.languages ?? SUMMARY_FALLBACK.languages;
+const linesOfCodeLabel = `${(linesOfCode / 1000).toFixed(1)}K`;
+const summaryTitle = summaryIsLive
+  ? undefined
+  : `Curated — PORTFOLIO.md unreadable this build; last measured ${SUMMARY_FALLBACK_MEASURED}`;
+
+const STATS = [
+  { value: String(courses.length), label: 'Courses' },
+  { value: String(totalAssignments), label: 'Assignments' },
+  { value: linesOfCodeLabel, label: 'Lines of code', title: summaryTitle },
+  { value: String(languages), label: 'Languages', title: summaryTitle },
+];
+
+const totalPages = PDF_VOLUMES.reduce((sum, v) => sum + v.pages, 0);
+
+// Stars: joined live off the SAME `repos` collection every project page
+// reads (github-meta.ts), keyed on the repo already tracked in
+// SITE.projectRepos. Omitted (not a stale/wrong number) when the repo's
+// metadata didn't come from a live fetch this build -- the site-wide
+// "never show a stale count as if it were current" rule (src/lib/projects.ts
+// summarizeRepos' same treatment of stars on /projects pages).
+const repos = await getCollection('repos');
+const academiaRepo = repos.find((r) => r.id === 'illyastarikov/academia');
+const showStars = academiaRepo && !academiaRepo.data.stale;
 
 const toc = [
   { id: 'volumes', label: 'Four volumes' },
@@ -72,7 +122,7 @@ const toc = [
 const facts = [
   { label: 'Degree', value: 'B.S. + M.S. CS' },
   { label: 'Years', value: '2014–2018' },
-  { label: 'Stars', value: '164' },
+  ...(showStars ? [{ label: 'Stars', value: String(academiaRepo!.data.stars) }] : []),
   { label: 'Source', value: 'academia', href: REPO_URL, external: true },
 ];
 ---
@@ -97,7 +147,9 @@ const facts = [
           STATS.map((s) => (
             <div class="acad-stats__cell">
               <dt class="acad-stats__label">{s.label}</dt>
-              <dd class="acad-stats__value">{s.value}</dd>
+              <dd class="acad-stats__value" title={s.title}>
+                {s.value}
+              </dd>
             </div>
           ))
         }
@@ -116,7 +168,7 @@ const facts = [
     <section id="volumes" class="acad-section">
       <h2 class="acad-label">Four volumes</h2>
       <p class="acad-section__lead">
-        Every course's notes and assignments, typeset in LaTeX and bound into four PDFs — 2,368
+        Every course's notes and assignments, typeset in LaTeX and bound into four PDFs — {totalPages.toLocaleString()}
         pages in all. They open in a new tab; no reader is embedded here (v1).
       </p>
       <ul class="acad-shelf">

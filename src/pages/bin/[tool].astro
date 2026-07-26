@@ -7,7 +7,7 @@
  *   NAME       h1 command name + tagline callout + lead description
  *   SYNOPSIS   the Usage section, commands copy-able
  *   OPTIONS    two-column flag reference (accent mono pills)
- *   HOW IT WORKS / CAVEATS   when the README has them
+ *   REQUIREMENTS / HOW IT WORKS / CAVEATS   when the README has them
  *   SOURCE     link to the tool on GitHub + a git clone one-liner
  *
  * Right rail (>=1280px): a TOC of the present sections + a facts block
@@ -48,9 +48,18 @@ function formatDate(iso: string | undefined): string | undefined {
 const updated = formatDate(data.updated);
 
 // TOC: present sections only, in page order (NAME is the title, not a jump).
+// Requirements (A16 -- v1.1 polish Task 6): the loader parses a "## Requirements"
+// section (e.g. "Python 3.9+") but this page used to discard it entirely. It
+// isn't order-preserved through ParsedTool.sections/the tools schema (both are
+// a FIXED {requirements, usage, howItWorks, caveats} shape, not an ordered
+// list of whatever the README actually had), so per the brief it renders as
+// its own section rather than trying to reconstruct README order -- placed
+// right after Options, matching the man-page-ish REQUIREMENTS-before-details
+// convention.
 const toc = [
   sections.usage && { id: 'synopsis', label: 'Synopsis' },
   options.length > 0 && { id: 'options', label: 'Options' },
+  sections.requirements && { id: 'requirements', label: 'Requirements' },
   sections.howItWorks && { id: 'how-it-works', label: 'How it works' },
   sections.caveats && { id: 'caveats', label: 'Caveats' },
   { id: 'source', label: 'Source' },
@@ -112,6 +121,15 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
               ))}
             </tbody>
           </table>
+        </section>
+      )
+    }
+
+    {
+      sections.requirements && (
+        <section id="requirements" class="tool__section">
+          <h2 class="tool__label">Requirements</h2>
+          <div class="prose" set:html={sections.requirements} />
         </section>
       )
     }

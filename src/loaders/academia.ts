@@ -288,6 +288,48 @@ export function parseDocuments(md: string): VolumeDoc[] {
     }));
 }
 
+export interface AcademiaSummary {
+  courses: number;
+  totalCommits: number;
+  totalFiles: number;
+  linesOfCode: number;
+  languages: number;
+}
+
+const SUMMARY_KEYS: Record<string, keyof AcademiaSummary> = {
+  courses: 'courses',
+  'total commits': 'totalCommits',
+  'total files': 'totalFiles',
+  'lines of code': 'linesOfCode',
+  languages: 'languages',
+};
+
+/**
+ * The `### Summary` table (`Metric | Value` rows: Courses, Total Commits,
+ * Total Files, Lines of Code, Languages). v1.1 polish Task 6 (honesty debt):
+ * powers /academia's header stat strip's "Lines of code"/"Languages" cells --
+ * the other two cells (Courses, Assignments) are loader-derived from the
+ * `courses` collection directly instead (this table's OWN "Courses" row,
+ * like parseDocuments' page counts, is read only as a cross-check candidate,
+ * never rendered). Row keys are matched case-insensitively; commas/whitespace
+ * are stripped before parsing. A missing table, or a row whose value isn't a
+ * finite number, is simply absent from the result -- the caller (the page)
+ * decides how to degrade. PURE.
+ */
+export function parseSummary(md: string): Partial<AcademiaSummary> {
+  const table = parseReadme(md).tables.find((t) => t.heading.toLowerCase() === 'summary');
+  if (!table) return {};
+  const out: Partial<AcademiaSummary> = {};
+  for (const row of table.rows) {
+    if (row.length < 2) continue;
+    const key = SUMMARY_KEYS[(row[0] ?? '').trim().toLowerCase()];
+    if (!key) continue;
+    const n = Number((row[1] ?? '').replace(/[,\s]/g, ''));
+    if (Number.isFinite(n)) out[key] = n;
+  }
+  return out;
+}
+
 /**
  * Split markdown into its `## ` (depth-2) sections, preserving the ORIGINAL
  * heading text. parseReadme lowercases its section keys, which would lose

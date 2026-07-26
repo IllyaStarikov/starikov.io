@@ -15,6 +15,7 @@ import ThemeGallery from '../components/ThemeGallery.astro';
 import themesCurated from '../data/generated/themes.json';
 import themesAll from '../data/generated/themes-all.json';
 import { GITHUB_URL } from '../lib/nav';
+import { EDITOR_STARTUP } from '../site.config';
 
 const SITE_REPO = `${GITHUB_URL}/starikov.io`;
 const DOTFILES_REPO = `${GITHUB_URL}/.dotfiles`;
@@ -39,7 +40,7 @@ const built = `${builtIso.slice(0, 10)} ${builtIso.slice(11, 16)} UTC`;
 const toc = [
   { id: 'pipeline', label: 'The pipeline' },
   { id: 'gallery', label: 'Every variant' },
-  { id: 'tokens', label: 'Token derivation' },
+  { id: 'tokens', label: 'Honest tokens' },
   { id: 'type', label: 'Type specimen' },
   { id: 'stack', label: 'The stack' },
   { id: 'drivers', label: 'Daily drivers' },
@@ -105,7 +106,8 @@ const drivers = [
       <p class="mono-label">colophon</p>
       <h1>Colophon</h1>
       <p class="col__lead">
-        This site is hand-built with <a href="https://astro.build">Astro 5</a> — static HTML,
+        This site is hand-built with
+        <a href="https://astro.build" target="_blank" rel="noopener noreferrer">Astro 5 ↗</a> — static HTML,
         no client framework — and deployed to GitHub Pages from a single workflow. But the part
         worth writing down is the color: every palette you can pick here is generated at build
         time from my <a href="/projects/dotfiles">dotfiles theme engine</a>, the same
@@ -282,6 +284,13 @@ const drivers = [
         <span class="prov__dot" aria-hidden="true">·</span>
         built {built}
       </p>
+      <p class="col__prose">
+        One number on the <a href="/">System card</a> isn't build-time data: editor cold-start
+        (<strong>{EDITOR_STARTUP.label}</strong>) was measured locally on {EDITOR_STARTUP.measured},
+        not this build — there's no neovim on the build runner. Every other System card
+        number (plugin count, dotfiles lines/files, theme variant/family counts) is computed
+        fresh at build, same as the palette above.
+      </p>
       <p class="col__prose col__prose--fine">
         <a href={DEPLOY_RUNS} target="_blank" rel="noopener noreferrer">Deploy runs ↗</a>
         <span class="prov__dot" aria-hidden="true">·</span>
@@ -360,6 +369,11 @@ const drivers = [
   }
 
   .col__prose--fine {
+    margin-top: var(--s-3);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
     font-family: var(--font-mono);
     font-size: var(--fs-13);
   }
@@ -647,13 +661,5 @@ const drivers = [
   .prov__dot {
     user-select: none;
     color: var(--border);
-  }
-
-  .col__prose--fine {
-    margin-top: var(--s-3);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-    align-items: center;
   }
 </style>

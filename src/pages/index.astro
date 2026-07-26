@@ -86,10 +86,14 @@ startHere.push({
 // logic lives in src/lib/recent.ts (selectRecentItems) so it's unit-tested
 // (test/recent.test.ts) independent of this page's Astro glue.
 const allItems = await getAllItems();
+// No 'page' entry: selectRecentItems (src/lib/recent.ts) filters on
+// `Boolean(item.date)`, and PAGE_ITEMS is deliberately undated by
+// construction (src/lib/page-items.ts) -- a 'page'-typed row can never
+// survive into `recent` below, so a label for it here is unreachable dead
+// code (same reasoning as changelog.astro's identical TYPE_LABEL).
 const TYPE_LABEL: Record<string, string> = {
   tool: 'tool',
   project: 'project',
-  page: 'page',
 };
 // Built AFTER startHere's `.push()` above, so /academia (added there, not in
 // the initial three-project array) is included in the exclusion set too.

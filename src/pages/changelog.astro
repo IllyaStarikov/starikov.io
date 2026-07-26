@@ -13,11 +13,15 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+// No 'page' entry: PAGE_ITEMS (src/lib/page-items.ts) is deliberately undated
+// BY CONSTRUCTION, and the filter two lines down drops every undated item --
+// a 'page'-typed row can never reach this page's rows array, so a TYPE_LABEL
+// entry (and the matching .entry__type--page rule below) for it would be
+// unreachable dead code. See page-items.ts's module doc for the full "why".
 const TYPE_LABEL: Record<string, string> = {
   tool: 'tool',
   project: 'project',
   essay: 'essay',
-  page: 'page',
 };
 
 // The 30 most recent DATED items (newest first -- getAllItems already sorts).
@@ -190,10 +194,6 @@ const facts = [
   .entry__type--essay {
     color: var(--ansi-magenta, var(--accent));
     border-color: color-mix(in srgb, var(--ansi-magenta, var(--accent)) 40%, transparent);
-  }
-  .entry__type--page {
-    color: var(--ansi-yellow, var(--accent));
-    border-color: color-mix(in srgb, var(--ansi-yellow, var(--accent)) 40%, transparent);
   }
 
   .entry__title {

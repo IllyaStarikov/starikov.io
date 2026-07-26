@@ -3,9 +3,13 @@
  * ThemeControl -- the signature theme picker.
  *
  * Self-contained: renders its own trigger + popover and ships its own script
- * (src/scripts/theme-control.ts). Placed top-right on the placeholder home page
- * for now; Task 7 moves this component into the sidebar footer UNCHANGED (the
- * host is responsible for positioning, not this component).
+ * (src/scripts/theme-control.ts). Lives in the desktop sidebar's footer
+ * (Sidebar.astro renders it there, below the nav groups) -- the host is
+ * responsible for positioning, not this component. Below the ≥1024px sidebar
+ * breakpoint the mobile nav sheet gets a lightweight mode-toggle button
+ * instead, so exactly one ThemeControl (and one `#theme-popover` id) exists
+ * in the document at a time; SystemCard's own theme row opens this SAME
+ * popover rather than owning a second one (see SystemCard.astro's doc).
  *
  * Server-rendered from the generated theme manifest so the 8 family rows exist
  * in the HTML immediately (no island, no hydration). Each row carries both its

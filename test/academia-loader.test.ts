@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
   parseDocuments,
+  parseSummary,
   parseShowcase,
   splitSections,
   extractMedia,
@@ -64,6 +65,43 @@ describe('parseDocuments', () => {
     expect(docs.map((d) => d.pages)).toEqual([284, 473, 498, 1113]); // note: "1,113" comma stripped
     expect(docs[0].blurb).toBe('Curated selection of best work');
     expect(docs[3].blurb).toBe('Complete collection: assignments + notes');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Summary table (v1.1 polish Task 6, honesty debt: /academia's stat strip)
+// ---------------------------------------------------------------------------
+describe('parseSummary', () => {
+  it('extracts every row of the real fixture\'s ### Summary table, commas stripped', () => {
+    expect(parseSummary(PORTFOLIO)).toEqual({
+      courses: 25,
+      totalCommits: 545,
+      totalFiles: 1826,
+      linesOfCode: 91512,
+      languages: 9,
+    });
+  });
+
+  it('matches the metric column case-insensitively', () => {
+    const md = '### Summary\n\n| Metric | Value |\n|---|---|\n| LANGUAGES | 3 |\n';
+    expect(parseSummary(md)).toEqual({ languages: 3 });
+  });
+
+  it('is {} when there is no Summary table', () => {
+    expect(parseSummary('# no tables here')).toEqual({});
+  });
+
+  it('ignores an unrecognized metric row and a non-numeric value, keeping the rest', () => {
+    const md = [
+      '### Summary',
+      '',
+      '| Metric | Value |',
+      '|---|---|',
+      '| Courses | 12 |',
+      '| Mascot | Miner |',
+      '| Languages | TBD |',
+    ].join('\n');
+    expect(parseSummary(md)).toEqual({ courses: 12 });
   });
 });
 
