@@ -119,3 +119,32 @@
      property can't be read from an IntersectionObserver options string. */
   --anchor-offset: 69px;
 }
+
+/* -----------------------------------------------------------------------
+ * Breakpoint scale (v1.1 polish, Task 4 -- spec amendment, documented per
+ * the wave plan's own instruction rather than left implicit in scattered
+ * media queries). CSS custom properties cannot be read inside a media/
+ * container feature value (`@media (min-width: var(--x))` is not valid
+ * CSS), so this is documentation, not tokens to consume -- the canonical
+ * numbers every query in the codebase should draw from.
+ *
+ * Two independent scales, chosen by what the breakpoint reacts to:
+ *
+ *   VIEWPORT  {640, 1024, 1280}  -- chrome-structural: the sidebar/rail grid,
+ *     the mobile topbar vs. desktop sidebar, and other layout that depends on
+ *     the actual window (things outside -- or larger than -- `.content-col`
+ *     can't use a container query at all). Declared with `@media`.
+ *
+ *   CONTAINER {480, 560, 640, 720}  -- content-driven: layout inside the
+ *     page's reading column that should react to the SPACE IT ACTUALLY HAS,
+ *     not the viewport -- the same content column is narrower with the
+ *     sidebar/rail present (>=1024px) than without them. Declared with
+ *     `@container content (...)` against the named container Shell.astro's
+ *     `.content-col` establishes (`container: content / inline-size`,
+ *     Task 3). Every page's content renders inside `.content-col`, so this
+ *     container is reachable from any page's own styles.
+ *
+ * Nothing outside these eight numbers should appear in a new media/container
+ * query without a specific reason (documented inline, same as any other
+ * deliberate exception).
+ * ----------------------------------------------------------------------- */

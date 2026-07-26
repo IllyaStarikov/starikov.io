@@ -400,7 +400,7 @@ const stack = [
     background: color-mix(in srgb, var(--accent) 8%, var(--surface));
   }
 
-  @media (min-width: 760px) {
+  @container content (min-width: 720px) {
     .pipe {
       flex-direction: row;
       align-items: stretch;
@@ -456,6 +456,8 @@ const stack = [
     font-family: var(--font-mono);
     font-size: var(--fs-20);
     overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
     white-space: nowrap;
   }
 

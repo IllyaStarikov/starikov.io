@@ -329,7 +329,7 @@ const facts = [
     color: var(--text-secondary);
   }
 
-  @media (min-width: 560px) {
+  @container content (min-width: 560px) {
     .acad-stats {
       grid-template-columns: repeat(4, 1fr);
     }
@@ -398,7 +398,7 @@ const facts = [
     border-bottom: 1px solid var(--border);
   }
 
-  @media (min-width: 560px) {
+  @container content (min-width: 560px) {
     .acad-shelf {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
@@ -513,7 +513,7 @@ const facts = [
   }
 
   /* Paired demos (Splatoonio, Bolt) sit side by side once there's room. */
-  @media (min-width: 560px) {
+  @container content (min-width: 560px) {
     .acad-media[data-count='2'] {
       grid-template-columns: 1fr 1fr;
     }
@@ -587,9 +587,34 @@ const facts = [
     color: var(--accent);
   }
 
-  @media (max-width: 520px) {
+  /* <480px content column: code/title/meta no longer fit three-across.
+     WRAP into a stacked block instead of hiding the meta column outright --
+     the old <520px viewport rule dropped the assignment count and "notes"
+     badge entirely on narrow screens; that information must not disappear,
+     only reflow. Same stacking idiom as bin/[tool].astro's OPTIONS table. */
+  @container content (max-width: 480px) {
+    .acad-courses,
+    .acad-courses tbody,
+    .acad-courses tr,
+    .acad-courses th,
+    .acad-courses td {
+      display: block;
+    }
+
+    .acad-courses tr {
+      padding: var(--s-2) 0;
+    }
+
+    .acad-courses__code,
+    .acad-courses__title {
+      width: auto;
+      padding: 0 0 var(--s-1);
+    }
+
     .acad-courses__meta {
-      display: none;
+      padding: var(--s-1) 0 0;
+      text-align: left;
+      white-space: normal;
     }
   }
 </style>

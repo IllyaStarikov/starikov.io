@@ -118,7 +118,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding: 12vh var(--s-4) var(--s-4);
+    padding: 12dvh var(--s-4) var(--s-4);
   }
 
   command-palette[hidden] {
@@ -143,7 +143,7 @@
     display: flex;
     flex-direction: column;
     width: min(560px, 100%);
-    max-height: 76vh;
+    max-height: 76dvh;
     background: var(--surface-raised, var(--surface));
     border: 1px solid var(--border);
     border-radius: var(--r-3);
@@ -203,6 +203,8 @@
   .cmdk-list {
     flex: 1;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
     padding: var(--s-2);
   }
 
@@ -326,7 +328,9 @@
 
   @media (max-width: 640px) {
     command-palette {
-      padding-top: 8vh;
+      /* Same dvh reasoning as the base padding above -- this is the one
+         viewport band (narrow/mobile) where the vh-vs-dvh gap matters most. */
+      padding-top: 8dvh;
     }
   }
 </style>

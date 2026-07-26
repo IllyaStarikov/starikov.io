@@ -90,7 +90,10 @@ const { metric, unit, label } = Astro.props;
     font-size: 0.9em;
   }
 
-  @media (max-width: 640px) {
+  /* Reacts to the content column's own width (Task 3's `content` container),
+     not the viewport -- this component always lives inside .prose inside
+     .content-col. */
+  @container content (max-width: 640px) {
     .highlight {
       grid-template-columns: 1fr;
       gap: var(--s-2);

@@ -258,8 +258,11 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
     line-height: 1.5;
   }
 
-  /* Stack the two columns on narrow screens. */
-  @media (max-width: 640px) {
+  /* Stack the two columns when the content column is narrow -- reacts to the
+     space .content-col actually has (Shell.astro's `content` container,
+     Task 3), not the viewport, so this stacks correctly whether the ≥1024px
+     sidebar is eating 240px or not. */
+  @container content (max-width: 640px) {
     .options,
     .options tbody,
     .options tr,
@@ -302,6 +305,8 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
     border: 1px solid var(--border);
     border-radius: var(--r-2);
     overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
 
   .clone__cmd {

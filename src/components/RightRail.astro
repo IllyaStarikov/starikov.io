@@ -120,9 +120,12 @@ const showConnections = connections.length >= 2;
     display: flex;
     flex-direction: column;
     gap: var(--s-6);
-    max-height: 100vh;
+    max-height: 100vh; /* fallback: iOS Safari <15.4 has no dvh */
+    max-height: 100dvh;
     padding: var(--s-6) var(--s-4);
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
     font-size: var(--fs-14);
   }
 

@@ -40,7 +40,8 @@ select {
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100vh; /* fallback: iOS Safari <15.4 has no dvh */
+  min-height: 100dvh;
   background: var(--bg, #24283b);
   color: var(--fg, #c0caf5);
   font: 400 var(--fs-16) / var(--lh-body) var(--font-sans);
@@ -292,6 +293,8 @@ samp {
   overflow-x: auto;
   font-size: var(--fs-14);
   line-height: var(--lh-body);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #3b4261) transparent;
 }
 
 .prose pre code {
