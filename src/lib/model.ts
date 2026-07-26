@@ -36,6 +36,7 @@ import {
   type RepoSummary,
 } from './projects';
 import { selectRecentItems } from './recent';
+import { PAGE_ITEMS } from './page-items';
 
 // Re-exported so the pure project cores have one public home (model.ts) even
 // though they live in the Astro-free `./projects` module for testability.
@@ -51,6 +52,11 @@ export {
 // Same re-export arrangement for the home page's RECENTLY UPDATED selection
 // (see `./recent` -- Astro-free for the same testability reason).
 export { selectRecentItems };
+
+// Same arrangement again for the static-page SiteItems (see `./page-items` --
+// Astro-free for the same testability reason; test/page-items.test.ts pins
+// its shape and every downstream ripple directly).
+export { PAGE_ITEMS };
 
 export type SiteItemType = 'tool' | 'project' | 'essay' | 'page';
 
@@ -118,21 +124,6 @@ type ProjectEntry = CollectionEntry<'projects'>;
 function repoNames(data: ProjectEntry['data']): string[] {
   return [...(data.repo ? [data.repo] : []), ...data.repos];
 }
-
-/**
- * Static pages that are first-class site items (⌘K / search / Connections /
- * home feed) but aren't collection-backed. /academia is one uniform record: a
- * marquee page over the archived coursework, not a per-entry route in v1.
- */
-const PAGE_ITEMS: SiteItem[] = [
-  {
-    type: 'page',
-    slug: 'academia',
-    title: 'Academia',
-    tagline: 'Four bound LaTeX volumes and a media showcase from the Missouri S&T years.',
-    href: '/academia',
-  },
-];
 
 /**
  * Every site item, newest-first: tools + projects + essays + static pages.
