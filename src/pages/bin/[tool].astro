@@ -142,8 +142,10 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
           View <code>{slug}</code> on GitHub<span aria-hidden="true"> ↗</span>
         </a>
       </p>
-      <div class="clone">
-        <code id="clone-cmd" class="clone__cmd"><span class="clone__prompt" aria-hidden="true">$ </span>{cloneCmd}</code>
+      <div class="clone-wrap">
+        <div class="clone">
+          <code id="clone-cmd" class="clone__cmd"><span class="clone__prompt" aria-hidden="true">$ </span>{cloneCmd}</code>
+        </div>
         <button
           type="button"
           class="copy-btn"
@@ -201,7 +203,7 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
   /* -- Sections ------------------------------------------------------------ */
   .tool__section {
     margin-top: var(--s-7);
-    scroll-margin-top: var(--s-5);
+    scroll-margin-top: var(--anchor-offset);
   }
 
   .tool__label {
@@ -283,8 +285,15 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
     font-size: 0.95em;
   }
 
-  .clone {
+  /* Positioning context for the copy button now lives HERE, not on the
+     overflow-x:auto `.clone` below -- an absolutely-positioned child of a
+     scroll container scrolls away with its content. The wrapper sits still;
+     only `.clone`'s text scrolls underneath the button. */
+  .clone-wrap {
     position: relative;
+  }
+
+  .clone {
     display: flex;
     align-items: center;
     padding: var(--s-3) var(--s-4);
@@ -335,7 +344,7 @@ const stripItems = facts.map((f) => ({ label: f.badge ? f.value : `${f.label.toL
   }
 
   /* The clone line's button sits centered in its own row and is always shown. */
-  .clone :global(.copy-btn) {
+  .clone-wrap :global(.copy-btn) {
     top: 50%;
     transform: translateY(-50%);
     background: transparent;

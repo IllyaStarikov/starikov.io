@@ -12,7 +12,10 @@
  *   3. Search affordance -> `open-palette` CustomEvent (Task 17 listens).
  *   4. Mobile nav <dialog>: open/close/backdrop/link-click (focus trap + Esc
  *      are native).
- *   5. Mobile mode toggle -> window.__setTheme (defined by theme-control.ts).
+ *   5. Sheet vs resize: close the sheet if a resize/rotation crosses the
+ *      1024px breakpoint while it's open, so it can't be stranded open behind
+ *      the desktop sidebar with no control left that can reach it.
+ *   6. Mobile mode toggle -> window.__setTheme (defined by theme-control.ts).
  *
  * Module state persists across ClientRouter navigations (no full reload), so
  * `barPrevY` carries the FLIP origin between pages.
@@ -139,7 +142,11 @@ function setupScrollspy(): void {
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
       if (visible[0]) setActive(visible[0].target.id);
     },
-    { rootMargin: '-72px 0px -70% 0px', threshold: 0 },
+    // -69px matches --anchor-offset (tokens.css) exactly, not a separately
+    // guessed number: a heading crosses into "active" right where the CSS
+    // scroll-margin-top would have stopped an anchor jump from tucking it
+    // under the topbar.
+    { rootMargin: '-69px 0px -70% 0px', threshold: 0 },
   );
   headings.forEach((h) => tocObserver!.observe(h));
   setActive(headings[0].id);
@@ -201,7 +208,34 @@ function wireDialog(): void {
   }
 }
 
-/* --- 5. Mobile mode toggle ------------------------------------------------ */
+/* --- 5. Sheet vs resize ----------------------------------------------------
+ * The sheet (and the hamburger that opens it) only exist below 1024px
+ * (Shell.astro's breakpoint). If a visitor rotates a tablet, or resizes a
+ * desktop window across that line, with the sheet open, the desktop sidebar
+ * appears underneath a still-open modal <dialog> that no on-screen control can
+ * reach anymore. sheet.close() fires the native `close` event -> wireDialog's
+ * listener already releases the scroll lock and resets the trigger's
+ * aria-expanded, so there is nothing else to clean up here. */
+function wireSheetAutoClose(): void {
+  let desktop: MediaQueryList;
+  try {
+    desktop = matchMedia('(min-width: 1024px)');
+  } catch {
+    return; // matchMedia unsupported: the sheet just won't auto-close on resize
+  }
+  const onChange = (e: MediaQueryList | MediaQueryListEvent): void => {
+    if (!e.matches) return;
+    const sheet = document.querySelector<HTMLDialogElement>('[data-nav-sheet]');
+    if (sheet?.open) sheet.close();
+  };
+  try {
+    desktop.addEventListener('change', onChange);
+  } catch {
+    /* old Safari without MediaQueryList#addEventListener: same graceful no-op */
+  }
+}
+
+/* --- 6. Mobile mode toggle -------------------------------------------------- */
 
 function readMode(): 'light' | 'dark' | 'system' {
   try {
@@ -253,6 +287,12 @@ if (document.readyState === 'loading') {
 } else {
   boot(false);
 }
+
+// Registered exactly once: the handler re-queries [data-nav-sheet] live on
+// every fire, so it stays correct across every ClientRouter swap without
+// needing to be re-wired (and without stacking a duplicate listener) on
+// astro:page-load the way the per-element wire* functions above do.
+wireSheetAutoClose();
 
 // Every ClientRouter swap: re-resolve active item and slide the bar.
 document.addEventListener('astro:page-load', () => boot(true));

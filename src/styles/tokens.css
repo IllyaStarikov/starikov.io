@@ -91,4 +91,14 @@
   --dur-3: 200ms;
   --dur-4: 300ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Anchor-jump clearance for the <1024px sticky topbar (Shell.astro's
+     .topbar: 2x --s-3 padding + the 36px icon buttons + 1px border-bottom =
+     61px) plus an --s-2 breathing gap. The one shared scroll-margin-top for
+     every in-page hash target (bin/[tool], projects/[...slug], colophon,
+     academia) so a jump never lands a heading half-hidden under the topbar.
+     Harmless at >=1024px, where the topbar is display:none. shell.ts's
+     scrollspy rootMargin is hand-kept equal to this same 69px -- a CSS custom
+     property can't be read from an IntersectionObserver options string. */
+  --anchor-offset: 69px;
 }

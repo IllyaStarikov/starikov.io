@@ -61,17 +61,10 @@ const isDesktop = variant === 'desktop';
   <nav class="sidebar-nav" aria-label="Primary" data-flip-host={isDesktop ? 'true' : undefined}>
     {isDesktop && <span class="nav-bar" aria-hidden="true" data-nav-bar></span>}
     {
-      sliced.map(({ group, items, overflow }) => (
+      sliced.map(({ group, items, indexLink }) => (
         <div class="nav-group">
           <p class="nav-group__label">{group.label}</p>
           <ul>
-            {items.length === 0 && group.index && (
-              <li>
-                <a class="nav-link nav-link--muted" href={group.index.href} data-nav-link>
-                  All {group.label.toLowerCase()} →
-                </a>
-              </li>
-            )}
             {items.map((item) => (
               <li>
                 <a
@@ -87,10 +80,10 @@ const isDesktop = variant === 'desktop';
                 </a>
               </li>
             ))}
-            {overflow && (
+            {indexLink && (
               <li>
-                <a class="nav-link nav-link--overflow" href={overflow.href} data-nav-link>
-                  {overflow.label}
+                <a class="nav-link nav-link--muted" href={indexLink.href} data-nav-link>
+                  {indexLink.label}
                 </a>
               </li>
             )}
@@ -270,15 +263,12 @@ const isDesktop = variant === 'desktop';
     opacity: 0;
   }
 
-  .nav-link--muted,
-  .nav-link--overflow {
+  /* No opacity on text, ever (colophon's contrast doctrine) -- italic +
+     text-secondary is the muted signal, not a dimmed alpha. */
+  .nav-link--muted {
     color: var(--text-secondary);
     font-size: var(--fs-13);
-  }
-
-  .nav-link--muted {
     font-style: italic;
-    opacity: 0.75;
   }
 
   /* Shared FLIP bar -- one element, slid between active items by shell.ts. */

@@ -42,7 +42,7 @@ const modes = [
   <button
     type="button"
     class="theme-control__trigger"
-    aria-haspopup="true"
+    aria-haspopup="dialog"
     aria-expanded="false"
     aria-controls="theme-popover"
     data-theme-trigger
@@ -158,13 +158,20 @@ const modes = [
     flex: none;
   }
 
+  /* JS-anchored (theme-control.ts sets left/bottom inline on open, and on
+     every resize/scroll while open -- src/lib/popover-position.ts has the
+     math + the full rationale). position:fixed escapes the sidebar's
+     overflow-y:auto clip; nothing between this element and the viewport sets
+     a transform/filter/perspective/contain that would create a fixed
+     containing block ahead of the viewport itself. max-height + overflow-y is
+     the fallback for a popover taller than the viewport has room for. */
   .theme-control__popover {
-    position: absolute;
-    top: calc(100% + var(--s-2));
-    right: 0;
+    position: fixed;
     z-index: 60;
     width: 260px;
-    max-width: min(90vw, 260px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
     padding: var(--s-3);
     background: var(--surface-raised, var(--surface));
     border: 1px solid var(--border);
@@ -207,6 +214,17 @@ const modes = [
     cursor: pointer;
   }
 
+  /* currentColor, not a fixed site color -- each row's background/color is a
+     dynamic per-family swatch set inline by theme-control.ts, so only the
+     row's own (contrast-designed) foreground is guaranteed to read against
+     it. Declared before [aria-pressed='true'] so the active row's border
+     still wins on hover/focus (equal specificity, source order breaks the tie
+     -- matches .nav-link's is-active-over-hover convention). */
+  .theme-control__family:hover,
+  .theme-control__family:focus-visible {
+    border-color: currentColor;
+  }
+
   .theme-control__family[aria-pressed='true'] {
     border-color: currentColor;
     font-weight: 600;
@@ -235,6 +253,14 @@ const modes = [
     font-family: var(--font-mono);
     font-size: var(--fs-12);
     cursor: pointer;
+  }
+
+  /* Declared before [aria-pressed='true'] so the active mode's own styling
+     still wins on the tied specificity (see the family-row rule above). */
+  .theme-control__mode:hover,
+  .theme-control__mode:focus-visible {
+    color: var(--fg);
+    background: var(--surface-hover, var(--surface));
   }
 
   .theme-control__mode[aria-pressed='true'] {

@@ -111,22 +111,27 @@ export function buildNav(
 
 export interface SlicedGroup {
   items: NavItem[];
-  overflow?: NavItem;
+  /** The group's "All <label> ->" landing-page link. Present whenever the
+   *  group declares `index`, independent of item count -- it is the only way
+   *  to reach a group's index page when the group has 1-8 items inline
+   *  (previously reachable only when the group was empty or >8, backlog #12). */
+  indexLink?: NavItem;
 }
 
 /**
- * Apply the slice rule. <=8 items pass through untouched; >8 are sorted by
- * `updated` desc, cut to 8, and given an "All N ->" overflow link when the
- * group declares a section index.
+ * Apply the slice rule (<=8 items pass through untouched, in declared order;
+ * >8 are sorted by `updated` desc and cut to 8) and attach the group's index
+ * link when declared. The index link ALWAYS renders when `group.index` is
+ * set -- slicing and index-link presence are independent concerns.
  */
 export function sliceGroup(group: NavGroup): SlicedGroup {
   const { items } = group;
-  if (items.length <= SLICE_LIMIT) return { items };
-  const sorted = [...items].sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''));
-  const overflow: NavItem | undefined = group.index
-    ? { href: group.index.href, label: `All ${items.length} →` }
+  const indexLink: NavItem | undefined = group.index
+    ? { href: group.index.href, label: `All ${group.label.toLowerCase()} →` }
     : undefined;
-  return { items: sorted.slice(0, SLICE_LIMIT), overflow };
+  if (items.length <= SLICE_LIMIT) return { items, indexLink };
+  const sorted = [...items].sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''));
+  return { items: sorted.slice(0, SLICE_LIMIT), indexLink };
 }
 
 /**
