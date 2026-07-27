@@ -13,13 +13,17 @@
  * dedicated `[data-writing-row]` marker used to live on a wrapper div around
  * each row, but that wrapper is gone (byte diet) and `data-tags` now lives on
  * the LedgerRow anchor itself. `.ledger-row` alone is precise enough here --
- * this module only ever runs on /writing, so every match IS an essay row.
- * `.ledger-row[hidden]{display:none}` (LedgerRow.astro's global style) is
- * what makes setting `.hidden` here actually take effect against the row's
- * own `display:flex`.
+ * LedgerRow.astro only ever renders it on /writing, so every match IS an
+ * essay row. `.ledger-row[hidden]{display:none}` (LedgerRow.astro's global
+ * style) is what makes setting `.hidden` here actually take effect against
+ * the row's own `display:flex`.
  *
- * Re-initialised on every astro:page-load; per-chip `dataset.wired` guards
- * against double-binding if init() ever runs twice for the same DOM.
+ * Re-initialised on every astro:page-load -- same as academia.ts/project-
+ * media.ts/tool.ts, this module's listener persists under ClientRouter and
+ * fires init() on every later page, not just /writing's own. wireChips()'s
+ * early return on zero `[data-tag-filter]` chips makes that a harmless
+ * no-op everywhere else; per-chip `dataset.wired` separately guards against
+ * double-binding if init() ever runs twice for the same DOM.
  */
 
 export {};

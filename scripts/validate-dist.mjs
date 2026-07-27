@@ -293,7 +293,10 @@ export async function checkUrls(urls, head) {
 //     on its own, unrelated to any regression: it renders every essay in one
 //     flat index (currently 94), and each new essay is real, unique, poorly-
 //     compressing content (Task 2's own finding) that grows the page a little
-//     with it -- the other seven pages here render a fixed, curated set.
+//     with it -- the other seven pages here render a fixed, curated set. If
+//     this check goes red here again purely from that ordinary essay growth:
+//     re-measure the clean build and re-base this number the same way, same
+//     formula -- that is routine upkeep, not a regression to chase down.
 //   - DEFAULT_BUDGET_KB is sized off the heaviest page NOT in the allowlist
 //     (today: /projects/mcp-servers), so every future /bin/<tool> or
 //     /projects/<slug> page this rule provides a default for starts with the

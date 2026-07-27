@@ -70,6 +70,11 @@
   --fs-20: 20px;
   --fs-24: 24px;
   --fs-32: 32px;
+
+  /* Type scale's documented ceiling (design spec §4: "44, home statement
+     only") -- nothing references this token directly since --fs-statement's
+     fluid clamp below superseded it; kept, not deleted, as the scale's own
+     record of its top step. */
   --fs-44: 44px;
 
   /* Home hero statement only: a fluid clamp rather than a fixed step, so it

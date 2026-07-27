@@ -411,13 +411,16 @@ samp {
 /* -----------------------------------------------------------------------
  * Print (v1.1 polish, Task 4). One block. Every theme variant lives in a
  * generated `[data-theme="..."]` attribute selector -- specificity (0,1,0).
- * `:root[data-theme], :root` is (0,1,1) (an attribute selector plus the
- * :root pseudo-class, which counts as a class in the specificity model) --
- * strictly higher than EVERY generated block, regardless of which variant is
- * active or where its rule sits in source order (themes.generated.css is
- * linked in <head> before tokens.css/global.css load, but loses anyway on
- * specificity, not order). That is what lets one block override the full
- * token set for print without touching any of the 38 generated blocks.
+ * `:root[data-theme]` -- the selector of this pair that actually matches,
+ * since the active theme always sets `data-theme` on `:root` -- is (0,2,0):
+ * the `:root` pseudo-class and the `[data-theme]` attribute selector both
+ * land in the middle (class) bucket, not (0,1,1) (there is no type selector
+ * here to fill the third bucket). Either way it's strictly higher than EVERY
+ * generated block, regardless of which variant is active or where its rule
+ * sits in source order (themes.generated.css is linked in <head> before
+ * tokens.css/global.css load, but loses anyway on specificity, not order).
+ * That is what lets one block override the full token set for print without
+ * touching any of the 38 generated blocks.
  *
  * Everything the token block does NOT reach (Shell.astro's `.shell`/
  * `.content-col`/`main`, and the chrome-hide list below) lives in Astro
