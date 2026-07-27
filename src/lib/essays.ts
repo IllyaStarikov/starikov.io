@@ -5,11 +5,12 @@
  * these functions and supply plain data pulled from the `essays`/`essayTags`
  * collections.
  *
- * Dates are treated as UTC throughout (`getUTCFullYear`, `timeZone: 'UTC'` on
- * the formatter) so year-grouping and the printed date are stable regardless
- * of the machine building the site -- a post published at
+ * Dates are treated as UTC throughout (`getUTCFullYear`) so year-grouping is
+ * stable regardless of the machine building the site -- a post published at
  * `2026-01-01T00:30:00Z` must group into 2026 whether the CI runner or a
- * developer's laptop is behind UTC.
+ * developer's laptop is behind UTC. The printed row date itself renders via
+ * `formatDate` (src/lib/dates.ts, the site's one date formatter, v1.1 polish
+ * Task 7 -- this module used to carry its own near-duplicate Intl.DateTimeFormat).
  */
 
 /** The shape /writing's ledger rows and the home essay rows need. */
@@ -99,18 +100,6 @@ export function firstTagAccent(
   const tag = tagBySlug.get(slug);
   if (!tag) return null;
   return { name: tag.name, accent: tag.accentColor ?? 'var(--accent)' };
-}
-
-const ESSAY_DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-
-/** "Jul 14, 2026" -- the /writing ledger row's date column. PURE. */
-export function formatEssayDate(date: Date): string {
-  return ESSAY_DATE_FORMAT.format(date);
 }
 
 export interface EssayFreshnessInput {

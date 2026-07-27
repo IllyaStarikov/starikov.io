@@ -6,7 +6,10 @@
  *
  * "Elsewhere" publishes the same illya@starikov.co address already public on
  * the profile card above it (see ProfileCard's own generated readme SVGs) --
- * a real mailto:, not GitHub-as-contact-of-last-resort.
+ * a real mailto:, not GitHub-as-contact-of-last-resort. The right rail's
+ * Connections block leads with that same address (v1.1 polish Task 7 fix --
+ * it used to omit email entirely and open on Writing, contradicting this
+ * comment's own claim), so a >=1280px visitor sees email first there too.
  */
 import Shell from '../layouts/Shell.astro';
 import ProfileCard from '../components/ProfileCard.astro';
@@ -30,6 +33,7 @@ const facts = [
 ];
 
 const connections = [
+  { href: 'mailto:illya@starikov.co', label: 'Email — illya@starikov.co' },
   { href: BLOG, label: 'Writing — starikov.co', external: true },
   { href: GITHUB_URL, label: 'GitHub — @IllyaStarikov', external: true },
   { href: RESUME_SITE, label: 'Résumé site', external: true },
@@ -46,7 +50,10 @@ const connections = [
 >
   <div class="about">
     <header>
-      <p class="mono-label">about</p>
+      {/* No eyebrow (v1.1 polish Task 7): the breadcrumb above ("~ / about")
+          already gives the section context an eyebrow would repeat, and
+          this page's only content IS its own name -- see Shell.astro's
+          header-mode note. */}
       <h1>About</h1>
     </header>
 

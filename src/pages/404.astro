@@ -12,13 +12,15 @@ import Shell from '../layouts/Shell.astro';
 import Kbd from '../components/Kbd.astro';
 
 const SUGGESTIONS = [
+  { href: '/', path: '~', note: 'home' },
   { href: '/projects', path: '~/projects', note: 'the project ledger' },
   { href: '/bin', path: '~/bin', note: 'command-line tools' },
   { href: '/academia', path: '~/academia', note: 'the S&T archive' },
+  { href: '/writing', path: '~/writing', note: 'the essay index' },
 ];
 ---
 
-<Shell title="404 — not found · starikov.io" description="Page not found." pageType="404">
+<Shell title="404 — starikov.io" description="Page not found." pageType="404">
   <section class="nf" aria-labelledby="nf-title">
     <h1 id="nf-title" class="nf__title">404 — not found</h1>
 
@@ -68,7 +70,10 @@ const SUGGESTIONS = [
   }
 
   .nf__title {
-    font-size: var(--fs-24);
+    /* v1.1 polish Task 7: joins the site's normal h1 scale (global.css's
+       default, same as /projects and /about) instead of the smaller size
+       this page used to carve out for itself -- a 404 is still a page. */
+    font-size: var(--fs-32);
     margin-bottom: var(--s-5);
   }
 

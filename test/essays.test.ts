@@ -3,7 +3,6 @@ import {
   groupByYear,
   filterableTagChips,
   firstTagAccent,
-  formatEssayDate,
   essayFreshnessLine,
   type EssayRow,
 } from '../src/lib/essays';
@@ -110,15 +109,9 @@ describe('firstTagAccent', () => {
   });
 });
 
-describe('formatEssayDate', () => {
-  it('formats as "Mon D, YYYY" in UTC', () => {
-    expect(formatEssayDate(new Date('2026-07-14T13:01:17.000Z'))).toBe('Jul 14, 2026');
-  });
-
-  it('is pinned to UTC regardless of local runner timezone (near-midnight edge)', () => {
-    expect(formatEssayDate(new Date('2026-01-01T00:30:00.000Z'))).toBe('Jan 1, 2026');
-  });
-});
+// formatEssayDate moved to src/lib/dates.ts as formatDate (v1.1 polish Task
+// 7, the site's one date formatter) -- its two pins moved to
+// test/dates.test.ts verbatim.
 
 // v1.1 polish Task 6, A12 -- /writing's honest freshness footer.
 describe('essayFreshnessLine', () => {

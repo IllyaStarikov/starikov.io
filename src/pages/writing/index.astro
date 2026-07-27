@@ -41,10 +41,10 @@ import {
   groupByYear,
   filterableTagChips,
   firstTagAccent,
-  formatEssayDate,
   essayFreshnessLine,
   type EssayRow,
 } from '../../lib/essays';
+import { formatDate } from '../../lib/dates';
 
 const essayEntries = await getCollection('essays');
 const tagEntries = await getCollection('essayTags');
@@ -96,7 +96,7 @@ const facts = [
 
 <Shell
   title="writing — starikov.io"
-  description="Essays on software, systems, and the occasional detour -- written and read at starikov.co."
+  description="Essays on software, systems, and the occasional detour — written and read at starikov.co."
   crumbs={[{ href: '/writing', label: 'writing' }]}
   facts={facts}
   pageType="writing"
@@ -110,7 +110,7 @@ const facts = [
     {
       count === 0 ? (
         <p class="writing__empty">
-          No essays loaded for this build -- read directly at{' '}
+          No essays loaded for this build — read directly at{' '}
           <a href="https://starikov.co" target="_blank" rel="noopener noreferrer">
             starikov.co ↗
           </a>
@@ -141,7 +141,7 @@ const facts = [
                     <LedgerRow
                       href={row.url}
                       title={row.title}
-                      meta={[`${row.readingTime} min read`, formatEssayDate(row.publishedAt)]}
+                      meta={[`${row.readingTime} min read`, formatDate(row.publishedAt)]}
                       tag={dot ? { label: dot.name, accent: dot.accent } : undefined}
                       external
                       data-tags={row.tags.join(',')}

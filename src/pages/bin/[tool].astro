@@ -18,6 +18,7 @@ import Shell from '../../layouts/Shell.astro';
 import MetadataStrip from '../../components/MetadataStrip.astro';
 import { getCollection } from 'astro:content';
 import { getToolPage } from '../../lib/model';
+import { formatDate } from '../../lib/dates';
 
 export async function getStaticPaths() {
   const tools = await getCollection('tools');
@@ -38,14 +39,21 @@ const { name, tagline, description, sections, options, sourceUrl, language, lice
 const cloneUrl = `${sourceUrl.split('/tree/')[0]}.git`;
 const cloneCmd = `git clone ${cloneUrl}`;
 
-function formatDate(iso: string | undefined): string | undefined {
+// `data.updated` is a raw ISO string (git commit date or a file mtime
+// fallback -- see bin-tools.ts), not yet a validated Date, so this stays
+// page-local glue around the shared formatter rather than moving into
+// dates.ts itself (whose `formatDate` takes a real Date, not an optional,
+// possibly-invalid string). v1.1 polish Task 7: this used to call
+// `toLocaleDateString` with NO `timeZone: 'UTC'` -- a date-only ISO string
+// like "2025-09-05" parses as UTC midnight, so formatting it in the BUILD
+// MACHINE's local zone could print the wrong calendar day anywhere west of
+// UTC. `formatDate` is UTC-pinned, so that bug can't recur here.
+function parseUpdated(iso: string | undefined): string | undefined {
   if (!iso) return undefined;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? undefined
-    : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return Number.isNaN(d.getTime()) ? undefined : formatDate(d);
 }
-const updated = formatDate(data.updated);
+const updated = parseUpdated(data.updated);
 
 // TOC: present sections only, in page order (NAME is the title, not a jump).
 // Requirements (A16 -- v1.1 polish Task 6): the loader parses a "## Requirements"

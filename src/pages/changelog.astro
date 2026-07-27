@@ -29,6 +29,8 @@ const items = (await getAllItems()).filter((i) => i.date).slice(0, 30);
 
 interface Row {
   day: string;
+  /** Full "YYYY-MM-DD", the day <time>'s machine-readable `datetime`. */
+  iso: string;
   type: string;
   title: string;
   href: string;
@@ -51,6 +53,7 @@ for (const item of items) {
   }
   group.rows.push({
     day: String(d.getUTCDate()).padStart(2, '0'),
+    iso: d.toISOString().slice(0, 10),
     type: TYPE_LABEL[item.type] ?? item.type,
     title: item.title,
     href: item.href,
@@ -73,7 +76,8 @@ const facts = [
 >
   <div class="log">
     <header>
-      <p class="mono-label">changelog</p>
+      {/* No eyebrow (v1.1 polish Task 7): the breadcrumb above already gives
+          the section context -- see Shell.astro's header-mode note. */}
       <h1>Changelog</h1>
       <p class="log__lead">
         Everything new across the site, newest first — the same data as the
@@ -91,9 +95,17 @@ const facts = [
           <ul class="log__entries">
             {group.rows.map((row) => (
               <li class="entry">
-                <span class="entry__day" aria-hidden="true">
-                  {row.day}
-                </span>
+                {/* v1.1 polish Task 7: the day number used to be aria-hidden --
+                    a screen reader got no date at all, not even the bare
+                    digits. It's a real <time datetime> now, AT-visible
+                    content, with the month+year appended sr-only so each
+                    entry announces a complete date ("05 September 2025")
+                    instead of a bare, context-free "05" -- the month heading
+                    above it is a landmark, not something a linear
+                    read-through repeats. */}
+                <time class="entry__day" datetime={row.iso}>
+                  {row.day}<span class="sr-only"> {group.label}</span>
+                </time>
                 <span class={`entry__type entry__type--${row.type}`}>{row.type}</span>
                 <a
                   class="entry__title"
