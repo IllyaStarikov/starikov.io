@@ -290,6 +290,20 @@ const isDesktop = variant === 'desktop';
     opacity: 1;
   }
 
+  /* Windows High Contrast / forced-colors (v1.1 polish Task 8): both bars are
+     background-only, 2px wide, with no border of their own -- exactly the
+     shape forced-colors mode silently drops (an author `background-color`
+     with nothing else to anchor it commonly force-resolves to `Canvas`, the
+     page's own background, on a page that IS `Canvas`). A 1px outline in the
+     `CanvasText` system color survives forced-colors by construction and
+     doesn't shift either bar's own layout (outlines never affect box size). */
+  @media (forced-colors: active) {
+    .nav-link.is-active::before,
+    .nav-bar {
+      outline: 1px solid CanvasText;
+    }
+  }
+
   /* -- Footer -------------------------------------------------------------- */
   .sidebar-foot {
     display: flex;
@@ -343,7 +357,9 @@ const isDesktop = variant === 'desktop';
   }
 
   .sidebar-inner[data-variant='sheet'] .nav-link {
-    min-height: 40px;
+    /* 44px tap target (v1.1 polish Task 8, WCAG 2.5.8): grows the row's own
+       hit area, not its (--fs-14, unchanged) text. Was 40px. */
+    min-height: 44px;
     display: flex;
     align-items: center;
   }

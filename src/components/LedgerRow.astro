@@ -189,4 +189,17 @@ const titleClasses = ['ledger-row__title', { 'ledger-row__title--mono': mono }];
     background: var(--dot, var(--accent));
     flex-shrink: 0;
   }
+
+  /* Windows High Contrast / forced-colors (v1.1 polish Task 8): the dot is
+     background-only (no border), an 8px circle that force-resolves to the
+     page's own Canvas color and vanishes -- exactly the failure mode
+     forced-colors mode is built to trip. A border in the CanvasText system
+     color keeps the dot's outline visible; the tag NAME beside it (never
+     itself color-dependent -- see the doc comment above on blend-safety)
+     still carries the row's meaning either way, this is belt and suspenders. */
+  @media (forced-colors: active) {
+    .ledger-row__tag::before {
+      border: 1px solid CanvasText;
+    }
+  }
 </style>

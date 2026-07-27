@@ -565,3 +565,25 @@ samp {
     word-break: break-all;
   }
 }
+
+/* -----------------------------------------------------------------------
+ * prefers-contrast: more (v1.1 polish, Task 8). --text-secondary and
+ * --code-comment are already contrast-FLOORED per variant (design §4: build-
+ * time color-mix(fg, bg) iterated until >=4.5:1 body-adjacent / >=3:1 large-
+ * or-mono, disclosed on /colophon) -- a visitor who has told the OS they want
+ * MORE contrast than that floor gets both tokens blended halfway toward --fg
+ * (already validated well above the floor for every curated variant),
+ * instead of a fixed override color: color-mix keeps the boost correct for
+ * whichever variant is active, with no per-variant arithmetic duplicated
+ * here. Same specificity trick as the print block above (`:root[data-theme],
+ * :root` out-specifies every generated per-variant block regardless of
+ * source order), so this one block covers all 38 variants without touching
+ * themes.generated.css.
+ * ----------------------------------------------------------------------- */
+@media (prefers-contrast: more) {
+  :root[data-theme],
+  :root {
+    --text-secondary: color-mix(in srgb, var(--fg) 60%, var(--text-secondary) 40%);
+    --code-comment: color-mix(in srgb, var(--fg) 60%, var(--code-comment) 40%);
+  }
+}

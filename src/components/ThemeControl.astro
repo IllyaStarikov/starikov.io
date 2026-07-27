@@ -153,6 +153,19 @@ const modes = [
     flex: none;
   }
 
+  /* Windows High Contrast / forced-colors (v1.1 polish Task 8): same failure
+     mode as LedgerRow's tag dot -- a background-only swatch with no border
+     force-resolves toward Canvas and disappears, right where the whole point
+     is to show a DIFFERENT color per family. A CanvasText ring at least keeps
+     every dot's presence and position visible (the family NAME beside it,
+     unaffected by forced-colors, still carries the actual identification). */
+  @media (forced-colors: active) {
+    .theme-control__dot,
+    .theme-control__family-dot {
+      border: 1px solid CanvasText;
+    }
+  }
+
   /* JS-anchored (theme-control.ts sets left/bottom inline on open, and on
      every resize/scroll while open -- src/lib/popover-position.ts has the
      math + the full rationale). position:fixed escapes the sidebar's

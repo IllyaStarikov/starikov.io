@@ -237,6 +237,22 @@ const facts = [
     color: var(--fg);
   }
 
+  /* Windows High Contrast / forced-colors (v1.1 polish Task 8): every chip
+     already keeps its own outline (a plain `border` above, in every state) --
+     what forced-colors threatens here is the DISTINCTION between selected and
+     not, which today rides entirely on a tinted `background` plus an
+     accent-colored `border-color`, both liable to be flattened toward the
+     same forced value as an unselected chip's plain border. `Highlight` is
+     the system color role built for exactly "this is the current selection",
+     so the pressed chip gets an explicit outline in it -- additive, doesn't
+     touch the (already-surviving) border every chip has. */
+  @media (forced-colors: active) {
+    .chip[aria-pressed='true'] {
+      outline: 2px solid Highlight;
+      outline-offset: 1px;
+    }
+  }
+
   /* No opacity on text (design §4): it would drop --text-secondary below its
      validated 4.5:1 floor. The smaller size alone de-emphasizes the count; it
      inherits the chip's contrast-safe --text-secondary (and --fg when active). */

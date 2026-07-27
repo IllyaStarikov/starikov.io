@@ -17,7 +17,7 @@ const { metric, unit, label } = Astro.props;
 ---
 
 <article class="highlight">
-  <div class="highlight__metric" aria-hidden="false">
+  <div class="highlight__metric">
     <span class="highlight__num">{metric}</span>
     {unit && <span class="highlight__unit">{unit}</span>}
   </div>
