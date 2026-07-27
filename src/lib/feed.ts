@@ -56,3 +56,31 @@ export function buildFeedItems(items: SiteItem[], origin: string, limit = 50): F
       return feedItem;
     });
 }
+
+/*
+ * Per-item <guid> (v1.1 polish Task 7) needs no code here: @astrojs/rss
+ * already stamps `<guid isPermaLink="true">` from each item's own `link`
+ * (dist/index.js's generateRSS -- `item.guid = { '#text': itemLink,
+ * '@_isPermaLink': 'true' }` whenever `link` is a string), and `link` above
+ * is ALREADY the item's absolute permalink -- an essay's canonical
+ * starikov.co URL, everything else's starikov.io URL. Nothing to add; see
+ * test/feed.test.ts's link assertions, which double as the guid assertions.
+ */
+
+/**
+ * Channel-level RSS extras (v1.1 polish Task 7) appended via @astrojs/rss's
+ * `customData` -- raw XML merged into <channel>, the documented way to add
+ * fields the library has no first-class option for: a self-referencing
+ * `atom:link` (feed-validator best practice / RFC 5005, so a reader/aggregator
+ * knows the feed's own canonical URL even after being copied or reposted) and
+ * `lastBuildDate` (this build's own clock, distinct from any item's pubDate).
+ * The caller MUST also pass `xmlns: { atom: 'http://www.w3.org/2005/Atom' }`
+ * to `rss()` -- the `atom:` prefix here is meaningless without that namespace
+ * declared on the root <rss> element. `buildDate` is injected, not read from
+ * `new Date()` here, so this unit-tests deterministically (the "testable pure
+ * core" pattern the rest of this module already follows). PURE.
+ */
+export function buildFeedChannelExtras(origin: string, buildDate: Date): string {
+  const selfHref = `${origin.replace(/\/$/, '')}/rss.xml`;
+  return `<atom:link href="${selfHref}" rel="self" type="application/rss+xml"/><lastBuildDate>${buildDate.toUTCString()}</lastBuildDate>`;
+}

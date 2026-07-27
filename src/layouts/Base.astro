@@ -27,9 +27,15 @@ import commitMono400Woff2 from '@fontsource/commit-mono/files/commit-mono-latin-
 interface Props {
   title?: string;
   description?: string;
+  /** og:type (v1.1 polish Task 7): 'article' for a project/tool page (a
+   *  single authored thing with its own "content"), 'website' for every
+   *  index/meta page (the correct OG default, and the only sane value for a
+   *  page that's a LIST of things). Shell.astro derives this from `pageType`
+   *  so individual pages don't each have to know the OG taxonomy. */
+  ogType?: 'website' | 'article';
 }
 
-const { title = SITE.title, description = SITE.description } = Astro.props;
+const { title = SITE.title, description = SITE.description, ogType = 'website' } = Astro.props;
 
 // Absolute URLs for social/canonical meta. Astro.site is the config `site`
 // (https://starikov.io); fall back to SITE.origin for safety.
@@ -55,12 +61,26 @@ const gaInlineScript = `
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="author" content="Illya Starikov" />
     <link rel="canonical" href={canonical} />
+    <!-- Favicon set (v1.1 polish Task 7): the SVG is the primary icon (it's
+         already theme-aware -- an embedded @media (prefers-color-scheme: dark)
+         rule swaps the glyph fill so it stays visible on dark browser chrome,
+         see the file itself); the .ico is a fallback for contexts that don't
+         support SVG favicons. apple-touch-icon is iOS/Safari's home-screen
+         and pinned-tab icon; both were generated once by
+         scripts/generate-favicons.mjs (kept in the repo for provenance, not
+         run at build time -- the glyph doesn't change build to build). -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="application/rss+xml" title={SITE.title} href={rssHref} />
     <!-- Social cards: a static default OG image (design spec §7; per-page satori
-         endpoint is v1.1). Title/description mirror the per-page tags above. -->
-    <meta property="og:type" content="website" />
+         endpoint is v1.1). Title/description mirror the per-page tags above.
+         og:type is 'article' for a project/tool page, 'website' everywhere
+         else (v1.1 polish Task 7) -- see the Props doc above. -->
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={SITE.title} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -81,7 +101,7 @@ const gaInlineScript = `
     <meta name="theme-color" content="#24283b" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src https://academia.starikov.io; base-uri 'none'; object-src 'none'"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src https://academia.starikov.io; base-uri 'none'; object-src 'none'"
     />
     <!-- Font preloads come AFTER the CSP meta so the policy governs them (a
          meta-delivered CSP only applies to content that follows it in the head). -->

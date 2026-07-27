@@ -11,7 +11,7 @@
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
 import { getAllItems } from '../lib/model';
-import { buildFeedItems } from '../lib/feed';
+import { buildFeedItems, buildFeedChannelExtras } from '../lib/feed';
 import { SITE } from '../site.config';
 
 export async function GET(context: APIContext) {
@@ -23,13 +23,18 @@ export async function GET(context: APIContext) {
     title: SITE.title,
     description: SITE.description,
     site: origin,
+    // atom: declared here (v1.1 polish Task 7) so the self-link customData
+    // appends below actually resolves -- see buildFeedChannelExtras's doc.
+    xmlns: { atom: 'http://www.w3.org/2005/Atom' },
     items: feedItems.map((item) => ({
       title: item.title,
       link: item.link,
       description: item.description,
       pubDate: item.pubDate,
       categories: item.categories,
+      // Per-item <guid isPermaLink="true"> is @astrojs/rss's own default,
+      // derived from `link` -- nothing to set here, see feed.ts's note.
     })),
-    customData: '<language>en-us</language>',
+    customData: `<language>en-us</language>${buildFeedChannelExtras(origin, new Date())}`,
   });
 }

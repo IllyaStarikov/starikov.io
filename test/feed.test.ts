@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFeedItems } from '../src/lib/feed';
+import { buildFeedItems, buildFeedChannelExtras } from '../src/lib/feed';
 import type { SiteItem } from '../src/lib/model';
 
 const ORIGIN = 'https://starikov.io';
@@ -87,5 +87,45 @@ describe('buildFeedItems', () => {
     const feed = buildFeedItems(items, 'https://starikov.io/');
     const tool = feed.find((f) => f.title === 'pocketcasts-reset')!;
     expect(tool.link).toBe('https://starikov.io/bin/pocketcasts-reset');
+  });
+
+  it("essays' link (and therefore @astrojs/rss's default guid) is their canonical starikov.co URL, never rewritten onto the site origin", () => {
+    const feed = buildFeedItems(items, ORIGIN);
+    const essay = feed.find((f) => f.title === 'On dotfiles')!;
+    expect(essay.link).toBe('https://starikov.co/on-dotfiles/');
+    expect(essay.link.startsWith('https://starikov.co/')).toBe(true);
+  });
+
+  it("every non-essay item's link (and therefore its guid) is an absolute starikov.io URL", () => {
+    const feed = buildFeedItems(items, ORIGIN);
+    for (const f of feed.filter((f) => f.title !== 'On dotfiles')) {
+      expect(f.link.startsWith('https://starikov.io/')).toBe(true);
+    }
+  });
+});
+
+// v1.1 polish Task 7: the RSS channel's self-link + lastBuildDate, appended
+// via @astrojs/rss's `customData` (rss.xml.ts). Kept as a pure, injectable-date
+// function specifically so this is testable without spinning up Astro's rss()
+// helper or freezing the system clock.
+describe('buildFeedChannelExtras', () => {
+  const BUILD_DATE = new Date('2026-07-26T22:10:00.000Z');
+
+  it('emits a self-referencing atom:link with rel="self" and the rss+xml type', () => {
+    const extras = buildFeedChannelExtras(ORIGIN, BUILD_DATE);
+    expect(extras).toContain(
+      '<atom:link href="https://starikov.io/rss.xml" rel="self" type="application/rss+xml"/>',
+    );
+  });
+
+  it('emits lastBuildDate as an RFC-822 (toUTCString) stamp of the injected build date', () => {
+    const extras = buildFeedChannelExtras(ORIGIN, BUILD_DATE);
+    expect(extras).toContain(`<lastBuildDate>${BUILD_DATE.toUTCString()}</lastBuildDate>`);
+  });
+
+  it('tolerates a trailing slash on the origin without doubling it in the self href', () => {
+    const extras = buildFeedChannelExtras('https://starikov.io/', BUILD_DATE);
+    expect(extras).toContain('href="https://starikov.io/rss.xml"');
+    expect(extras).not.toContain('starikov.io//rss.xml');
   });
 });

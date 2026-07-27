@@ -10,6 +10,20 @@
  *
  * Pages import Shell only; Shell wraps Base (which owns <head>, CSP, theme boot,
  * ClientRouter). Pages supply their own <h1> in the default slot.
+ *
+ * Page-header pattern (v1.1 polish Task 7): two DELIBERATE modes, not an
+ * inconsistency.
+ *   1. `.mono-label` eyebrow + prose <h1> -- about, colophon, changelog,
+ *      academia, projects, 404. The eyebrow names the SECTION or context and
+ *      must never verbatim-echo the h1 (a plain page whose only content IS
+ *      its own name -- about/colophon/changelog -- drops the eyebrow
+ *      entirely rather than invent filler; the breadcrumb above main already
+ *      gives "~ / about"). academia's "Coursework archive" eyebrow over an
+ *      "academia" h1 is the pattern working as intended.
+ *   2. Bare mono <h1>, no eyebrow -- /bin and /writing. A deliberate
+ *      terminal-index head, not an oversight: the command-style name itself
+ *      (`bin`) already reads as its own label, so pairing it with an eyebrow
+ *      would be the verbatim-duplicate problem mode 1 exists to avoid.
  */
 import { getCollection } from 'astro:content';
 import Base from './Base.astro';
@@ -96,6 +110,11 @@ const hasRail = toc.length > 0 || facts.length > 0 || connections.length >= 2;
 // index" resolution.
 const pagefindType = pageType === 'tool' ? 'tool' : pageType === 'project' ? 'project' : 'page';
 
+// og:type (v1.1 polish Task 7): reuses the SAME tool/project-vs-everything-else
+// split as pagefindType just above -- a tool or project page is a single
+// authored "thing" (article); an index/listing/meta page is not.
+const ogType = pagefindType === 'page' ? 'website' : 'article';
+
 // The 404 page renders through Shell like everything else but has no content
 // worth surfacing in search ("404 -- not found" would just be search noise).
 // Pagefind's rule: once ANY page on the site opts into data-pagefind-body,
@@ -105,7 +124,7 @@ const pagefindType = pageType === 'tool' ? 'tool' : pageType === 'project' ? 'pr
 const isErrorPage = pageType === '404';
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} ogType={ogType}>
   <!-- Mobile-only top bar. Hidden ≥1024px. -->
   <header class="topbar" data-page-type={pageType}>
     <a class="topbar__wordmark" href="/" aria-label="starikov.io home">
