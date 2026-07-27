@@ -13,6 +13,8 @@ import {
   formatSummaryTable,
   annotationLine,
   checkUrls,
+  budgetForPath,
+  checkPageBudgets,
 } from '../scripts/validate-dist.mjs';
 
 // scripts/validate-dist.mjs's main() shells out to the real filesystem (dist/,
@@ -334,5 +336,101 @@ describe('checkUrls (academia PDF HEAD checks -- injected fn, never real network
     const head = async (url) => (url.includes('bad') ? { ok: false, status: 500 } : { ok: true, status: 200 });
     const results = await checkUrls(['https://x/good.pdf', 'https://x/bad.pdf'], head);
     expect(results.map((r) => r.ok)).toEqual([true, false]);
+  });
+});
+
+/*
+ * budgetForPath / checkPageBudgets -- Task 8's per-page gzipped HTML budget
+ * gate (design spec §9 + amendments; table + full methodology at
+ * scripts/validate-dist.mjs's PAGE_BUDGETS_KB). Every test below injects its
+ * OWN small table, the same "plain data, no real dist/" discipline as every
+ * other check in this file -- main() alone gzips a real dist/*.html file
+ * (node:zlib's gzipSync), exactly like checkUrls above is the only place a
+ * real `fetch` happens.
+ */
+describe('budgetForPath', () => {
+  const table = { 'writing/index.html': 13.5, 'index.html': 9.5 };
+
+  it("returns a named page's own budget", () => {
+    expect(budgetForPath('writing/index.html', table, 10)).toBe(13.5);
+  });
+
+  it('falls back to the default for a page not in the table', () => {
+    expect(budgetForPath('about/index.html', table, 10)).toBe(10);
+  });
+
+  it('uses the real exported PAGE_BUDGETS_KB/DEFAULT_BUDGET_KB when called with no arguments', async () => {
+    const { PAGE_BUDGETS_KB, DEFAULT_BUDGET_KB } = await import('../scripts/validate-dist.mjs');
+    expect(budgetForPath('writing/index.html')).toBe(PAGE_BUDGETS_KB['writing/index.html']);
+    expect(budgetForPath('some/unlisted/page.html')).toBe(DEFAULT_BUDGET_KB);
+  });
+});
+
+describe('checkPageBudgets', () => {
+  const table = { 'writing/index.html': 13.5, 'index.html': 9.5 };
+  const defaultKb = 10;
+
+  it('passes a page comfortably under its budget', () => {
+    const [row] = checkPageBudgets([{ path: 'index.html', bytes: 9000 }], table, defaultKb);
+    expect(row.status).toBe('pass');
+    expect(row.kb).toBeCloseTo(9000 / 1024, 5);
+    expect(row.detail).toContain('8.79KB gz (budget 9.5KB)');
+  });
+
+  it('passes exactly AT the budget (boundary is inclusive, not a fail)', () => {
+    const bytes = 9.5 * 1024;
+    const [row] = checkPageBudgets([{ path: 'index.html', bytes }], table, defaultKb);
+    expect(row.status).toBe('pass');
+  });
+
+  it('fails a page over its budget, and the detail names the exact overage', () => {
+    const bytes = 14 * 1024; // 14KB against writing's 13.5KB budget
+    const [row] = checkPageBudgets([{ path: 'writing/index.html', bytes }], table, defaultKb);
+    expect(row.status).toBe('fail');
+    expect(row.detail).toBe('14.00KB gz (budget 13.5KB, +0.50KB over)');
+  });
+
+  it('falls back to the default budget for a page not named in the table', () => {
+    const overDefault = checkPageBudgets(
+      [{ path: 'about/index.html', bytes: 11 * 1024 }],
+      table,
+      defaultKb,
+    );
+    expect(overDefault[0].status).toBe('fail');
+    expect(overDefault[0].budgetKb).toBe(10);
+  });
+
+  it('checks every page independently -- one regression does not hide the rest, none are skipped', () => {
+    const rows = checkPageBudgets(
+      [
+        { path: 'index.html', bytes: 20 * 1024 }, // way over
+        { path: 'writing/index.html', bytes: 1 * 1024 }, // comfortably under
+        { path: 'about/index.html', bytes: 9 * 1024 }, // under the default
+      ],
+      table,
+      defaultKb,
+    );
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.status)).toEqual(
+      // sorted by path: about, index, writing
+      ['pass', 'fail', 'pass'],
+    );
+  });
+
+  it('sorts rows by path regardless of input order, for a stable printed table build to build', () => {
+    const rows = checkPageBudgets(
+      [
+        { path: 'writing/index.html', bytes: 1024 },
+        { path: 'about/index.html', bytes: 1024 },
+        { path: 'index.html', bytes: 1024 },
+      ],
+      table,
+      defaultKb,
+    );
+    expect(rows.map((r) => r.path)).toEqual(['about/index.html', 'index.html', 'writing/index.html']);
+  });
+
+  it('is a no-op on an empty page list', () => {
+    expect(checkPageBudgets([], table, defaultKb)).toEqual([]);
   });
 });

@@ -22,9 +22,11 @@
  *   astro.config.mjs for "pagefind" (pagefindEnabled()), which is what makes
  *   this an unconditional, always-on gate since Task 16 actually added the
  *   astro-pagefind integration there; is dist/CNAME present and pointed at
- *   the real origin. These are pure build correctness -- nothing here should
- *   ever depend on network access, so there is no "offline dev build" excuse
- *   for any of them being broken.
+ *   the real origin; does every dist/**\/*.html page's OWN gzipped size sit
+ *   at or under its budget (PAGE_BUDGETS_KB / DEFAULT_BUDGET_KB, Task 8;
+ *   design spec §9 + amendments). These are pure build correctness --
+ *   nothing here should ever depend on network access, so there is no
+ *   "offline dev build" excuse for any of them being broken.
  *
  *   BUILD_STRICT-gated (network + content-threshold gates, CI-only by
  *   default so an offline/WIP local build isn't blocked): the four academia
@@ -36,12 +38,14 @@
  * Every pure decision below (occurrences/compareSlugs/withNote/toolsCheckRow/
  * anyContains/pagefindEnabled/pagefindIndexReady/isDraftFrontmatter/
  * cnameMatchesOrigin/checkMinCounts/formatSummaryTable/annotationLine/
- * checkUrls) is exported and
+ * checkUrls/budgetForPath/checkPageBudgets) is exported and
  * unit-tested in test/validate-dist.test.mjs with plain data -- no real
  * dist/, no network (checkUrls takes an INJECTED head-check function; main()'s
- * real run is the only place a real `fetch` appears). main() itself is the
- * thin, untested-by-design IO shell around them, mirroring build-themes.mjs /
- * transcode-media.mjs's split.
+ * real run is the only place a real `fetch` appears; checkPageBudgets takes
+ * plain `{path, bytes}` sizes -- main()'s real run is likewise the only place
+ * an actual `gzipSync` runs). main() itself is the thin, untested-by-design
+ * IO shell around them, mirroring build-themes.mjs / transcode-media.mjs's
+ * split.
  *
  * Every counts.json entry (tools/academiaShowcase/courses/repos/essays/
  * essayTags) may carry a `note` -- a loader's provenance hint for a ZERO
@@ -58,6 +62,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 import { SITE, ACADEMIA_PDF_ORIGIN, PDF_VOLUMES } from '../src/site.config.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -252,6 +257,89 @@ export async function checkUrls(urls, head) {
 }
 
 // ---------------------------------------------------------------------------
+// Per-page gzipped HTML budgets (v1.1 polish Task 8; design spec §9 + its
+// 2026-07-26 amendments -- see docs/superpowers/specs/2026-07-17-starikov-io-
+// redesign-design.md §9). Keys are dist-relative HTML paths (POSIX-style,
+// relative to dist/); every *.html file under dist/ NOT listed here gets
+// DEFAULT_BUDGET_KB. This is the allowlist the wave plan named explicitly:
+// home, /writing, /colophon, /academia, /projects/dotfiles, /changelog,
+// /bin/pocketcasts-reset -- roughly spec §10's "~8 deep pages" the award
+// submission is carried by, swapping /bin's own index for /changelog.
+//
+// Methodology (every number below is MEASURED, not guessed): gzip -9 (via
+// this file's own gzipSync(..., {level: 9}) at runtime -- Node's zlib and the
+// `gzip` CLI differ by a few dozen bytes at the same level, so the budget
+// must be checked against the SAME implementation that sets it, not a shell
+// command run once by hand) on a clean `npm run build`, then rounded UP to
+// the next 0.5KB, plus one further 0.5KB step of headroom. Two exceptions:
+//
+//   - /writing was SPECIFIED to inherit the spec's own pinned 12.5KB gz
+//     ceiling verbatim (its 2026-07-26 Task 2 amendment measured it as the
+//     worst-case index page at the time). It no longer fits: this file's own
+//     measurement puts it at ~12.7-12.9KB gz today (see the Task 8 spec
+//     amendment for the exact figure and why -- Task 6 legitimately added a
+//     freshness-disclosure footer and three right-rail facts after Task 2's
+//     measurement was taken, real content, not bloat). Re-pinning the gate at
+//     a number the very first build after adding it would fail is not a
+//     "regression gate", it's a false alarm from minute one -- so /writing
+//     gets the SAME measure-round-up-plus-headroom treatment as every other
+//     page below, re-based on today's honest floor. It is also, structurally,
+//     the one budget in this table that will need re-tuning again over time
+//     on its own, unrelated to any regression: it renders every essay in one
+//     flat index (currently 94), and each new essay is real, unique, poorly-
+//     compressing content (Task 2's own finding) that grows the page a little
+//     with it -- the other seven pages here render a fixed, curated set.
+//   - DEFAULT_BUDGET_KB is sized off the heaviest page NOT in the allowlist
+//     (today: /projects/mcp-servers), so every future /bin/<tool> or
+//     /projects/<slug> page this rule provides a default for starts with the
+//     same measured-plus-headroom discipline as a named page, not an arbitrary
+//     round number.
+// ---------------------------------------------------------------------------
+export const PAGE_BUDGETS_KB = {
+  'index.html': 9.5,
+  'writing/index.html': 13.5,
+  'colophon/index.html': 14.5,
+  'academia/index.html': 14.5,
+  'projects/dotfiles/index.html': 12.5,
+  'changelog/index.html': 9.0,
+  'bin/pocketcasts-reset/index.html': 10.0,
+};
+
+/** Applies to every dist/*.html page not named in PAGE_BUDGETS_KB. */
+export const DEFAULT_BUDGET_KB = 10.0;
+
+/** The budget (KB, gzipped) for a dist-relative HTML path: its own entry in
+ *  `table` if named, else `defaultKb`. PURE. */
+export function budgetForPath(path, table = PAGE_BUDGETS_KB, defaultKb = DEFAULT_BUDGET_KB) {
+  return Object.prototype.hasOwnProperty.call(table, path) ? table[path] : defaultKb;
+}
+
+/**
+ * The budget gate itself: one row per `{path, bytes}` entry (bytes = the
+ * page's OWN gzipped size, computed by the caller -- main() is the only place
+ * a real gzip runs, mirroring checkUrls' injected-fetch pattern above), pass
+ * when its size is at or under its budget (from `budgetForPath`), fail when
+ * over. Sorted by path so the printed table (formatSummaryTable) is stable
+ * build to build regardless of directory-walk order. PURE.
+ */
+export function checkPageBudgets(sizes, table = PAGE_BUDGETS_KB, defaultKb = DEFAULT_BUDGET_KB) {
+  return [...sizes]
+    .sort((a, b) => a.path.localeCompare(b.path))
+    .map(({ path, bytes }) => {
+      const budgetKb = budgetForPath(path, table, defaultKb);
+      const kb = bytes / 1024;
+      const over = kb > budgetKb;
+      return {
+        path,
+        budgetKb,
+        kb,
+        status: over ? 'fail' : 'pass',
+        detail: `${kb.toFixed(2)}KB gz (budget ${budgetKb.toFixed(1)}KB${over ? `, +${(kb - budgetKb).toFixed(2)}KB over` : ''})`,
+      };
+    });
+}
+
+// ---------------------------------------------------------------------------
 // IO shell -- main()
 // ---------------------------------------------------------------------------
 
@@ -283,6 +371,14 @@ function listFilesRecursive(dir, base = dir) {
     }
   }
   return out;
+}
+
+/** Every *.html file under dist/, as paths relative to DIST (POSIX-style via
+ *  node:path's relative() -- matches PAGE_BUDGETS_KB's keys on every
+ *  platform this actually runs on: local macOS/Linux dev and the Linux CI
+ *  runner). Feeds the HTML budget gate below. */
+function listHtmlFiles() {
+  return listFilesRecursive(DIST).filter((f) => f.endsWith('.html'));
 }
 
 function projectCountFromSource() {
@@ -416,7 +512,27 @@ async function main() {
     fail('CNAME', 'validate-dist', `dist/CNAME is missing or does not match ${SITE.origin}`);
   }
 
-  // ---- 7. academia volume URLs HEAD -> 200 (BUILD_STRICT only; network) ---
+  // ---- 7. per-page gzipped HTML budgets (unconditional) --------------------
+  // design spec §9 + amendments; table + methodology at PAGE_BUDGETS_KB above.
+  // gzipSync(..., {level: 9}) mirrors `gzip -9`, the convention every number
+  // in the table was measured with (Node's zlib and the `gzip` CLI differ by
+  // a few dozen bytes at the same level -- checking against THIS runtime's
+  // own gzip, not a shell command run once by hand, is what keeps the gate
+  // honest against itself build to build).
+  const htmlSizes = listHtmlFiles().map((path) => ({
+    path,
+    bytes: gzipSync(readFileSync(join(DIST, path)), { level: 9 }).length,
+  }));
+  const budgetRows = checkPageBudgets(htmlSizes);
+  for (const r of budgetRows) {
+    if (r.status === 'pass') {
+      pass(`HTML budget: ${r.path}`, r.detail);
+    } else {
+      fail(`HTML budget: ${r.path}`, 'validate-dist', r.detail);
+    }
+  }
+
+  // ---- 8. academia volume URLs HEAD -> 200 (BUILD_STRICT only; network) ---
   if (strict) {
     const urls = PDF_VOLUMES.map((v) => `${ACADEMIA_PDF_ORIGIN}/${v.slug}.pdf`);
     const results = await checkUrls(urls, (url) => fetch(url, { method: 'HEAD' }));
@@ -434,7 +550,7 @@ async function main() {
     warnSkip('academia PDFs', 'validate-dist', 'BUILD_STRICT not set -- skipping network HEAD checks');
   }
 
-  // ---- 8. counts vs SITE.minCounts (BUILD_STRICT only) ---------------------
+  // ---- 9. counts vs SITE.minCounts (BUILD_STRICT only) ---------------------
   if (strict) {
     const actual = {
       essays: counts.essays?.count ?? 0,
