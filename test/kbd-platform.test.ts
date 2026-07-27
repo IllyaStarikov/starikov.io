@@ -62,7 +62,10 @@ describe('swapKbdToNonMac', () => {
     const doc = kbdDoc();
     swapKbdToNonMac(doc);
     const glyphs = Array.from(doc.querySelectorAll('[data-kbd-glyph]')).map((el) => el.textContent);
-    expect(glyphs).toEqual(['CtrlK', 'Ctrl']);
+    // "⌘K" -> "Ctrl K" (a space, not the glued-together "CtrlK"); the
+    // standalone "⌘" (Palette's "new tab" hint) -> plain "Ctrl", no trailing
+    // space added where there was nothing to separate it from.
+    expect(glyphs).toEqual(['Ctrl K', 'Ctrl']);
     // The plain arrow/enter kbds (no data-kbd-glyph) are never touched.
     const untouched = Array.from(doc.querySelectorAll('kbd:not([data-kbd-glyph])')).map(
       (el) => el.textContent,
@@ -81,7 +84,7 @@ describe('swapKbdToNonMac', () => {
     swapKbdToNonMac(doc);
     swapKbdToNonMac(doc);
     const glyphs = Array.from(doc.querySelectorAll('[data-kbd-glyph]')).map((el) => el.textContent);
-    expect(glyphs).toEqual(['CtrlK', 'Ctrl']);
+    expect(glyphs).toEqual(['Ctrl K', 'Ctrl']);
     expect(doc.querySelector('[data-kbd-label]')?.textContent).toBe('Control K');
   });
 

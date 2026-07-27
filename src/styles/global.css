@@ -365,12 +365,14 @@ samp {
    a card or a zebra-striped grid. The pocketcasts-reset "How it works" table
    is the live example this was written against.
 
-   .prose-table-wrap is injected by src/loaders/bin-tools.ts's wrapProseTables()
-   around every README table's rendered HTML -- a real wrapper div, not
-   `table { display: block }`. The latter was considered and rejected: it
-   strips the table's row/column semantics from assistive tech, where a
-   wrapper div preserves them completely while still giving a wide table
-   somewhere to scroll besides the whole page. */
+   .prose-table-wrap is injected by src/loaders/lib/prose-tables.ts's
+   wrapProseTables() -- shared by both src/loaders/bin-tools.ts (README
+   tables) and src/loaders/academia.ts (PORTFOLIO.md tables) -- around every
+   rendered table's HTML -- a real wrapper div, not `table { display: block }`.
+   The latter was considered and rejected: it strips the table's row/column
+   semantics from assistive tech, where a wrapper div preserves them
+   completely while still giving a wide table somewhere to scroll besides the
+   whole page. */
 .prose-table-wrap {
   overflow-x: auto;
   scrollbar-width: thin;

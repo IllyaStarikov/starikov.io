@@ -54,11 +54,18 @@ export function isNonMacPlatform(nav: {
  * the ⌘ default) that needs the swap again, but the one persisted element
  * (the desktop sidebar's search hint, `transition:persist`) is already
  * swapped and simply matches nothing on repeat calls.
+ *
+ * "⌘" is replaced with "Ctrl " (trailing space) when it's glued to a
+ * following non-space character -- Kbd.astro's real glyph content is "⌘K"
+ * (Sidebar.astro/404.astro/index.astro), and a bare `/⌘/g -> 'Ctrl'` swap
+ * produced the unreadable "CtrlK" with no separator. A standalone "⌘" (the
+ * Palette footer's "new tab" hint, its own `<kbd>` with nothing else in its
+ * textContent) still becomes plain "Ctrl", no trailing space.
  */
 export function swapKbdToNonMac(root: ParentNode): void {
   root.querySelectorAll('[data-kbd-glyph]').forEach((el) => {
     if (el.textContent && el.textContent.includes('⌘')) {
-      el.textContent = el.textContent.replace(/⌘/g, 'Ctrl');
+      el.textContent = el.textContent.replace(/⌘(\S)/g, 'Ctrl $1').replace(/⌘/g, 'Ctrl');
     }
   });
   root.querySelectorAll('[data-kbd-label]').forEach((el) => {

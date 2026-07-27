@@ -4,9 +4,11 @@
  * The sidebar is a filesystem: five groups (Index / Projects / Tools /
  * Academia / Writing) whose items are routes -- every route in the site now
  * resolves (v1 shipped Tasks 9-18). This module is the single source of
- * truth for the tree, the ">8 entries -> slice 8 + All N ->" rule, and
- * longest-prefix active detection (rendered server-side so it is correct
- * with no JS).
+ * truth for the tree, sliceGroup's two INDEPENDENT rules (items >SLICE_LIMIT
+ * sort by `updated` desc and cut to 8; the "All <label> ->" index link
+ * renders whenever the group declares `index`, at ANY item count -- not only
+ * once it overflows), and longest-prefix active detection (rendered
+ * server-side so it is correct with no JS).
  *
  * Tools seam: Shell.astro calls `getCollection('tools')` and passes the
  * result into `buildNav(tools, projects)` on every route, so the Tools group
@@ -29,7 +31,9 @@ export interface NavItem {
 export interface NavGroup {
   label: string;
   items: NavItem[];
-  /** Section landing route; the target of the "All N ->" overflow link. */
+  /** Section landing route; the target of the group's "All <label> ->" index
+   *  link (sliceGroup attaches it whenever this is set, regardless of item
+   *  count -- not just once the group overflows SLICE_LIMIT). */
   index?: { href: string };
 }
 
@@ -64,7 +68,11 @@ const FALLBACK_PROJECTS: ProjectRef[] = FLAGSHIP_PROJECTS.map((slug) => ({ slug,
 
 export const GITHUB_URL = 'https://github.com/IllyaStarikov';
 
-/** Groups >8 entries collapse to the 8 most-recent + an "All N ->" link. */
+/** Groups with more than this many items collapse to the `SLICE_LIMIT`
+ *  most-recently-`updated`. Governs slicing ONLY -- the "All <label> ->"
+ *  index link (sliceGroup, below) is a separate concern that renders at any
+ *  item count whenever the group declares `index`, not just once a group
+ *  passes this limit. */
 export const SLICE_LIMIT = 8;
 
 /**
