@@ -11,7 +11,14 @@
 /** @type {const} */
 export const SITE = {
   title: 'starikov.io',
-  description: 'Illya Starikov — software engineer. The workshop.',
+  // A real sentence (v1.1 polish Task 7) -- ships verbatim in the RSS
+  // channel description and as the default og:description/meta description
+  // fallback, so it needs to read as one on its own, not just as a label.
+  // Same "the workshop" framing as the home hero statement (index.astro) and
+  // PAGE_ITEMS' own home tagline -- kept ≤160 chars for the RSS/OG surfaces
+  // that truncate past that.
+  description:
+    'Illya Starikov — software engineer. The workshop: ten years of dotfiles, tools, and essays — pulled from live sources and documented like it matters.',
   origin: 'https://starikov.io',
   gaId: 'G-MF94N59911',
   curatedFamilies: [

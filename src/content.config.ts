@@ -175,6 +175,11 @@ const projects = defineCollection({
       order: z.number().default(99),
       /** Optional local hero image, resolved to ImageMetadata (→ AVIF). */
       hero: image().optional(),
+      /** Real alt text describing what the hero screenshot actually shows
+       *  (v1.1 polish Task 7) -- falls back to a generic "<title> — preview"
+       *  at the route when unset, so this is only required for overlays that
+       *  set `hero`. */
+      heroAlt: z.string().optional(),
       /** Manual related-essay slugs (design spec section 6, resolved in Task 14). */
       essays: z.array(z.string()).default([]),
       /** Related-essay tags, matched after explicit slugs (Task 14). */

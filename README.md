@@ -89,6 +89,7 @@ files only and strips `.git`; no code from those repos ever runs.
 ```sh
 scripts/sync-sources.sh   # .sources/{dotfiles,bin,academia}
 npm install
+node scripts/build-themes.mjs && node scripts/build-system-stats.mjs  # one-time: astro dev doesn't run these, but the head/home import their JSON directly
 npm run dev               # http://localhost:4321
 ```
 

@@ -103,12 +103,20 @@ export function buildNav(
       })),
     },
     {
+      // Item label != group label (v1.1 polish Task 7): "Academia / Academia"
+      // read as a duplicate two lines apart. "Coursework" is what the item
+      // actually is (the page's own eyebrow says the same: "Coursework
+      // archive"); the group label, href, and the page's own <h1>/<title>
+      // ("Academia") are all unchanged -- this renames the SIDEBAR ROW only.
       label: 'Academia',
-      items: [{ href: '/academia', label: 'Academia' }],
+      items: [{ href: '/academia', label: 'Coursework' }],
     },
     {
+      // Same fix, same reasoning: "Writing / Writing" duplicated; "Essays"
+      // names what's actually there. Group label, href, and the page's own
+      // <h1>/<title> ("Writing") are unchanged.
       label: 'Writing',
-      items: [{ href: '/writing', label: 'Writing' }],
+      items: [{ href: '/writing', label: 'Essays' }],
     },
   ];
 }

@@ -70,7 +70,10 @@ const primaryRepo = data.repo ?? data.repos[0];
 const sourceDir = slug === 'dotfiles' ? '.sources/dotfiles' : undefined;
 const overlayPath = `src/content/projects/${slug}.mdx`;
 
-const heroAlt = `${data.title} — preview`;
+// v1.1 polish Task 7: real, screenshot-specific alt text where an overlay
+// sets `heroAlt` (dotfiles, eclecta, resume all do); the generic pattern is
+// only a fallback for a project whose overlay hasn't set one.
+const heroAlt = data.heroAlt ?? `${data.title} — preview`;
 ---
 
 <Shell
