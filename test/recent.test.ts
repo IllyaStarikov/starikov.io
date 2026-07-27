@@ -78,7 +78,7 @@ describe('selectRecentItems', () => {
     expect(result.map((i) => i.slug)).toEqual(['newest', 'middle', 'oldest']);
   });
 
-  it('combines every rule: essays and curated hrefs excluded, capped, date-sorted', () => {
+  it('combines every rule: essays and curated hrefs excluded, capped, date-sorted -- AND actually exercises the cap trim (7 qualifying items in, only the newest 5 survive)', () => {
     const items = [
       item({ slug: 'essay-1', href: 'https://starikov.co/essay-1/', type: 'essay', date: '2026-07-25T00:00:00.000Z' }),
       item({ slug: 'dotfiles', href: '/projects/dotfiles', type: 'project', date: '2026-07-24T00:00:00.000Z' }),
@@ -87,10 +87,20 @@ describe('selectRecentItems', () => {
       item({ slug: 'tool-c', href: '/bin/tool-c', date: '2026-06-01T00:00:00.000Z' }),
       item({ slug: 'tool-d', href: '/bin/tool-d', date: '2026-05-01T00:00:00.000Z' }),
       item({ slug: 'tool-e', href: '/bin/tool-e', date: '2026-04-01T00:00:00.000Z' }),
+      // Two MORE qualifying (dated, non-essay, non-excluded) items, older than
+      // every item above: without these, tool-a..e alone are exactly 5 --
+      // the default cap -- so slice(0, 5) never actually cuts anything, and a
+      // broken/absent cap would pass this test just as well as a correct one
+      // (Task 3 review finding). tool-f/tool-g push the qualifying count to 7
+      // so the assertion below only holds if the trim genuinely drops the two
+      // oldest, not merely if the sort is right.
+      item({ slug: 'tool-f', href: '/bin/tool-f', date: '2026-03-01T00:00:00.000Z' }),
+      item({ slug: 'tool-g', href: '/bin/tool-g', date: '2026-02-01T00:00:00.000Z' }),
       item({ slug: 'academia', href: '/academia', type: 'page', date: undefined }),
     ];
     const startHereHrefs = new Set(['/projects/dotfiles', '/academia']);
     const result = selectRecentItems(items, startHereHrefs);
+    expect(result).toHaveLength(5);
     expect(result.map((i) => i.slug)).toEqual([
       'tool-b',
       'tool-a',
@@ -98,5 +108,9 @@ describe('selectRecentItems', () => {
       'tool-d',
       'tool-e',
     ]);
+    // Explicit, not just implied by the exact-array-equality above: the two
+    // oldest qualifying items must not survive the cap.
+    expect(result.map((i) => i.slug)).not.toContain('tool-f');
+    expect(result.map((i) => i.slug)).not.toContain('tool-g');
   });
 });
