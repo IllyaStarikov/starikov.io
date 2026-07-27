@@ -271,13 +271,18 @@ export async function checkUrls(urls, head) {
 // `gzip` CLI differ by a few dozen bytes at the same level, so the budget
 // must be checked against the SAME implementation that sets it, not a shell
 // command run once by hand) on a clean `npm run build`, then rounded UP to
-// the next 0.5KB, plus one further 0.5KB step of headroom. Two exceptions:
+// the next 0.5KB, plus one further 0.5KB step of headroom. gzip -9 is a
+// stable LOCAL proxy for network cost, not the real one: GitHub Pages serves
+// through Fastly, which typically negotiates Brotli to modern browsers --
+// meaningfully smaller than gzip-9 for HTML, roughly 15-20% -- so actual
+// production bytes are expected to land BELOW every number measured here;
+// the gate errs conservative/strict, never optimistic. Two exceptions:
 //
 //   - /writing was SPECIFIED to inherit the spec's own pinned 12.5KB gz
 //     ceiling verbatim (its 2026-07-26 Task 2 amendment measured it as the
 //     worst-case index page at the time). It no longer fits: this file's own
-//     measurement puts it at ~12.7-12.9KB gz today (see the Task 8 spec
-//     amendment for the exact figure and why -- Task 6 legitimately added a
+//     measurement puts it at 12,984 B (12.68KB) gz today (see the Task 8 spec
+//     amendment for the full reasoning -- Task 6 legitimately added a
 //     freshness-disclosure footer and three right-rail facts after Task 2's
 //     measurement was taken, real content, not bloat). Re-pinning the gate at
 //     a number the very first build after adding it would fail is not a
